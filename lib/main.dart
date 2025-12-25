@@ -9,6 +9,7 @@ import 'admin_screens/admin_requests_screen.dart';
 import 'admin_screens/admin_settings_screen.dart';
 import 'admin_screens/admin_users_screen.dart';
 import 'admin_screens/admin_procedures_screen.dart';
+//import 'admin_screens/admin_workflow_canvas_screen.dart';
 
 void main() {
   runApp(const MyApp());
@@ -36,6 +37,7 @@ class MyApp extends StatelessWidget {
         '/admin/settings': (context) => const AdminSettingsScreen(),
         '/admin/users': (context) => const AdminUsersScreen(),
         '/admin/procedures': (context) => const AdminProceduresScreen(),
+        // '/admin/procedures/create': (context) => const AdminCreateProcedureScreen(),
       },
       debugShowCheckedModeBanner: false,
     );

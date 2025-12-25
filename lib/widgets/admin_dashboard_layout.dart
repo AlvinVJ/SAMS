@@ -7,10 +7,13 @@ class AdminDashboardLayout extends StatelessWidget {
   final Widget child;
   final String? activeRoute;
 
+  final bool disableSidebar;
+
   const AdminDashboardLayout({
     super.key,
     required this.child,
     this.activeRoute,
+    this.disableSidebar = false,
   });
 
   @override
@@ -20,7 +23,11 @@ class AdminDashboardLayout extends StatelessWidget {
       body: Row(
         children: [
           // Admin Sidebar
-          AdminSidebar(activeRoute: activeRoute),
+          //AdminSidebar(activeRoute: activeRoute),
+          IgnorePointer(
+            ignoring: disableSidebar,
+            child: AdminSidebar(activeRoute: activeRoute),
+          ),
 
           // Main Content
           Expanded(
