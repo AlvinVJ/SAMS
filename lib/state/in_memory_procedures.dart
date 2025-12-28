@@ -15,23 +15,17 @@ class InMemoryProcedures {
 class ProcedureDraft {
   final String title;
   final List<FormFieldDraft> formSchema;
-  final List<WorkflowStepDraft> steps;
+  final List<ApprovalLevelDraft> approvalLevels;
+
 
   ProcedureDraft({
     required this.title,
     required this.formSchema,
-    required this.steps,
+    required this.approvalLevels,
   });
 }
 
 /// Represents ONE workflow step (one level)
-class WorkflowStepDraft {
-  final List<String> approvers; // empty for form steps
-
-  WorkflowStepDraft({this.approvers = const []});
-}
-
-enum WorkflowStepType { approval }
 
 class FormFieldDraft {
   String fieldId;
@@ -48,3 +42,15 @@ class FormFieldDraft {
 }
 
 enum FormFieldType { text, file }
+
+class ApprovalLevelDraft {
+  List<Map<String, String>> roles;
+  int minApprovals;
+  bool allMustApprove;
+
+  ApprovalLevelDraft({
+    required this.roles,
+    required this.minApprovals,
+    required this.allMustApprove,
+  });
+}

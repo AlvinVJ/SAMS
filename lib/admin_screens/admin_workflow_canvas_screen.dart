@@ -3,6 +3,13 @@ import '../styles/app_theme.dart';
 import '../widgets/admin_dashboard_layout.dart';
 import '../state/in_memory_procedures.dart';
 
+const List<Map<String, String>> _dummyRoles = [
+  {'id': 'CLASS_ADVISOR_ROLE', 'name': 'Class Advisor'},
+  {'id': 'HOD_ROLE', 'name': 'Head of Department'},
+  {'id': 'PRINCIPAL_ROLE', 'name': 'Principal'},
+  {'id': 'FINANCE_ROLE', 'name': 'Finance Officer'},
+];
+
 class AdminCreateProcedureScreen extends StatefulWidget {
   const AdminCreateProcedureScreen({super.key});
 
@@ -20,10 +27,10 @@ class _AdminCreateProcedureScreenState
   final List<FormFieldDraft> _formFields = [];
   final _formKey = GlobalKey<FormState>();
 
-  /// Local UI state for workflow steps
-  final List<WorkflowStepDraft> _steps = [];
+  // Local UI state for approval steps
+  final List<ApprovalLevelDraft> _approvalLevels = [];
 
-  // ───────────────── Add Steps ─────────────────
+  // ─────────────────Form builder functions ─────────────────
 
   void _onFormBuilderClick() {
     setState(() {
@@ -50,16 +57,6 @@ class _AdminCreateProcedureScreenState
     });
   }
 
-  void _addApprovalStep() {
-    setState(() {
-      _steps.add(WorkflowStepDraft(approvers: []));
-    });
-  }
-
-  void _removeStep(int index) {
-    setState(() => _steps.removeAt(index));
-  }
-
   // ───────────────── Helper for field Id ─────────────────
   String _generateFieldId(String label) {
     return label
@@ -67,6 +64,91 @@ class _AdminCreateProcedureScreenState
         .trim()
         .replaceAll(RegExp(r'[^a-z0-9 ]'), '')
         .replaceAll(RegExp(r'\s+'), '_');
+  }
+
+  // ───────────────── Approval steps functions ─────────────────
+
+  void _addApprovalLevel() {
+    setState(() {
+      _approvalLevels.add(
+        ApprovalLevelDraft(roles: [], minApprovals: 0, allMustApprove: false),
+      );
+    });
+  }
+
+  void _removeApprovalLevel(int index) {
+    setState(() {
+      _approvalLevels.removeAt(index);
+    });
+  }
+
+  void _openAddRoleDialog(int levelIndex) {
+    String searchQuery = '';
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text('Add Role to Level ${levelIndex + 1}'),
+          content: StatefulBuilder(
+            builder: (context, setDialogState) {
+              final filteredRoles = _dummyRoles.where((role) {
+                return role['name']!.toLowerCase().contains(
+                  searchQuery.toLowerCase(),
+                );
+              }).toList();
+
+              return SizedBox(
+                width: 400, // ✅ important: fixes intrinsic size issue
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextField(
+                      decoration: const InputDecoration(
+                        hintText: 'Search role',
+                      ),
+                      onChanged: (value) {
+                        setDialogState(() {
+                          searchQuery = value;
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      height: 200, // ✅ fixed height for ListView
+                      child: ListView.builder(
+                        itemCount: filteredRoles.length,
+                        itemBuilder: (context, index) {
+                          final role = filteredRoles[index];
+
+                          return ListTile(
+                            title: Text(role['name']!),
+                            trailing: TextButton(
+                              child: const Text('Add'),
+                              onPressed: () {
+                                setState(() {
+                                  final level = _approvalLevels[levelIndex];
+                                  level.roles.add(role);
+
+                                  if (!level.allMustApprove) {
+                                    level.minApprovals = level.roles.length;
+                                  }
+                                });
+                                Navigator.pop(context);
+                              },
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        );
+      },
+    );
   }
 
   // ───────────────── Save to In-Memory Store ─────────────────
@@ -86,14 +168,42 @@ class _AdminCreateProcedureScreenState
       );
     }
     if (!_formKey.currentState!.validate()) return;
-    if (_titleController.text.trim().isEmpty) return;
-    if (_steps.isEmpty) return;
+    if (_approvalLevels.isEmpty) {
+      ScaffoldMessenger.of(Navigator.of(context).context).showSnackBar(
+        const SnackBar(content: Text('Add at least one approval level')),
+      );
+      return;
+    }
+    for (int i = 0; i < _approvalLevels.length; i++) {
+      if (_approvalLevels[i].roles.isEmpty) {
+        ScaffoldMessenger.of(Navigator.of(context).context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Approval level ${i + 1} must have at least one role',
+            ),
+          ),
+        );
+        return;
+      }
+    }
+    if (_titleController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Procedure title is required')),
+      );
+      return;
+    }
 
     InMemoryProcedures.addProcedure(
       ProcedureDraft(
         title: _titleController.text.trim(),
-        steps: List.from(_steps),
         formSchema: List.from(_formFields),
+        approvalLevels: _approvalLevels.map((level) {
+          return ApprovalLevelDraft(
+            roles: List.from(level.roles),
+            minApprovals: level.minApprovals,
+            allMustApprove: level.allMustApprove,
+          );
+        }).toList(),
       ),
     );
 
@@ -158,22 +268,58 @@ class _AdminCreateProcedureScreenState
                 ),
               ),
             ),
-          Column(
-            children: List.generate(
-              _steps.length,
-              (index) => _WorkflowStepCard(
-                index: index,
-                step: _steps[index],
-                onRemove: () => _removeStep(index),
+
+          if (_approvalLevels.isNotEmpty)
+            Column(
+              children: List.generate(
+                _approvalLevels.length,
+                (index) => _ApprovalLevelCard(
+                  level: index + 1,
+                  roles: _approvalLevels[index].roles,
+                  minApprovals: _approvalLevels[index].minApprovals,
+                  allMustApprove: _approvalLevels[index].allMustApprove,
+                  onRemove: () => _removeApprovalLevel(index),
+                  onAddRole: () => _openAddRoleDialog(index),
+                  onRemoveRole: (role) {
+                    setState(() {
+                      final level = _approvalLevels[index];
+                      level.roles.remove(role);
+
+                      if (!level.allMustApprove) {
+                        level.minApprovals = level.roles.length;
+                      }
+                    });
+                  },
+                  onToggleAllMustApprove: (checked) {
+                    setState(() {
+                      final level = _approvalLevels[index];
+                      final value = checked ?? false;
+                      level.allMustApprove = value;
+                      if (value) {
+                        level.minApprovals = level.roles.length;
+                      }
+                    });
+                  },
+                  onMinApprovalsChanged: (value) {
+                    setState(() {
+                      final level = _approvalLevels[index];
+                      if (value < 1) {
+                        level.minApprovals = 1;
+                      } else if (value > level.roles.length) {
+                        level.minApprovals = level.roles.length;
+                      } else {
+                        level.minApprovals = value;
+                      }
+                    });
+                  },
+                ),
               ),
             ),
-          ),
-
           const SizedBox(height: 32),
 
           // ───────────────── Add Step Section ─────────────────
           Text(
-            'Add workflow step',
+            'Approval Levels',
             style: TextStyle(
               fontWeight: FontWeight.bold,
               color: AppTheme.textLight,
@@ -195,9 +341,9 @@ class _AdminCreateProcedureScreenState
               _AddStepButton(
                 icon: Icons.how_to_reg,
                 color: Colors.green,
-                title: 'Approval Step',
-                subtitle: 'Review & sign-off',
-                onTap: _addApprovalStep,
+                title: 'Add Approval Level',
+                subtitle: 'Add reviewers manually',
+                onTap: _addApprovalLevel,
               ),
             ],
           ),
@@ -231,52 +377,6 @@ class _AdminCreateProcedureScreenState
 
 /// ───────────────── Workflow Step Card ─────────────────
 /// Represents ONE workflow level
-class _WorkflowStepCard extends StatelessWidget {
-  final int index;
-  final WorkflowStepDraft step;
-  final VoidCallback onRemove;
-
-  const _WorkflowStepCard({
-    required this.index,
-    required this.step,
-    required this.onRemove,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(16),
-      decoration: _cardBox(),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Level ${index + 1} • Approval Step',
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              IconButton(onPressed: onRemove, icon: const Icon(Icons.close)),
-            ],
-          ),
-
-          const SizedBox(height: 12),
-
-          const Text(
-            'Configure approvers for this level.',
-            style: TextStyle(color: AppTheme.textLight),
-          ),
-        ],
-      ),
-    );
-  }
-}
 
 class FormBuilderSection extends StatelessWidget {
   final List<FormFieldDraft> fields;
@@ -414,6 +514,142 @@ class FormBuilderSection extends StatelessWidget {
             onPressed: onAdd, // <-- empty for now
             icon: const Icon(Icons.add),
             label: const Text('Add Field'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ApprovalLevelCard extends StatelessWidget {
+  final int level;
+  final List<Map<String, String>> roles;
+  final VoidCallback onRemove;
+  final VoidCallback onAddRole;
+  final void Function(Map<String, String> role) onRemoveRole;
+  final int minApprovals;
+  final bool allMustApprove;
+  final ValueChanged<bool?> onToggleAllMustApprove;
+  final ValueChanged<int> onMinApprovalsChanged;
+
+  const _ApprovalLevelCard({
+    required this.level,
+    required this.roles,
+    required this.minApprovals,
+    required this.allMustApprove,
+    required this.onRemove,
+    required this.onAddRole,
+    required this.onRemoveRole,
+    required this.onToggleAllMustApprove,
+    required this.onMinApprovalsChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: _cardBox(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Level $level',
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              IconButton(icon: const Icon(Icons.close), onPressed: onRemove),
+            ],
+          ),
+
+          const SizedBox(height: 8),
+
+          if (roles.isEmpty)
+            const Text(
+              'No roles added yet',
+              style: TextStyle(color: AppTheme.textLight),
+            )
+          else
+            Column(
+              children: roles.map((role) {
+                return Container(
+                  margin: const EdgeInsets.only(bottom: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade100,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(role['name']!),
+                      IconButton(
+                        icon: const Icon(Icons.close, size: 18),
+                        onPressed: () => onRemoveRole(role),
+                      ),
+                    ],
+                  ),
+                );
+              }).toList(),
+            ),
+
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              const Text('Minimum approvals:', style: TextStyle(fontSize: 13)),
+              const SizedBox(width: 8),
+              SizedBox(
+                width: 60,
+                child: TextField(
+                  enabled: !allMustApprove,
+                  keyboardType: TextInputType.number,
+                  controller: TextEditingController(
+                    text: minApprovals.toString(),
+                  ),
+                  onChanged: (value) {
+                    final parsed = int.tryParse(value);
+                    if (parsed != null) {
+                      onMinApprovalsChanged(parsed);
+                    }
+                  },
+                  decoration: const InputDecoration(
+                    isDense: true,
+                    contentPadding: EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 6,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Checkbox(
+                value: allMustApprove,
+                onChanged: onToggleAllMustApprove,
+              ),
+              const Text('All must approve'),
+            ],
+          ),
+
+          const SizedBox(height: 12),
+
+          TextButton.icon(
+            onPressed: onAddRole, // intentionally empty
+            icon: const Icon(Icons.person_add),
+            label: const Text('Add User'),
           ),
         ],
       ),
