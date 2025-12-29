@@ -54,14 +54,8 @@ class MyApp extends StatelessWidget {
         '/admin/procedures': (context) => const AdminProceduresScreen(),
 
         // ================= FACULTY =================
-        '/faculty/dashboard': (context) => const FacultyDashboardScreen(
-              facultyName: 'Dr. Johnson',
-              dateText: 'October 24, 2023',
-              pending: 3,
-              approved: 12,
-              rejected: 1,
-              total: 16,
-            ),
+        '/faculty/dashboard': (context) => 
+          FacultyDashboardScreen(),
 
         '/faculty/create-request': (context) =>
             const FacultyCreateRequestScreen(),
@@ -75,7 +69,7 @@ class MyApp extends StatelessWidget {
         '/faculty/request-status': (context) =>
             const FacultyActedRequestsScreen(),
 
-        '/faculty/profile': (context) => const FacultyProfileScreen(),
+        '/faculty/profile': (context) =>  FacultyProfileScreen(),
 
       },
     );

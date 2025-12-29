@@ -1,10 +1,14 @@
+
 import 'package:flutter/material.dart';
 import '../styles/app_theme.dart';
-import '../widgets/app_header.dart';
+import '../widgets/faculty_app_header.dart';
 import '../widgets/faculty_sidebar.dart';
 
 class FacultyCreateRequestScreen extends StatelessWidget {
   const FacultyCreateRequestScreen({super.key});
+
+  // ---- Dummy data for now (API later) ----
+  final String facultyName = "Dr. Sarah Johnson";
 
   @override
   Widget build(BuildContext context) {
@@ -17,14 +21,14 @@ class FacultyCreateRequestScreen extends StatelessWidget {
           Expanded(
             child: Column(
               children: [
-                const AppHeader(),
+                FacultyAppHeader(facultyName: facultyName),
 
                 Expanded(
                   child: SingleChildScrollView(
                     padding: const EdgeInsets.all(32),
                     child: Center(
                       child: ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: 1000),
+                        constraints: const BoxConstraints(maxWidth: 950),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -36,32 +40,32 @@ class FacultyCreateRequestScreen extends StatelessWidget {
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
-                            const SizedBox(height: 8),
+                            const SizedBox(height: 6),
                             const Text(
                               'Choose the category that best fits your needs to begin the approval process.',
                               style: TextStyle(color: AppTheme.textLight),
                             ),
 
-                            const SizedBox(height: 32),
+                            const SizedBox(height: 28),
 
-                            // ===== REQUEST CARDS =====
+                            // ===== REQUEST TYPE CARDS (reduced size) =====
                             GridView.count(
                               crossAxisCount: 2,
-                              crossAxisSpacing: 24,
-                              mainAxisSpacing: 24,
+                              childAspectRatio: 3.2,       // << reduced height
+                              crossAxisSpacing: 20,
+                              mainAxisSpacing: 20,
                               shrinkWrap: true,
-                              physics:
-                                  const NeverScrollableScrollPhysics(),
+                              physics: const NeverScrollableScrollPhysics(),
                               children: const [
                                 _RequestTypeCard(
                                   title: 'Sick Leave',
                                   description:
-                                      'Apply for leave due to medical reasons, illness, or medical appointments. Requires documentation for extended periods.',
+                                      'Leave due to medical reasons or appointments.',
                                 ),
                                 _RequestTypeCard(
                                   title: 'Casual Leave',
                                   description:
-                                      'Apply for personal time off, planned vacations, or family matters. Subject to availability and prior approval.',
+                                      'Personal time off or family-related matters.',
                                 ),
                               ],
                             ),
@@ -70,24 +74,20 @@ class FacultyCreateRequestScreen extends StatelessWidget {
 
                             // ===== COMING SOON =====
                             Container(
-                              height: 180,
+                              height: 140,    // reduced height
                               decoration: BoxDecoration(
                                 color: Colors.grey.shade100,
-                                borderRadius:
-                                    BorderRadius.circular(16),
+                                borderRadius: BorderRadius.circular(16),
                                 border: Border.all(
                                   color: Colors.grey.shade300,
-                                  style: BorderStyle.solid,
                                 ),
                               ),
                               child: Column(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.center,
+                                mainAxisAlignment: MainAxisAlignment.center,
                                 children: const [
                                   Icon(Icons.add_circle_outline,
-                                      size: 36,
-                                      color: Colors.grey),
-                                  SizedBox(height: 12),
+                                      size: 30, color: Colors.grey),
+                                  SizedBox(height: 8),
                                   Text(
                                     'New Request Types Coming Soon',
                                     style: TextStyle(
@@ -98,6 +98,8 @@ class FacultyCreateRequestScreen extends StatelessWidget {
                                 ],
                               ),
                             ),
+
+                            const SizedBox(height: 40),
                           ],
                         ),
                       ),
@@ -113,7 +115,8 @@ class FacultyCreateRequestScreen extends StatelessWidget {
   }
 }
 
-/* ================= REQUEST TYPE CARD ================= */
+
+/* ================= REQUEST TYPE CARD (reduced size) ================= */
 
 class _RequestTypeCard extends StatelessWidget {
   final String title;
@@ -127,7 +130,7 @@ class _RequestTypeCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(20),  // tighter padding
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
@@ -135,39 +138,43 @@ class _RequestTypeCard extends StatelessWidget {
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.04),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            blurRadius: 6,
+            offset: const Offset(0, 3),
           ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            title,
-            style:
-                const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          Text(title,
+              style: const TextStyle(
+                fontSize: 18,  // reduced
+                fontWeight: FontWeight.bold,
+              )),
+          const SizedBox(height: 6),
+          Expanded(
+            child: Text(
+              description,
+              style:
+                  const TextStyle(color: AppTheme.textLight, fontSize: 13), // smaller
+            ),
           ),
           const SizedBox(height: 8),
-          Text(
-            description,
-            style: const TextStyle(color: AppTheme.textLight),
-          ),
-          const Spacer(),
-          ElevatedButton.icon(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.primary,
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 20, vertical: 12),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
+          Align(
+            alignment: Alignment.bottomRight,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.primary,
+                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
               ),
+              onPressed: () {
+                // TODO: Navigate to request form screen when API ready
+              },
+              child: const Text("Apply Now"),
             ),
-            onPressed: () {
-              // TODO: Navigate to form
-            },
-            icon: const Text('Apply Now'),
-            label: const Icon(Icons.arrow_forward, size: 18),
           ),
         ],
       ),

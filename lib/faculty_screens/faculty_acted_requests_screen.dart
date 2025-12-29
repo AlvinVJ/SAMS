@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../styles/app_theme.dart';
-import '../widgets/app_header.dart';
+import '../widgets/faculty_app_header.dart';
 import '../widgets/faculty_sidebar.dart';
 
 class FacultyActedRequestsScreen extends StatelessWidget {
@@ -18,7 +18,8 @@ class FacultyActedRequestsScreen extends StatelessWidget {
           Expanded(
             child: Column(
               children: [
-                const AppHeader(),
+                 /// 👇 replaced AppHeader with FacultyAppHeader
+                const FacultyAppHeader(facultyName: "Dr. Sarah Johnson"),
 
                 // ✅ MAIN CONTENT AREA
                 Expanded(
