@@ -16,12 +16,14 @@ class ProcedureDraft {
   final String title;
   final List<FormFieldDraft> formSchema;
   final List<ApprovalLevelDraft> approvalLevels;
+   final ProcedureVisibility visibility;
 
 
   ProcedureDraft({
     required this.title,
     required this.formSchema,
     required this.approvalLevels,
+    required this.visibility,
   });
 }
 
@@ -54,3 +56,7 @@ class ApprovalLevelDraft {
     required this.allMustApprove,
   });
 }
+
+// visibility button
+
+enum ProcedureVisibility { user, faculty, all }

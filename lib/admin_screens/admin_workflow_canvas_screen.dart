@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../styles/app_theme.dart';
 import '../widgets/admin_dashboard_layout.dart';
 import '../state/in_memory_procedures.dart';
@@ -21,6 +22,9 @@ class AdminCreateProcedureScreen extends StatefulWidget {
 class _AdminCreateProcedureScreenState
     extends State<AdminCreateProcedureScreen> {
   final TextEditingController _titleController = TextEditingController();
+
+  // Visibility toggle variable
+  ProcedureVisibility _visibility = ProcedureVisibility.all;
 
   // Local UI state for form builder
   bool _hasForm = false;
@@ -64,6 +68,14 @@ class _AdminCreateProcedureScreenState
         .trim()
         .replaceAll(RegExp(r'[^a-z0-9 ]'), '')
         .replaceAll(RegExp(r'\s+'), '_');
+  }
+
+  void _removeFormBuilder() {
+    setState(() {
+      _hasForm = false;
+      _formFields.clear();
+      _formKey.currentState?.reset();
+    });
   }
 
   // ───────────────── Approval steps functions ─────────────────
@@ -204,6 +216,7 @@ class _AdminCreateProcedureScreenState
             allMustApprove: level.allMustApprove,
           );
         }).toList(),
+        visibility: _visibility,
       ),
     );
 
@@ -242,6 +255,50 @@ class _AdminCreateProcedureScreenState
 
           const SizedBox(height: 24),
 
+          // ───────────────── Visibility Section ─────────────────
+          Container(
+            margin: const EdgeInsets.only(bottom: 24),
+            padding: const EdgeInsets.all(16),
+            decoration: _cardBox(),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Who can create this request type ?',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 12),
+
+                ToggleButtons(
+                  isSelected: [
+                    _visibility == ProcedureVisibility.user,
+                    _visibility == ProcedureVisibility.faculty,
+                    _visibility == ProcedureVisibility.all,
+                  ],
+                  onPressed: (index) {
+                    setState(() {
+                      _visibility = ProcedureVisibility.values[index];
+                    });
+                  },
+                  borderRadius: BorderRadius.circular(8),
+                  children: const [
+                    Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 16),
+                      child: Text('User'),
+                    ),
+                    Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 16),
+                      child: Text('Faculty'),
+                    ),
+                    Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 16),
+                      child: Text('All'),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
           // ───────────────── Title Input ─────────────────
           TextField(
             controller: _titleController,
@@ -265,6 +322,7 @@ class _AdminCreateProcedureScreenState
                   onChanged: () => setState(() {}),
                   onRemove: _removeField,
                   generateFieldId: _generateFieldId,
+                  onRemoveForm: _removeFormBuilder,
                 ),
               ),
             ),
@@ -375,8 +433,7 @@ class _AdminCreateProcedureScreenState
   }
 }
 
-/// ───────────────── Workflow Step Card ─────────────────
-/// Represents ONE workflow level
+// ───────────────── Form Creation Widget ─────────────────
 
 class FormBuilderSection extends StatelessWidget {
   final List<FormFieldDraft> fields;
@@ -384,6 +441,7 @@ class FormBuilderSection extends StatelessWidget {
   final VoidCallback onChanged;
   final void Function(int index) onRemove;
   final String Function(String label) generateFieldId;
+  final VoidCallback onRemoveForm;
 
   const FormBuilderSection({
     super.key,
@@ -392,6 +450,7 @@ class FormBuilderSection extends StatelessWidget {
     required this.onChanged,
     required this.onRemove,
     required this.generateFieldId,
+    required this.onRemoveForm,
   });
 
   @override
@@ -403,10 +462,21 @@ class FormBuilderSection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Form Builder',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Form Builder',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+              IconButton(
+                icon: const Icon(Icons.close),
+                tooltip: 'Remove form',
+                onPressed: onRemoveForm,
+              ),
+            ],
           ),
+
           const SizedBox(height: 12),
 
           if (fields.isEmpty)
@@ -415,16 +485,6 @@ class FormBuilderSection extends StatelessWidget {
               style: TextStyle(color: AppTheme.textLight),
             )
           else
-            // ...List.generate(
-            //   fields.length,
-            //   (index) => Padding(
-            //     padding: const EdgeInsets.only(bottom: 8),
-            //     child: Text(
-            //       '• ${fields[index].label}',
-            //       style: const TextStyle(fontSize: 14),
-            //     ),
-            //   ),
-            // ),
             ...List.generate(fields.length, (index) {
               final field = fields[index];
 
@@ -612,6 +672,9 @@ class _ApprovalLevelCard extends StatelessWidget {
                 child: TextField(
                   enabled: !allMustApprove,
                   keyboardType: TextInputType.number,
+                  inputFormatters: [
+                    FilteringTextInputFormatter.digitsOnly,
+                  ],
                   controller: TextEditingController(
                     text: minApprovals.toString(),
                   ),
