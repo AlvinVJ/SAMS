@@ -25,7 +25,7 @@ class AuthGate extends StatelessWidget {
               return const Scaffold(
                 body: Center(child: CircularProgressIndicator()),
               );
-            }
+            }            
 
             final resolution = snapshot.data!;
 

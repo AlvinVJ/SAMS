@@ -20,25 +20,27 @@ class AuthService {
 
     final profile = await getUserProfile();
 
-    // 🔹 No profile → onboarding / auto-provision
-    if (profile == null || profile['exists'] == false) {
+    // 🔹 No profile → decide role
+    if (profile['exists'] == false) {
       final email = user.email;
       if (email == null) return AuthResolution.accessDenied;
 
-      final allowedRole = await getAllowedRole(email);
-      if (allowedRole != null) {
-        return AuthResolution.needsOnboarding;
-      }
-
-      final studentId = extractStudentId(email);
-      if (studentId != null) {
+      // ✅ AUTO STUDENT (highest priority)
+      if (isStudentEmail(email)) {
         await saveUserProfile(
-          userIdCode: studentId,
+          userIdCode: extractStudentId(email),
           role: 'student',
         );
         return AuthResolution.student;
       }
 
+      // 🔹 Faculty/Admin allowlist
+      final allowedRole = await getAllowedRole(email);
+      if (allowedRole != null) {
+        return AuthResolution.needsOnboarding;
+      }
+
+      // ❌ Nobody else allowed
       return AuthResolution.accessDenied;
     }
 
@@ -53,11 +55,12 @@ class AuthService {
     }
   }
 
+
   // -------------------------------
   // Existing methods you already had
   // -------------------------------
 
-  Future<Map<String, dynamic>?> getUserProfile() async {
+  Future<Map<String, dynamic>> getUserProfile() async {
     final res = await _supabase
         .from('profiles')
         .select()
@@ -69,7 +72,7 @@ class AuthService {
 
   Future<String?> getAllowedRole(String email) async {
     final res = await _supabase
-        .from('allowed_users')
+        .from('userdetails')
         .select('role')
         .eq('email', email)
         .maybeSingle();
@@ -77,12 +80,24 @@ class AuthService {
     return res?['role'];
   }
 
-  String? extractStudentId(String email) {
-    // example: 22cs123@college.edu
-    final match = RegExp(r'^\d{2}[a-z]{2}\d{3}')
-        .firstMatch(email);
-    return match?.group(0);
+  bool isStudentEmail(String email) {
+    final regex = RegExp(
+      r'^\d+[a-zA-Z]+\d+@mgits\.ac\.in$',
+    );
+    return regex.hasMatch(email);
   }
+
+  String extractStudentId(String email) {
+    return email.split('@').first.toUpperCase();
+  }
+
+
+  // String? extractStudentId(String email) {
+  //   // example: 22cs123@college.edu
+  //   final match = RegExp(r'^\d{2}[a-z]{2}\d{3}')
+  //       .firstMatch(email);
+  //   return match?.group(0);
+  // }
 
   Future<void> saveUserProfile({
     required String userIdCode,
