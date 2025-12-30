@@ -3,10 +3,10 @@ import 'services/auth_service.dart';
 import 'state/auth_resolution.dart';
 
 import 'screens/login_screen.dart';
-import 'screens/onboarding_screen.dart';
+//import 'screens/onboarding_screen.dart';
 import 'screens/dashboard_screen.dart';
-import 'screens/admin_dashboard.dart';
-import 'screens/faculty_dashboard.dart';
+import 'admin_screens/admin_dashboard_screen.dart';
+//import 'screens/faculty_dashboard.dart';
 
 class AuthGate extends StatelessWidget {
   const AuthGate({super.key});
@@ -36,7 +36,7 @@ class AuthGate extends StatelessWidget {
               });
 
               // While dialog is shown, render empty scaffold
-              return const Scaffold();
+              //return const Scaffold();
             }
 
             switch (resolution) {
@@ -44,15 +44,17 @@ class AuthGate extends StatelessWidget {
                 return const LoginScreen();
 
               case AuthResolution.needsOnboarding:
-                return const OnboardingScreen();
+              //return const OnboardingScreen();
 
               case AuthResolution.admin:
+                //print(resolution);
                 return const AdminDashboardScreen();
 
               case AuthResolution.faculty:
-                return const FacultyDashboardScreen();
+              //return const FacultyDashboardScreen();
 
               case AuthResolution.student:
+                print(resolution);
                 return const DashboardScreen();
 
               default:
@@ -64,10 +66,7 @@ class AuthGate extends StatelessWidget {
     );
   }
 
-  void _showAccessDeniedDialog(
-    BuildContext context,
-    AuthService authService,
-  ) {
+  void _showAccessDeniedDialog(BuildContext context, AuthService authService) {
     showDialog(
       context: context,
       barrierDismissible: false,
