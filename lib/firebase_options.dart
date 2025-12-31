@@ -41,49 +41,51 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyARJKtpBVCAz9MSaj0qhChhGmYrzDQwm2g',
-    appId: '1:180319974548:web:61f1467f6c9c6b2fe43081',
-    messagingSenderId: '180319974548',
-    projectId: 'sams-ae15c',
-    authDomain: 'sams-ae15c.firebaseapp.com',
-    storageBucket: 'sams-ae15c.firebasestorage.app',
-    measurementId: 'G-PD54HPH036',
+    apiKey: 'AIzaSyCPCqzoA5nLmler2u_6s4VDDd-9m_0m0iU',
+    appId: '1:791583603828:web:78ebb9ee19c2c5ca5e6521',
+    messagingSenderId: '791583603828',
+    projectId: 'sams-d2236',
+    authDomain: 'sams-d2236.firebaseapp.com',
+    storageBucket: 'sams-d2236.firebasestorage.app',
+    measurementId: 'G-MWJ4YZ7XHC',
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyDJLUFdeB1sfovYJdKElMoPw4ADB-LVMxY',
-    appId: '1:180319974548:android:252115a6bf9f9c30e43081',
-    messagingSenderId: '180319974548',
-    projectId: 'sams-ae15c',
-    storageBucket: 'sams-ae15c.firebasestorage.app',
+    apiKey: 'AIzaSyBxiyNRh6gaMbF3nfKnsN_e9W5Vt4AoXHc',
+    appId: '1:791583603828:android:00e8940779bc0fd35e6521',
+    messagingSenderId: '791583603828',
+    projectId: 'sams-d2236',
+    storageBucket: 'sams-d2236.firebasestorage.app',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyDqONAOPRz8uOw2uWcNQdhPZVl2idsM0Kg',
-    appId: '1:180319974548:ios:a8b3dee5f1534f10e43081',
-    messagingSenderId: '180319974548',
-    projectId: 'sams-ae15c',
-    storageBucket: 'sams-ae15c.firebasestorage.app',
+    apiKey: 'AIzaSyAiT03-9FTl9BZhfMGwM1_F6SaWU37slgk',
+    appId: '1:791583603828:ios:ca3d7fb6577d26405e6521',
+    messagingSenderId: '791583603828',
+    projectId: 'sams-d2236',
+    storageBucket: 'sams-d2236.firebasestorage.app',
+    iosClientId: '791583603828-26keabsa1jb2kbtnp050l1l3och4qrbn.apps.googleusercontent.com',
     iosBundleId: 'com.example.samsFinal',
   );
 
   static const FirebaseOptions macos = FirebaseOptions(
-    apiKey: 'AIzaSyDqONAOPRz8uOw2uWcNQdhPZVl2idsM0Kg',
-    appId: '1:180319974548:ios:a8b3dee5f1534f10e43081',
-    messagingSenderId: '180319974548',
-    projectId: 'sams-ae15c',
-    storageBucket: 'sams-ae15c.firebasestorage.app',
+    apiKey: 'AIzaSyAiT03-9FTl9BZhfMGwM1_F6SaWU37slgk',
+    appId: '1:791583603828:ios:ca3d7fb6577d26405e6521',
+    messagingSenderId: '791583603828',
+    projectId: 'sams-d2236',
+    storageBucket: 'sams-d2236.firebasestorage.app',
+    iosClientId: '791583603828-26keabsa1jb2kbtnp050l1l3och4qrbn.apps.googleusercontent.com',
     iosBundleId: 'com.example.samsFinal',
   );
 
   static const FirebaseOptions windows = FirebaseOptions(
-    apiKey: 'AIzaSyARJKtpBVCAz9MSaj0qhChhGmYrzDQwm2g',
-    appId: '1:180319974548:web:17f0d2d5934336b4e43081',
-    messagingSenderId: '180319974548',
-    projectId: 'sams-ae15c',
-    authDomain: 'sams-ae15c.firebaseapp.com',
-    storageBucket: 'sams-ae15c.firebasestorage.app',
-    measurementId: 'G-2K89F6YXCB',
+    apiKey: 'AIzaSyCPCqzoA5nLmler2u_6s4VDDd-9m_0m0iU',
+    appId: '1:791583603828:web:c86509dbfe2178a05e6521',
+    messagingSenderId: '791583603828',
+    projectId: 'sams-d2236',
+    authDomain: 'sams-d2236.firebaseapp.com',
+    storageBucket: 'sams-d2236.firebasestorage.app',
+    measurementId: 'G-DNM11B7BD3',
   );
 
 }

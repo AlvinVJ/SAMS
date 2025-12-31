@@ -1,26 +1,36 @@
 {
   "project_info": {
-    "project_number": "180319974548",
-    "project_id": "sams-ae15c",
-    "storage_bucket": "sams-ae15c.firebasestorage.app"
+    "project_number": "791583603828",
+    "project_id": "sams-d2236",
+    "storage_bucket": "sams-d2236.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:180319974548:android:252115a6bf9f9c30e43081",
+        "mobilesdk_app_id": "1:791583603828:android:00e8940779bc0fd35e6521",
         "android_client_info": {
           "package_name": "com.example.sams_final"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "791583603828-le0jps0nop5lo12i60be3p9ao7ukog6m.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
-          "current_key": "AIzaSyDJLUFdeB1sfovYJdKElMoPw4ADB-LVMxY"
+          "current_key": "AIzaSyBxiyNRh6gaMbF3nfKnsN_e9W5Vt4AoXHc"
         }
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "791583603828-le0jps0nop5lo12i60be3p9ao7ukog6m.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }
