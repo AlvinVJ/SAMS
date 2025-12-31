@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "180319974548",
+    "project_id": "sams-ae15c",
+    "storage_bucket": "sams-ae15c.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:180319974548:android:252115a6bf9f9c30e43081",
+        "android_client_info": {
+          "package_name": "com.example.sams_final"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDJLUFdeB1sfovYJdKElMoPw4ADB-LVMxY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
