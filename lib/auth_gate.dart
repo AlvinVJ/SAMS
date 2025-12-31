@@ -3,10 +3,8 @@ import 'services/auth_service.dart';
 import 'state/auth_resolution.dart';
 
 import 'screens/login_screen.dart';
-//import 'screens/onboarding_screen.dart';
 import 'screens/dashboard_screen.dart';
 import 'admin_screens/admin_dashboard_screen.dart';
-//import 'screens/faculty_dashboard.dart';
 
 class AuthGate extends StatelessWidget {
   const AuthGate({super.key});
@@ -17,45 +15,47 @@ class AuthGate extends StatelessWidget {
 
     return StreamBuilder(
       stream: authService.authStateChanges,
-      builder: (context, _) {
+      builder: (context, snapshot) {
+        // 🔹 Waiting for auth state to settle
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
+
+        // 🔹 Not logged in
+        if (!snapshot.hasData) {
+          return const LoginScreen();
+        }
+
+        // 🔹 Logged in → resolve role
         return FutureBuilder<AuthResolution>(
           future: authService.resolveUser(),
-          builder: (context, snapshot) {
-            if (!snapshot.hasData) {
+          builder: (context, roleSnapshot) {
+            if (!roleSnapshot.hasData) {
               return const Scaffold(
                 body: Center(child: CircularProgressIndicator()),
               );
-            }            
+            }
 
-            final resolution = snapshot.data!;
+            final resolution = roleSnapshot.data!;
 
-            // 🚨 Access Denied → show dialog, then logout
             if (resolution == AuthResolution.accessDenied) {
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 _showAccessDeniedDialog(context, authService);
               });
-
-              // While dialog is shown, render empty scaffold
-              //return const Scaffold();
+              return const Scaffold();
             }
-
+            print(resolution);
             switch (resolution) {
-              case AuthResolution.unauthenticated:
-                return const LoginScreen();
-
-              case AuthResolution.needsOnboarding:
-              //return const OnboardingScreen();
-
               case AuthResolution.admin:
-                //print(resolution);
                 return const AdminDashboardScreen();
 
-              case AuthResolution.faculty:
-              //return const FacultyDashboardScreen();
-
               case AuthResolution.student:
-                print(resolution);
                 return const DashboardScreen();
+
+              case AuthResolution.unauthenticated:
+                return const LoginScreen();
 
               default:
                 return const LoginScreen();

@@ -1,5 +1,6 @@
-import 'package:flutter/foundation.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+//import 'package:flutter/foundation.dart';
 import '../state/auth_resolution.dart';
 
 class AuthService {
@@ -7,45 +8,43 @@ class AuthService {
   factory AuthService() => _instance;
   AuthService._internal();
 
-  final SupabaseClient _supabase = Supabase.instance.client;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseFirestore _db = FirebaseFirestore.instance;
 
-  Stream<AuthState> get authStateChanges =>
-      _supabase.auth.onAuthStateChange;
+  // 🔹 Auth state stream (single source of truth)
+  Stream<User?> get authStateChanges => _auth.authStateChanges();
 
-  User? get currentUser => _supabase.auth.currentUser;
+  User? get currentUser => _auth.currentUser;
 
+  // 🔹 PURE resolver (NO side-effects)
   Future<AuthResolution> resolveUser() async {
     final user = currentUser;
     if (user == null) return AuthResolution.unauthenticated;
 
-    final profile = await getUserProfile();
+    final profileDoc = await _db.collection('profiles').doc(user.uid).get();
 
-    // 🔹 No profile → decide role
-    if (profile['exists'] == false) {
+    // 🔹 No profile exists
+    if (!profileDoc.exists) {
       final email = user.email;
       if (email == null) return AuthResolution.accessDenied;
 
-      // ✅ AUTO STUDENT (highest priority)
+      // Student auto-detection (same logic as before)
       if (isStudentEmail(email)) {
-        await saveUserProfile(
-          userIdCode: extractStudentId(email),
-          role: 'student',
-        );
         return AuthResolution.student;
       }
 
-      // 🔹 Faculty/Admin allowlist
+      // Admin / faculty allowlist
       final allowedRole = await getAllowedRole(email);
       if (allowedRole != null) {
         return AuthResolution.needsOnboarding;
       }
 
-      // ❌ Nobody else allowed
       return AuthResolution.accessDenied;
     }
 
     // 🔹 Existing profile → route by role
-    switch (profile['role']) {
+    final data = profileDoc.data()!;
+    switch (data['role']) {
       case 'admin':
         return AuthResolution.admin;
       case 'faculty':
@@ -55,35 +54,17 @@ class AuthService {
     }
   }
 
-
   // -------------------------------
-  // Existing methods you already had
+  // Firestore helpers (read-only)
   // -------------------------------
-
-  Future<Map<String, dynamic>> getUserProfile() async {
-    final res = await _supabase
-        .from('profiles')
-        .select()
-        .eq('id', currentUser!.id)
-        .maybeSingle();
-
-    return res == null ? {'exists': false} : res;
-  }
 
   Future<String?> getAllowedRole(String email) async {
-    final res = await _supabase
-        .from('userdetails')
-        .select('role')
-        .eq('email', email)
-        .maybeSingle();
-
-    return res?['role'];
+    final doc = await _db.collection('userdetails').doc(email).get();
+    return doc.data()?['role'];
   }
 
   bool isStudentEmail(String email) {
-    final regex = RegExp(
-      r'^\d+[a-zA-Z]+\d+@mgits\.ac\.in$',
-    );
+    final regex = RegExp(r'^\d+[a-zA-Z]+\d+@mgits\.ac\.in$');
     return regex.hasMatch(email);
   }
 
@@ -91,41 +72,30 @@ class AuthService {
     return email.split('@').first.toUpperCase();
   }
 
+  // -------------------------------
+  // Auth actions
+  // -------------------------------
 
-  // String? extractStudentId(String email) {
-  //   // example: 22cs123@college.edu
-  //   final match = RegExp(r'^\d{2}[a-z]{2}\d{3}')
-  //       .firstMatch(email);
-  //   return match?.group(0);
-  // }
-
-  Future<void> saveUserProfile({
-    required String userIdCode,
-    required String role,
-  }) async {
-    await _supabase.from('profiles').insert({
-      'id': currentUser!.id,
-      'user_id_code': userIdCode,
-      'role': role,
-    });
+  /// Starts Google OAuth.
+  /// DOES NOT report success/failure.
+  Future<void> signInWithGoogle() async {
+    final provider = GoogleAuthProvider();
+    print("Entry");
+    await _auth.signInWithRedirect(provider);
+    print("Exit");
   }
 
-  Future<bool> signInWithGoogle() async {
+  Future<void> handleRedirectResult() async {
     try {
-      await _supabase.auth.signInWithOAuth(
-        OAuthProvider.google,
-        redirectTo: kIsWeb
-            ? 'http://localhost:3000/'
-            : 'io.supabase.sams://login-callback/',
-      );
-      return true;
+      UserCredential user;
+      user=await _auth.getRedirectResult();
+      print(user);
     } catch (e) {
-      debugPrint('Google sign-in failed: $e');
-      return false;
+      print('Redirect result error: $e');
     }
   }
-  
+
   Future<void> signOut() async {
-    await _supabase.auth.signOut();
+    await _auth.signOut();
   }
 }
