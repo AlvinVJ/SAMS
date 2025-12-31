@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'services/auth_service.dart';
 import 'state/auth_resolution.dart';
@@ -47,6 +48,8 @@ class AuthGate extends StatelessWidget {
               return const Scaffold();
             }
             print(resolution);
+            print(UserInfo);
+            print(User);
             switch (resolution) {
               case AuthResolution.admin:
                 return const AdminDashboardScreen();

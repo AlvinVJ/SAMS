@@ -49,8 +49,10 @@ class AuthService {
         return AuthResolution.admin;
       case 'faculty':
         return AuthResolution.faculty;
-      default:
+      case 'student':
         return AuthResolution.student;
+      default:
+        return AuthResolution.unauthenticated;
     }
   }
 
@@ -80,19 +82,12 @@ class AuthService {
   /// DOES NOT report success/failure.
   Future<void> signInWithGoogle() async {
     final provider = GoogleAuthProvider();
-    print("Entry");
     await _auth.signInWithPopup(provider);
-    print("Exit");
-    UserCredential user;
-    user=await _auth.getRedirectResult();
-    print(user);
   }
 
   Future<void> handleRedirectResult() async {
     try {
-      UserCredential user;
-      user=await _auth.getRedirectResult();
-      print(user);
+      await _auth.getRedirectResult();
     } catch (e) {
       print('Redirect result error: $e');
     }
