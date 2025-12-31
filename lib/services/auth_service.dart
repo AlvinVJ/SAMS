@@ -81,8 +81,11 @@ class AuthService {
   Future<void> signInWithGoogle() async {
     final provider = GoogleAuthProvider();
     print("Entry");
-    await _auth.signInWithRedirect(provider);
+    await _auth.signInWithPopup(provider);
     print("Exit");
+    UserCredential user;
+    user=await _auth.getRedirectResult();
+    print(user);
   }
 
   Future<void> handleRedirectResult() async {
