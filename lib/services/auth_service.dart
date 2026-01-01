@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 //import 'package:flutter/foundation.dart';
 import '../state/auth_resolution.dart';
+import '../models/app_user.dart';
 
 class AuthService {
   static final AuthService _instance = AuthService._internal();
@@ -200,4 +201,25 @@ class AuthService {
   Future<void> signOut() async {
     await _auth.signOut();
   }
+}
+
+
+class UserState {
+  static final UserState _instance = UserState._internal();
+  factory UserState() => _instance;
+  UserState._internal();
+
+  AppUser? _currentUser;
+
+  AppUser? get currentUser => _currentUser;
+
+  void setUser(AppUser user) {
+    _currentUser = user;
+  }
+
+  void clear() {
+    _currentUser = null;
+  }
+
+  bool get isLoggedIn => _currentUser != null;
 }
