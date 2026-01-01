@@ -1,4 +1,4 @@
-import 'dart:nativewrappers/_internal/vm/lib/mirrors_patch.dart';
+// import 'dart:nativewrappers/_internal/vm/lib/mirrors_patch.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 //import 'package:flutter/foundation.dart';
@@ -20,9 +20,10 @@ class AuthService {
   // 🔹 PURE resolver (NO side-effects)
   // Future<AuthResolution> resolveUser() async {
   //   final user = currentUser;
+  //   print(user);
   //   if (user == null) return AuthResolution.unauthenticated; //signed in
 
-  //   if(!checkMgitsId(user.email)) return AuthResolution.unauthorized; //not mgits
+  //   if(!isMgitsEmail(user.email)) return AuthResolution.unauthorized; //not mgits
 
   //   final profileDoc = await _db.collection('profiles').doc(user.email).get();
 
@@ -68,6 +69,7 @@ class AuthService {
   Future<AuthResolution> resolveUser() async {
 
     final user = currentUser;
+    print(user);
     if(user == null) return AuthResolution.unauthenticated;
     final email = user.email;
     if(!isMgitsEmail(email)) return AuthResolution.unauthorized;
@@ -111,12 +113,34 @@ class AuthService {
           'uid': emailPrefix.toUpperCase(),
         });
       onboarding = false;
+      switch(role){
+        case 'admin':
+          return AuthResolution.admin;
+        case 'faculty':
+          return AuthResolution.faculty;
+        default:
+          return AuthResolution.notAdded;
+      }
     }
-    else{}
-
-
-
-    return AuthResolution.unauthenticated;
+    else{
+      final data = profileDoc.data();
+      if(data==null) return AuthResolution.unauthenticated;
+      if(data['isActive']){
+        if(!data['banned']){
+          String role = data['role'];
+          switch(role){
+            case 'admin':
+              return AuthResolution.admin;
+            case 'faculty':
+              return AuthResolution.faculty;
+            default:
+              return AuthResolution.notAdded;
+          }
+        }
+        return AuthResolution.banned;
+      }
+      return AuthResolution.inactive;
+    }
   }
 
   // -------------------------------
@@ -129,7 +153,6 @@ class AuthService {
   }
 
   bool isStudentEmail(String? email) {
-    return false;
     final regex = RegExp(r'^\d+[a-zA-Z]+\d+@mgits\.ac\.in$');
     if(email ==  null) return false;
     return regex.hasMatch(email);
@@ -152,8 +175,18 @@ class AuthService {
   /// Starts Google OAuth.
   /// DOES NOT report success/failure.
   Future<void> signInWithGoogle() async {
-    final provider = GoogleAuthProvider();
-    await _auth.signInWithPopup(provider);
+    try{
+      await _auth.signOut();
+      final provider = GoogleAuthProvider();
+      provider.setCustomParameters({
+      'prompt': 'select_account',
+      'auth_type': 'reauthenticate'
+    });
+      await _auth.signInWithPopup(provider);
+    }
+    catch(e){
+      print("sign in error: $e");
+    }
   }
 
   Future<void> handleRedirectResult() async {

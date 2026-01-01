@@ -22,8 +22,11 @@ import 'admin_screens/admin_procedures_screen.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  final result = await FirebaseAuth.instance.getRedirectResult();
-  print('Redirect result user: ${result.user}');
+  try {
+    print(await FirebaseAuth.instance.getRedirectResult());
+  } catch (e) {
+    print("Redirect Error: $e");
+  }
   runApp(const MyApp());
 }
 
