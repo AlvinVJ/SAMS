@@ -1,3 +1,4 @@
+import 'dart:nativewrappers/_internal/vm/lib/mirrors_patch.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 //import 'package:flutter/foundation.dart';
@@ -17,61 +18,131 @@ class AuthService {
   User? get currentUser => _auth.currentUser;
 
   // 🔹 PURE resolver (NO side-effects)
+  // Future<AuthResolution> resolveUser() async {
+  //   final user = currentUser;
+  //   if (user == null) return AuthResolution.unauthenticated; //signed in
+
+  //   if(!checkMgitsId(user.email)) return AuthResolution.unauthorized; //not mgits
+
+  //   final profileDoc = await _db.collection('profiles').doc(user.email).get();
+
+  //   // 🔹 No profile exists
+  //   if (!profileDoc.exists) {
+  //     final email = user.email;
+  //     // if (email == null) return AuthResolution.unauthenticated;
+
+
+
+  //     // Student auto-detection (same logic as before)
+  //     if (isStudentEmail(email)) {
+  //       return AuthResolution.student;
+  //       //do adding to profiles table
+  //     }
+  //     else{
+  //       final allowedRole = await getAllowedRole(email);
+  //       if(allowedRole == null){
+  //         return AuthResolution.notAdded;
+  //       }
+  //       else{
+  //         return AuthResolution.needsOnboarding;
+  //       }
+  //     }
+  //   }
+
+  //   // 🔹 Existing profile → route by role
+  //   final data = profileDoc.data()!;
+  //   switch (data['role']) {
+  //     //implement ban check
+  //     case 'admin':
+  //       return AuthResolution.admin;
+  //     case 'faculty':
+  //       return AuthResolution.faculty;
+  //     case 'student':
+  //       return AuthResolution.student;
+  //     default:
+  //       return AuthResolution.unauthenticated;
+  //   }
+  // }
+
+
   Future<AuthResolution> resolveUser() async {
+
     final user = currentUser;
-    if (user == null) return AuthResolution.unauthenticated;
+    if(user == null) return AuthResolution.unauthenticated;
+    final email = user.email;
+    if(!isMgitsEmail(email)) return AuthResolution.unauthorized;
 
-    final profileDoc = await _db.collection('profiles').doc(user.uid).get();
-
-    // 🔹 No profile exists
-    if (!profileDoc.exists) {
-      final email = user.email;
-      if (email == null) return AuthResolution.accessDenied;
-
-      // Student auto-detection (same logic as before)
-      if (isStudentEmail(email)) {
+    //all are mgits emails
+    final profileDoc = await _db.collection('profiles').doc(email).get();
+    if(!profileDoc.exists){
+      bool onboarding = false;
+      String emailPrefix = extractEmailPrefix(email);
+      if(isStudentEmail(email)){
+        onboarding = true;
+        await _db.collection('profiles').doc(emailPrefix).set({
+          'banned': false,
+          'createdAt': DateTime.timestamp(),
+          'email': email, 
+          'isActive': true, 
+          'role': 'student',
+          'uid': emailPrefix.toUpperCase(),
+        });
+        onboarding = false;
+        //check if rollback possible
         return AuthResolution.student;
       }
-
-      // Admin / faculty allowlist
-      final allowedRole = await getAllowedRole(email);
-      if (allowedRole != null) {
-        return AuthResolution.needsOnboarding;
+      final userDoc = await _db.collection('userDetails').doc(emailPrefix).get();
+      if(!userDoc.exists){
+        return AuthResolution.notAdded;
+      }
+      onboarding = true;
+      final data = userDoc.data();
+      if (data == null || !data.containsKey('role')) {
+        throw StateError('userDetails/$emailPrefix exists but has no role field');
       }
 
-      return AuthResolution.accessDenied;
+      final String role = data['role'] as String;
+      await _db.collection('profiles').doc(emailPrefix).set({
+          'banned': false,
+          'createdAt': DateTime.timestamp(),
+          'email': email, 
+          'isActive': true, 
+          'role': role,
+          'uid': emailPrefix.toUpperCase(),
+        });
+      onboarding = false;
     }
+    else{}
 
-    // 🔹 Existing profile → route by role
-    final data = profileDoc.data()!;
-    switch (data['role']) {
-      case 'admin':
-        return AuthResolution.admin;
-      case 'faculty':
-        return AuthResolution.faculty;
-      case 'student':
-        return AuthResolution.student;
-      default:
-        return AuthResolution.unauthenticated;
-    }
+
+
+    return AuthResolution.unauthenticated;
   }
 
   // -------------------------------
   // Firestore helpers (read-only)
   // -------------------------------
 
-  Future<String?> getAllowedRole(String email) async {
+  Future<String?> getAllowedRole(String? email) async {
     final doc = await _db.collection('userdetails').doc(email).get();
     return doc.data()?['role'];
   }
 
-  bool isStudentEmail(String email) {
+  bool isStudentEmail(String? email) {
+    return false;
     final regex = RegExp(r'^\d+[a-zA-Z]+\d+@mgits\.ac\.in$');
+    if(email ==  null) return false;
     return regex.hasMatch(email);
   }
 
-  String extractStudentId(String email) {
-    return email.split('@').first.toUpperCase();
+  String extractEmailPrefix(String? email) {
+    if (email==null) return "";
+    return email.split('@').first;
+  }
+
+  bool isMgitsEmail(String? email){
+    if (email==null) return false;
+    return (email.split('@').last == 'mgits.ac.in');
   }
 
   // -------------------------------

@@ -1,8 +1,18 @@
 enum AuthResolution {
-  unauthenticated,
-  needsOnboarding,
-  student,
-  faculty,
+  //if mgits
+    //if in profiles
+  inactive, 
+  banned, 
+  student, 
+  faculty, 
   admin,
-  accessDenied,
+    //if not in profiles
+  needsOnboarding,
+  notAdded,
+
+  //if not mgits
+  unauthorized,
+
+  //default
+  unauthenticated
 }

@@ -41,15 +41,36 @@ class AuthGate extends StatelessWidget {
 
             final resolution = roleSnapshot.data!;
 
-            if (resolution == AuthResolution.accessDenied) {
+            if (resolution == AuthResolution.unauthorized) {
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 _showAccessDeniedDialog(context, authService);
               });
               return const Scaffold();
             }
-            print(resolution);
-            print(UserInfo);
-            print(User);
+
+            else if (resolution == AuthResolution.notAdded) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                _showNotAddedDialog(context, authService);
+              });
+              return const Scaffold();
+            }
+
+            else if (resolution == AuthResolution.banned) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                _showBannedAccountDialog(context, authService);
+              });
+              return const Scaffold();
+            }
+
+            else if (resolution == AuthResolution.inactive) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                _showInactiveAccountDialog(context, authService);
+              });
+              return const Scaffold();
+            }
+            // print(resolution);
+            // print(UserInfo);
+            // print(User);
             switch (resolution) {
               case AuthResolution.admin:
                 return const AdminDashboardScreen();
@@ -59,6 +80,8 @@ class AuthGate extends StatelessWidget {
 
               case AuthResolution.unauthenticated:
                 return const LoginScreen();
+
+              //add routing to faculty dashboard
 
               default:
                 return const LoginScreen();
@@ -87,6 +110,108 @@ class AuthGate extends StatelessWidget {
           ),
           content: const Text(
             'Your email is not authorized to access this platform.\n\n'
+            'If you believe this is a mistake, contact the administrator.',
+          ),
+          actions: [
+            ElevatedButton(
+              onPressed: () async {
+                Navigator.of(context).pop();
+                await authService.signOut();
+              },
+              child: const Text('Sign Out'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showNotAddedDialog(BuildContext context, AuthService authService) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: const Row(
+            children: [
+              Icon(Icons.block, color: Colors.red),
+              SizedBox(width: 8),
+              Text('Access Denied'),
+            ],
+          ),
+          content: const Text(
+            'Your email has not been added as a valid user to this platform.\n\n'
+            'If you believe this is a mistake, contact the administrator.',
+          ),
+          actions: [
+            ElevatedButton(
+              onPressed: () async {
+                Navigator.of(context).pop();
+                await authService.signOut();
+              },
+              child: const Text('Sign Out'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showInactiveAccountDialog(BuildContext context, AuthService authService) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: const Row(
+            children: [
+              Icon(Icons.block, color: Colors.red),
+              SizedBox(width: 8),
+              Text('Access Denied'),
+            ],
+          ),
+          content: const Text(
+            'Your account is no longer active on this platform.\n\n'
+            'If you believe this is a mistake, contact the administrator.',
+          ),
+          actions: [
+            ElevatedButton(
+              onPressed: () async {
+                Navigator.of(context).pop();
+                await authService.signOut();
+              },
+              child: const Text('Sign Out'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showBannedAccountDialog(BuildContext context, AuthService authService) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: const Row(
+            children: [
+              Icon(Icons.block, color: Colors.red),
+              SizedBox(width: 8),
+              Text('Access Denied'),
+            ],
+          ),
+          content: const Text(
+            'Your account has been temporarily banned from this platform.\n\n'
             'If you believe this is a mistake, contact the administrator.',
           ),
           actions: [
