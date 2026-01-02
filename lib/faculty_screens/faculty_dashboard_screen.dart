@@ -68,7 +68,7 @@ class FacultyDashboardScreen extends StatelessWidget {
             ],
           ),
 
-          const SizedBox(height: 4),
+          // const SizedBox(height: 4),
 
           // ===== PENDING APPROVALS TABLE =====
           Row(
