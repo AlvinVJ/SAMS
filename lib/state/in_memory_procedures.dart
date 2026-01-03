@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class InMemoryProcedures {
   // Singleton-style static storage
   static final List<ProcedureDraft> _procedures = [];
@@ -60,3 +62,55 @@ class ApprovalLevelDraft {
 // visibility button
 
 enum ProcedureVisibility { user, faculty, all }
+
+extension FormFieldDraftJson on FormFieldDraft {
+  Map<String, dynamic> toJson() {
+    return {
+      "fieldId": fieldId,
+      "type": type.name,
+      "label": label,
+      "required": required,
+    };
+  }
+}
+
+extension ApprovalLevelDraftJson on ApprovalLevelDraft {
+  Map<String, dynamic> toJson(int level) {
+    return {
+      "level": level,
+      "approvalType": "ROLE",
+      "roleIds": roles.map((r) => r['id']).toList(),
+      "userIds": [],
+      "minApprovals": minApprovals,
+      "allMustApprove": allMustApprove,
+    };
+  }
+}
+
+extension ProcedureDraftJson on ProcedureDraft {
+  Map<String, dynamic> toJson({required String adminUid}) {
+    return {
+      "title": title,
+      "desc": "",
+
+      "visibility": visibility == ProcedureVisibility.all
+          ? ["user", "faculty"]
+          : [visibility.name],
+
+      "requestFormat": 0,
+      "priority": "NORMAL",
+
+      "formSchema": formSchema.map((f) => f.toJson()).toList(),
+
+      "approvalLevels": approvalLevels
+          .asMap()
+          .entries
+          .map((e) => e.value.toJson(e.key + 1))
+          .toList(),
+
+      "createdBy": adminUid,
+      "createdAt": FieldValue.serverTimestamp(),
+      "isActive": true,
+    };
+  }
+}

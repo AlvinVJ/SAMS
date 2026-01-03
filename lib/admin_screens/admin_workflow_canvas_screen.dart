@@ -3,6 +3,8 @@ import 'package:flutter/services.dart';
 import '../styles/app_theme.dart';
 import '../widgets/admin_dashboard_layout.dart';
 import '../state/in_memory_procedures.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import '../data/firebase_procedure_repository.dart';
 
 const List<Map<String, String>> _dummyRoles = [
   {'id': 'CLASS_ADVISOR_ROLE', 'name': 'Class Advisor'},
@@ -22,6 +24,10 @@ class AdminCreateProcedureScreen extends StatefulWidget {
 class _AdminCreateProcedureScreenState
     extends State<AdminCreateProcedureScreen> {
   final TextEditingController _titleController = TextEditingController();
+
+  // Firebase details
+  final FirebaseProcedureRepository _procedureRepo =
+      FirebaseProcedureRepository();
 
   // Visibility toggle variable
   ProcedureVisibility _visibility = ProcedureVisibility.all;
@@ -165,7 +171,7 @@ class _AdminCreateProcedureScreenState
 
   // ───────────────── Save to In-Memory Store ─────────────────
 
-  void _saveProcedure() {
+  Future<void> _saveProcedure() async {
     if (!_hasForm) {
       ScaffoldMessenger.of(Navigator.of(context).context).showSnackBar(
         const SnackBar(
@@ -178,6 +184,7 @@ class _AdminCreateProcedureScreenState
       ScaffoldMessenger.of(Navigator.of(context).context).showSnackBar(
         const SnackBar(content: Text('Add at least one form field')),
       );
+      return;
     }
     if (!_formKey.currentState!.validate()) return;
     if (_approvalLevels.isEmpty) {
@@ -205,19 +212,39 @@ class _AdminCreateProcedureScreenState
       return;
     }
 
-    InMemoryProcedures.addProcedure(
-      ProcedureDraft(
-        title: _titleController.text.trim(),
-        formSchema: List.from(_formFields),
-        approvalLevels: _approvalLevels.map((level) {
-          return ApprovalLevelDraft(
-            roles: List.from(level.roles),
-            minApprovals: level.minApprovals,
-            allMustApprove: level.allMustApprove,
-          );
-        }).toList(),
-        visibility: _visibility,
-      ),
+    // InMemoryProcedures.addProcedure(
+    //   ProcedureDraft(
+    //     title: _titleController.text.trim(),
+    //     formSchema: List.from(_formFields),
+    //     approvalLevels: _approvalLevels.map((level) {
+    //       return ApprovalLevelDraft(
+    //         roles: List.from(level.roles),
+    //         minApprovals: level.minApprovals,
+    //         allMustApprove: level.allMustApprove,
+    //       );
+    //     }).toList(),
+    //     visibility: _visibility,
+    //   ),
+    // );
+    final adminUid = FirebaseAuth.instance.currentUser!.uid;
+
+    final procedure = ProcedureDraft(
+      title: _titleController.text.trim(),
+      formSchema: List.from(_formFields),
+      approvalLevels: _approvalLevels.map((level) {
+        return ApprovalLevelDraft(
+          roles: List.from(level.roles),
+          minApprovals: level.minApprovals,
+          allMustApprove: level.allMustApprove,
+        );
+      }).toList(),
+      visibility: _visibility,
+    );
+
+    // need try catch here later.
+    await _procedureRepo.saveProcedure(
+      procedure: procedure,
+      adminUid: adminUid,
     );
 
     Navigator.pop(context); // only allowed exit
@@ -672,9 +699,7 @@ class _ApprovalLevelCard extends StatelessWidget {
                 child: TextField(
                   enabled: !allMustApprove,
                   keyboardType: TextInputType.number,
-                  inputFormatters: [
-                    FilteringTextInputFormatter.digitsOnly,
-                  ],
+                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                   controller: TextEditingController(
                     text: minApprovals.toString(),
                   ),

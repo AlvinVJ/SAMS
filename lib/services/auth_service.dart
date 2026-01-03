@@ -69,7 +69,7 @@ class AuthService {
   Future<AuthResolution> resolveUser() async {
 
     final user = currentUser;
-    print(user);
+    //print(user);
     if(user == null) return AuthResolution.unauthenticated;
     final email = user.email;
     if(!isMgitsEmail(email)) return AuthResolution.unauthorized;
