@@ -37,7 +37,26 @@ class ApiProcedureRepository {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $authToken',
       },
-      body: jsonEncode(procedure.toJson(adminUid: adminUid)),
+      // body: jsonEncode(procedure.toJson(adminUid: adminUid)),
+      body: jsonEncode({
+        "adminUid": adminUid,
+
+        "procedure": {
+          "title": procedure.title,
+          "desc": "",
+          "visibility": procedure.visibility.name,
+          "priority": "NORMAL",
+          "isActive": true,
+
+          "formBuilder": procedure.formSchema.map((f) => f.toJson()).toList(),
+
+          "approvalLevels": procedure.approvalLevels
+              .asMap()
+              .entries
+              .map((e) => e.value.toJson(e.key + 1))
+              .toList(),
+        },
+      }),
     );
 
     if (response.statusCode != 201) {
