@@ -26,8 +26,10 @@ class _AdminCreateProcedureScreenState
   final TextEditingController _titleController = TextEditingController();
 
   // Firebase details
-  final FirebaseProcedureRepository _procedureRepo =
-      FirebaseProcedureRepository();
+  // final FirebaseProcedureRepository _procedureRepo =
+  //     FirebaseProcedureRepository();
+
+  final ApiProcedureRepository _procedureRepo = ApiProcedureRepository("http://localhost:3000");
 
   // Visibility toggle variable
   ProcedureVisibility _visibility = ProcedureVisibility.all;
@@ -227,6 +229,7 @@ class _AdminCreateProcedureScreenState
     //   ),
     // );
     final adminUid = FirebaseAuth.instance.currentUser!.uid;
+    final authToken = await FirebaseAuth.instance.currentUser!.getIdToken();
 
     final procedure = ProcedureDraft(
       title: _titleController.text.trim(),
@@ -245,6 +248,7 @@ class _AdminCreateProcedureScreenState
     await _procedureRepo.saveProcedure(
       procedure: procedure,
       adminUid: adminUid,
+       authToken: authToken,
     );
 
     Navigator.pop(context); // only allowed exit

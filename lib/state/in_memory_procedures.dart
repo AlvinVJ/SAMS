@@ -109,8 +109,9 @@ extension ProcedureDraftJson on ProcedureDraft {
           .toList(),
 
       "createdBy": adminUid,
-      "createdAt": FieldValue.serverTimestamp(),
+      "createdAt":  DateTime.now().toIso8601String(),
       "isActive": true,
     };
   }
 }
+// "createdAt": FieldValue.serverTimestamp(),
