@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class UserProfile {
@@ -44,11 +45,28 @@ class UserProfile {
       email: email,
       displayName: displayName,
       photoUrl: photoUrl,
-      role: data['role'] ?? 'student',
+      role: data['role'],
       isActive: data['isActive'],
       banned: data['banned'],
       studentId: data['uid'],
       createdAt: getDoB(data['createdAt']),
     );
+  }
+
+  /// Debug helper method
+  void debugPrintProfile() {
+    debugPrint('''
+      ========== USER PROFILE ==========
+      Auth UID     : $authUid
+      Email        : $email
+      Display Name : ${displayName ?? 'N/A'}
+      Photo URL    : ${photoUrl ?? 'N/A'}
+      Role         : $role
+      Is Active    : ${isActive ?? 'N/A'}
+      Banned       : ${banned ?? 'N/A'}
+      Student ID   : ${studentId ?? 'N/A'}
+      Created At   : ${createdAt?.toIso8601String() ?? 'N/A'}
+      =================================
+''');
   }
 }

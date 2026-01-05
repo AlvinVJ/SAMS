@@ -70,8 +70,7 @@ class AuthService {
             photoUrl: user.photoURL,
           );
 
-          _printProfileDetails(); // Print everything
-
+          //_printProfileDetails();
           onboarding = false;
           return AuthResolution.student;
         }
@@ -116,8 +115,7 @@ class AuthService {
           photoUrl: user.photoURL,
         );
 
-        _printProfileDetails(); // Print everything
-
+        //_printProfileDetails();
         onboarding = false;
 
         switch (role) {
@@ -142,8 +140,7 @@ class AuthService {
         );
         // print("ResolveUser: Memory Profile Set");
 
-        _printProfileDetails(); // Print everything
-
+        //_printProfileDetails();
         if (data['isActive'] == true) {
           if (data['banned'] != true) {
             switch (_userProfile!.role) {
@@ -169,20 +166,10 @@ class AuthService {
   }
 
   // 🔹 Helper to print all details clearly
+
   void _printProfileDetails() {
-    if (_userProfile != null) {
-      print("--------------------------------------------------");
-      print("USER PROFILE LOADED");
-      print("--------------------------------------------------");
-      print("Name      : ${_userProfile!.displayName}");
-      print("Email     : ${_userProfile!.email}");
-      print("UID (Auth): ${_userProfile!.authUid}");
-      print("Role      : ${_userProfile!.role}");
-      print("Photo URL : ${_userProfile!.photoUrl}");
-      print("Active    : ${_userProfile!.isActive}");
-      print("Banned    : ${_userProfile!.banned}");
-      print("Student ID: ${_userProfile!.studentId}");
-      print("--------------------------------------------------");
+    if (userProfile != null) {
+      userProfile!.debugPrintProfile();
     }
   }
 
