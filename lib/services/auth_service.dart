@@ -195,7 +195,8 @@ class AuthService {
 
   bool isMgitsEmail(String? email) {
     if (email == null) return false;
-    return (email.split('@').last == 'mgits.ac.in');
+    // return (email.split('@').last == 'mgits.ac.in');
+    return true;
   }
 
   // -------------------------------
