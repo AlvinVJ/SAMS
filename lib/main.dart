@@ -19,6 +19,9 @@ import 'admin_screens/admin_users_screen.dart';
 import 'admin_screens/admin_procedures_screen.dart';
 //import 'admin_screens/admin_workflow_canvas_screen.dart';
 
+import 'widgets/role_guard.dart';
+import 'state/auth_resolution.dart';
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
@@ -42,17 +45,43 @@ class MyApp extends StatelessWidget {
       //initialRoute: '/',
       routes: {
         //'/': (context) => const DashboardScreen(),
-        '/requests': (context) => const RequestsScreen(),
-        '/create-request': (context) => const CreateRequestScreen(),
-        '/notifications': (context) => const NotificationsScreen(),
-        '/settings': (context) => const SettingsScreen(),
-
+        '/requests': (context) => const RoleGuard(
+          allowedRoles: [AuthResolution.student], // Only Students
+          child: RequestsScreen(),
+        ),
+        '/create-request': (context) => const RoleGuard(
+          allowedRoles: [AuthResolution.student],
+          child: CreateRequestScreen(),
+        ),
+        '/notifications': (context) => const RoleGuard(
+          allowedRoles: [AuthResolution.student], // Both allowed
+          child: NotificationsScreen(),
+        ),
+        '/settings': (context) => const RoleGuard(
+          allowedRoles: [AuthResolution.student], // Both allowed
+          child: SettingsScreen(),
+        ),
         //Admin page routes
-        '/admin/dashboard': (context) => const AdminDashboardScreen(),
-        '/admin/requests': (context) => const AdminRequestsScreen(),
-        '/admin/settings': (context) => const AdminSettingsScreen(),
-        '/admin/users': (context) => const AdminUsersScreen(),
-        '/admin/procedures': (context) => const AdminProceduresScreen(),
+        '/admin/dashboard': (context) => const RoleGuard(
+          allowedRoles: [AuthResolution.admin], // Only Admins
+          child: AdminDashboardScreen(),
+        ),
+        '/admin/requests': (context) => const RoleGuard(
+          allowedRoles: [AuthResolution.admin],
+          child: AdminRequestsScreen(),
+        ),
+        '/admin/settings': (context) => const RoleGuard(
+          allowedRoles: [AuthResolution.admin],
+          child: AdminSettingsScreen(),
+        ),
+        '/admin/users': (context) => const RoleGuard(
+          allowedRoles: [AuthResolution.admin],
+          child: AdminUsersScreen(),
+        ),
+        '/admin/procedures': (context) => const RoleGuard(
+          allowedRoles: [AuthResolution.admin],
+          child: AdminProceduresScreen(),
+        ),
         // '/admin/procedures/create': (context) => const AdminCreateProcedureScreen(),
       },
       debugShowCheckedModeBanner: false,
