@@ -40,29 +40,31 @@ class AuthGate extends StatelessWidget {
             }
 
             final resolution = roleSnapshot.data!;
+            if (AuthService().userProfile != null) {
+              print("TEST SUCCESS: Profile Loaded!");
+              print("User Role: ${AuthService().userProfile!.role}");
+              print("User Email: ${AuthService().userProfile!.email}");
+              print("Auth UID: ${AuthService().userProfile!.authUid}");
+            } else {
+              print("TEST FAILED: Profile is NULL");
+            }
 
             if (resolution == AuthResolution.unauthorized) {
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 _showAccessDeniedDialog(context, authService);
               });
               return const Scaffold();
-            }
-
-            else if (resolution == AuthResolution.notAdded) {
+            } else if (resolution == AuthResolution.notAdded) {
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 _showNotAddedDialog(context, authService);
               });
               return const Scaffold();
-            }
-
-            else if (resolution == AuthResolution.banned) {
+            } else if (resolution == AuthResolution.banned) {
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 _showBannedAccountDialog(context, authService);
               });
               return const Scaffold();
-            }
-
-            else if (resolution == AuthResolution.inactive) {
+            } else if (resolution == AuthResolution.inactive) {
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 _showInactiveAccountDialog(context, authService);
               });
