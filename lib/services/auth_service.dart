@@ -4,6 +4,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 //import 'package:flutter/foundation.dart';
 import '../state/auth_resolution.dart';
 import '../models/user_profile.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 
 class AuthService {
   static final AuthService _instance = AuthService._internal();
@@ -61,6 +63,13 @@ class AuthService {
 
           await _db.collection('profiles').doc(emailPrefix).set(newStudentData);
           // print("ResolveUser: Created Student Profile");
+
+          //api call
+          final backendBaseUrl = 'http://localhost:3000';
+          await sendUserProfileToBackend(
+            baseUrl: backendBaseUrl,
+            profileData: newStudentData,
+          );
 
           _userProfile = UserProfile.fromMap(
             data: newStudentData,
@@ -227,5 +236,34 @@ class AuthService {
 
   Future<void> signOut() async {
     await _auth.signOut();
+  }
+}
+
+// function to send signup data to express
+
+Future<void> sendUserProfileToBackend({
+  required String baseUrl,
+  required Map<String, dynamic> profileData,
+}) async {
+  final user = FirebaseAuth.instance.currentUser;
+  if (user == null) {
+    throw Exception('User not authenticated');
+  }
+
+  final authToken = await user.getIdToken();
+
+  final response = await http.post(
+    Uri.parse('$baseUrl/api/common/signup'),
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer $authToken',
+    },
+    body: jsonEncode(profileData),
+  );
+
+  if (response.statusCode != 200 && response.statusCode != 201) {
+    throw Exception(
+      'Failed to sync user profile with backend (${response.statusCode})',
+    );
   }
 }
