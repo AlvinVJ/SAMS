@@ -18,8 +18,7 @@ class ProcedureDraft {
   final String title;
   final List<FormFieldDraft> formSchema;
   final List<ApprovalLevelDraft> approvalLevels;
-   final ProcedureVisibility visibility;
-
+  final ProcedureVisibility visibility;
 
   ProcedureDraft({
     required this.title,
@@ -36,16 +35,18 @@ class FormFieldDraft {
   String label;
   FormFieldType type;
   bool required;
+  List<String>? options; // for choice based fields
 
   FormFieldDraft({
     required this.fieldId,
     required this.label,
     required this.type,
     required this.required,
+    this.options,
   });
 }
 
-enum FormFieldType { text, file }
+enum FormFieldType { text, file, singleChoice, multipleChoice, date }
 
 class ApprovalLevelDraft {
   List<Map<String, String>> roles;
@@ -65,12 +66,19 @@ enum ProcedureVisibility { user, faculty, all }
 
 extension FormFieldDraftJson on FormFieldDraft {
   Map<String, dynamic> toJson() {
-    return {
+    final json = {
       "fieldId": fieldId,
       "type": type.name,
       "label": label,
       "required": required,
     };
+
+    if (type == FormFieldType.singleChoice ||
+        type == FormFieldType.multipleChoice) {
+      json["options"] = options ?? [];
+    }
+
+    return json;
   }
 }
 

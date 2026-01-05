@@ -212,6 +212,21 @@ class _AdminCreateProcedureScreenState
       return;
     }
 
+    for (final field in _formFields) {
+      if (field.type == FormFieldType.singleChoice ||
+          field.type == FormFieldType.multipleChoice) {
+        final hasEmptyOption = field.options!.any((opt) => opt.trim().isEmpty);
+
+        if (hasEmptyOption) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Choice fields cannot have empty options'),
+            ),
+          );
+          return;
+        }
+      }
+    }
     // InMemoryProcedures.addProcedure(
     //   ProcedureDraft(
     //     title: _titleController.text.trim(),
@@ -517,79 +532,165 @@ class FormBuilderSection extends StatelessWidget {
 
               return Padding(
                 padding: const EdgeInsets.only(bottom: 12),
-                child: Row(
+                child: Column(
                   children: [
-                    // Label
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          TextFormField(
-                            initialValue: field.label,
-                            decoration: const InputDecoration(
-                              labelText: 'Field Label',
-                            ),
-                            validator: (val) {
-                              if (val == null || val.trim().isEmpty) {
-                                return 'Label is required';
-                              }
-                              return null;
-                            },
-                            onChanged: (val) {
-                              field.label = val;
-                              field.fieldId = generateFieldId(val);
-                              onChanged();
-                            },
+                    Row(
+                      children: [
+                        // Label
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              TextFormField(
+                                initialValue: field.label,
+                                decoration: const InputDecoration(
+                                  labelText: 'Field Label',
+                                ),
+                                validator: (val) {
+                                  if (val == null || val.trim().isEmpty) {
+                                    return 'Label is required';
+                                  }
+                                  return null;
+                                },
+                                onChanged: (val) {
+                                  field.label = val;
+                                  field.fieldId = generateFieldId(val);
+                                  onChanged();
+                                },
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'ID: ${field.fieldId}',
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey,
+                                ),
+                              ),
+                            ],
                           ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'ID: ${field.fieldId}',
-                            style: const TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    const SizedBox(width: 12),
-
-                    // Type
-                    DropdownButton<FormFieldType>(
-                      value: field.type,
-                      items: const [
-                        DropdownMenuItem(
-                          value: FormFieldType.text,
-                          child: Text('Text'),
                         ),
-                        DropdownMenuItem(
-                          value: FormFieldType.file,
-                          child: Text('File'),
+
+                        const SizedBox(width: 12),
+
+                        // Type
+                        DropdownButton<FormFieldType>(
+                          value: field.type,
+                          items: const [
+                            DropdownMenuItem(
+                              value: FormFieldType.text,
+                              child: Text('Text'),
+                            ),
+                            DropdownMenuItem(
+                              value: FormFieldType.file,
+                              child: Text('File'),
+                            ),
+                            DropdownMenuItem(
+                              value: FormFieldType.singleChoice,
+                              child: Text('Single choice'),
+                            ),
+                            DropdownMenuItem(
+                              value: FormFieldType.multipleChoice,
+                              child: Text('Multiple choice'),
+                            ),
+                            DropdownMenuItem(
+                              value: FormFieldType.date,
+                              child: Text('Date'),
+                            ),
+                          ],
+
+                          onChanged: (val) {
+                            if (val != null) {
+                              field.type = val;
+
+                              if (val == FormFieldType.singleChoice ||
+                                  val == FormFieldType.multipleChoice) {
+                                field.options ??= [''];
+                              } else {
+                                field.options = null;
+                              }
+
+                              onChanged();
+                            }
+                          },
+                        ),
+
+                        const SizedBox(width: 12),
+
+                        // Required
+                        Checkbox(
+                          value: field.required,
+                          onChanged: (val) {
+                            field.required = val ?? false;
+                            onChanged();
+                          },
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close),
+                          onPressed: () => onRemove(index),
                         ),
                       ],
-                      onChanged: (val) {
-                        if (val != null) {
-                          field.type = val;
-                          onChanged();
-                        }
-                      },
                     ),
+                    if (field.type == FormFieldType.singleChoice ||
+                        field.type == FormFieldType.multipleChoice)
+                      Padding(
+                        padding: const EdgeInsets.only(left: 16, top: 8),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Options',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
 
-                    const SizedBox(width: 12),
+                            ...List.generate(field.options!.length, (optIndex) {
+                              return Padding(
+                                padding: const EdgeInsets.only(bottom: 6),
+                                child: Row(
+                                  children: [
+                                    Expanded(
+                                      child: TextFormField(
+                                        initialValue: field.options![optIndex],
+                                        onChanged: (val) {
+                                          field.options![optIndex] = val;
+                                          onChanged();
+                                        },
+                                        decoration: InputDecoration(
+                                          hintText: 'Option ${optIndex + 1}',
+                                          isDense: true,
+                                        ),
+                                      ),
+                                    ),
+                                    IconButton(
+                                      icon: const Icon(Icons.close, size: 18),
+                                      onPressed: field.options!.length <= 1
+                                          ? null
+                                          : () {
+                                              field.options!.removeAt(optIndex);
+                                              onChanged();
+                                            },
+                                    ),
+                                  ],
+                                ),
+                              );
+                            }),
 
-                    // Required
-                    Checkbox(
-                      value: field.required,
-                      onChanged: (val) {
-                        field.required = val ?? false;
-                        onChanged();
-                      },
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.close),
-                      onPressed: () => onRemove(index),
-                    ),
+                            TextButton.icon(
+                              onPressed: () {
+                                field.options!.add(
+                                  'Option ${field.options!.length + 1}',
+                                );
+                                onChanged();
+                              },
+                              icon: const Icon(Icons.add, size: 18),
+                              label: const Text('Add option'),
+                            ),
+                          ],
+                        ),
+                      ),
                   ],
                 ),
               );
