@@ -54,7 +54,7 @@ class AuthService {
 
           final newStudentData = {
             'banned': false,
-            'createdAt': DateTime.timestamp(),
+            'createdAt': DateTime.timestamp(),// do .toisoblaa blaa if sending to backend
             'email': email,
             'isActive': true,
             'role': 'student',
