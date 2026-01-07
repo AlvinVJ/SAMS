@@ -55,8 +55,8 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(useMaterial3: true),
       debugShowCheckedModeBanner: false,
 
-      initialRoute: '/',
-
+      // initialRoute: '/',
+      home: const AuthGate(),
       routes: {
         //'/': (context) => const DashboardScreen(),
         '/requests': (context) => const RoleGuard(
@@ -97,23 +97,39 @@ class MyApp extends StatelessWidget {
           child: AdminProceduresScreen(),
         ),
         // ================= FACULTY =================
-        '/faculty/dashboard': (context) => 
-          FacultyDashboardScreen(),
+        '/faculty/dashboard': (context) => RoleGuard( 
+          allowedRoles: [AuthResolution.faculty] ,
+          child: FacultyDashboardScreen(),
+        ),
 
-        '/faculty/create-request': (context) =>
-            const FacultyCreateRequestScreen(),
+        '/faculty/create-request': (context) => const RoleGuard(
+          allowedRoles: [AuthResolution.faculty],
+          child : FacultyCreateRequestScreen(),
+        ),
+ 
+        '/faculty/requests': (context) => const RoleGuard(
+          allowedRoles: [AuthResolution.faculty], 
+          child:  FacultyRequestsForApprovalScreen(), 
+        ), 
 
-        '/faculty/requests': (context) =>
-             const FacultyRequestsForApprovalScreen(),
-        '/faculty/history': (context) =>
-            const FacultyRequestHistoryScreen(),
+
+        '/faculty/history': (context) =>const RoleGuard(
+          allowedRoles: [AuthResolution.faculty], 
+          child:FacultyRequestHistoryScreen(),
+        ),
 
         
-        '/faculty/request-status': (context) =>
-            const FacultyActedRequestsScreen(),
+        '/faculty/request-status': (context) => const RoleGuard(
+          allowedRoles: [AuthResolution.faculty], 
+          child: FacultyActedRequestsScreen(),
+        ),
 
-        '/faculty/profile': (context) =>  FacultyProfileScreen(),
-        // '/admin/procedures/create': (context) => const AdminCreateProcedureScreen(),
+        '/faculty/profile': (context) =>  RoleGuard(
+          allowedRoles: [AuthResolution.faculty], 
+          child:FacultyProfileScreen(),
+
+        )
+        
       },
     );
   }

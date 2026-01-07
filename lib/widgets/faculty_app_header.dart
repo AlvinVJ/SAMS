@@ -3,7 +3,7 @@ import '../styles/app_theme.dart';
 
 class FacultyAppHeader extends StatelessWidget {
   final String facultyName;
-  final String facultyRole; // e.g., "Department Head"
+  final String facultyRole; 
 
   const FacultyAppHeader({
     super.key,
@@ -64,7 +64,8 @@ class FacultyAppHeader extends StatelessWidget {
                 radius: 18,
                 backgroundColor: AppTheme.primary,
                 child: Text(
-                  facultyName[0], // first letter
+                  // facultyName[0], // first letter
+                   facultyName.isNotEmpty ? facultyName[0].toUpperCase() : "?",
                   style: const TextStyle(color: Colors.white, fontSize: 18),
                 ),
               ),
