@@ -34,6 +34,7 @@ class AuthService {
 
       print("ResolveUser: User found: ${user.email}");
       final email = user.email;
+      final uid = user.uid;
 
       if (!isMgitsEmail(email)) {
         //  print("ResolveUser: invalid domain");
@@ -41,91 +42,126 @@ class AuthService {
       }
 
       // all are mgits emails
-      final profileDoc = await _db.collection('profiles').doc(email).get();
+      final profileDoc = await _db.collection('profiles').doc(uid).get();
       //print("ResolveUser: Profile Exists? ${profileDoc.exists}");
 
       if (!profileDoc.exists) {
         bool onboarding = false;
-        String emailPrefix = extractEmailPrefix(email);
+        final backendBaseUrl = 'http://localhost:3000';
 
-        if (isStudentEmail(email)) {
-          //  print("ResolveUser: Detected Student Email");
-          onboarding = true;
+        final backendData = await sendUserProfileToBackend(
+          baseUrl: backendBaseUrl,
+        );
 
-          final newStudentData = {
-            'banned': false,
-            'createdAt': DateTime.timestamp(),
-            'email': email,
-            'isActive': true,
-            'role': 'student',
-            'uid': emailPrefix.toUpperCase(),
-          };
+        final String role = backendData['role'];
+        final String email = backendData['email'];
+        //String emailPrefix = extractEmailPrefix(email);
+        //final String uid = backendData['uid'];
 
-          await _db.collection('profiles').doc(emailPrefix).set(newStudentData);
-          // print("ResolveUser: Created Student Profile");
-
-          //api call
-          final backendBaseUrl = 'http://localhost:3000';
-          await sendUserProfileToBackend(
-            baseUrl: backendBaseUrl,
-            profileData: newStudentData,
-          );
-
-          _userProfile = UserProfile.fromMap(
-            data: newStudentData,
-            authUid: user.uid,
-            email: email!,
-            displayName: user.displayName,
-            photoUrl: user.photoURL,
-          );
-
-          //_printProfileDetails();
-          onboarding = false;
-          return AuthResolution.student;
-        }
-
-        // --- STAFF FLOW ---
-        //  print("ResolveUser: Checking userDetails whitelist...");
-        final userDoc = await _db
-            .collection('userDetails')
-            .doc(emailPrefix)
-            .get();
-        if (!userDoc.exists) {
-          //  print("ResolveUser: Not in userDetails whitelist");
-          return AuthResolution.notAdded;
-        }
-
-        onboarding = true;
-        final data = userDoc.data();
-        if (data == null || !data.containsKey('role')) {
-          throw StateError(
-            'userDetails/$emailPrefix exists but has no role field',
-          );
-        }
-
-        final String role = data['role'] as String;
-        final newStaffData = {
-          'banned': false,
-          'createdAt': DateTime.timestamp(),
-          'email': email,
-          'isActive': true,
-          'role': role,
-          'uid': emailPrefix.toUpperCase(),
-        };
-
-        await _db.collection('profiles').doc(emailPrefix).set(newStaffData);
-        // print("ResolveUser: Created Staff Profile");
-
+        final snapshot = await _db.collection('profiles').doc(uid).get();
         _userProfile = UserProfile.fromMap(
-          data: newStaffData,
+          data: snapshot.data(),
           authUid: user.uid,
-          email: email!,
+          email: email,
           displayName: user.displayName,
           photoUrl: user.photoURL,
         );
 
-        //_printProfileDetails();
-        onboarding = false;
+        // if (isStudentEmail(email)) {
+        //   //  print("ResolveUser: Detected Student Email");
+        //   onboarding = true;
+
+        //   // final newStudentData = {
+        //   //   'banned': false,
+        //   //   'createdAt': DateTime.timestamp(),
+        //   //   'email': email,
+        //   //   'isActive': true,
+        //   //   'role': 'student',
+        //   //   'uid': emailPrefix.toUpperCase(),
+        //   // };
+
+        //   //await _db.collection('profiles').doc(emailPrefix).set(newStudentData);
+        //   // print("ResolveUser: Created Student Profile");
+
+        //   //api call
+        //   final backendBaseUrl = 'http://localhost:3000';
+        //   String? error;
+
+        //   try {
+        //     await sendUserProfileToBackend(
+        //       baseUrl: backendBaseUrl,
+        //       // profileData: newStudentData,
+        //     );
+
+        //     // Only runs if API succeeded
+        //     final snapshot = await _db
+        //         .collection('profiles')
+        //         .doc(emailPrefix)
+        //         .get();
+
+        //     _userProfile = UserProfile.fromMap(
+        //       data: snapshot.data(),
+        //       authUid: user.uid,
+        //       email: email!,
+        //       displayName: user.displayName,
+        //       photoUrl: user.photoURL,
+        //     );
+        //   } catch (e) {
+        //     // Handle API failure gracefully
+        //     // e.g. show snackbar, dialog, log out user, retry
+        //     // ScaffoldMessenger.of(
+        //     //   context,
+        //     // ).showSnackBar(SnackBar(content: Text(e.toString())));
+        //     error = e.toString();
+        //   }
+
+        //   //_printProfileDetails();
+        //   onboarding = false;
+        //   return AuthResolution.student;
+        // }
+
+        // // --- STAFF FLOW ---
+        // //  print("ResolveUser: Checking userDetails whitelist...");
+        // final userDoc = await _db
+        //     .collection('userDetails')
+        //     .doc(emailPrefix)
+        //     .get();
+        // if (!userDoc.exists) {
+        //   //  print("ResolveUser: Not in userDetails whitelist");
+        //   return AuthResolution.notAdded;
+        // }
+
+        // onboarding = true;
+        // final data = userDoc.data();
+        // if (data == null || !data.containsKey('role')) {
+        //   throw StateError(
+        //     'userDetails/$emailPrefix exists but has no role field',
+        //   );
+        // }
+
+        // final String role = data['role'] as String;
+        // final newStaffData = {
+        //   'banned': false,
+        //   'createdAt': DateTime.timestamp(),
+        //   'email': email,
+        //   'isActive': true,
+        //   'role': role,
+        //   'uid': emailPrefix.toUpperCase(),
+        // };
+
+        // await _db.collection('profiles').doc(emailPrefix).set(newStaffData);
+        // // print("ResolveUser: Created Staff Profile");
+
+        // _userProfile = UserProfile.fromMap(
+        //   data: newStaffData,
+        //   authUid: user.uid,
+        //   email: email!,
+        //   displayName: user.displayName,
+        //   photoUrl: user.photoURL,
+        // );
+
+        // //_printProfileDetails();
+        // onboarding = false;
 
         switch (role) {
           case 'admin':
@@ -241,9 +277,8 @@ class AuthService {
 
 // function to send signup data to express
 
-Future<void> sendUserProfileToBackend({
+Future<Map<String, dynamic>> sendUserProfileToBackend({
   required String baseUrl,
-  required Map<String, dynamic> profileData,
 }) async {
   final user = FirebaseAuth.instance.currentUser;
   if (user == null) {
@@ -258,12 +293,30 @@ Future<void> sendUserProfileToBackend({
       'Content-Type': 'application/json',
       'Authorization': 'Bearer $authToken',
     },
-    body: jsonEncode(profileData),
   );
 
+  // ❌ Error case
   if (response.statusCode != 200 && response.statusCode != 201) {
-    throw Exception(
-      'Failed to sync user profile with backend (${response.statusCode})',
-    );
+    String errorMessage = 'Failed to sync user profile with backend';
+
+    try {
+      final decoded = jsonDecode(response.body);
+      if (decoded is Map && decoded['message'] != null) {
+        errorMessage = decoded['message'];
+      }
+    } catch (_) {}
+
+    throw Exception(errorMessage);
   }
+
+  // ✅ Success case
+  final Map<String, dynamic> decoded =
+      jsonDecode(response.body) as Map<String, dynamic>;
+
+  // optional safety check
+  if (decoded['success'] != true) {
+    throw Exception(decoded['message'] ?? 'Backend error');
+  }
+
+  return decoded['data'] as Map<String, dynamic>;
 }
