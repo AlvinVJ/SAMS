@@ -16,12 +16,14 @@ class InMemoryProcedures {
 /// Represents a procedure created in the UI
 class ProcedureDraft {
   final String title;
+  final String description;
   final List<FormFieldDraft> formSchema;
   final List<ApprovalLevelDraft> approvalLevels;
   final ProcedureVisibility visibility;
 
   ProcedureDraft({
     required this.title,
+    required this.description,
     required this.formSchema,
     required this.approvalLevels,
     required this.visibility,
@@ -99,7 +101,7 @@ extension ProcedureDraftJson on ProcedureDraft {
   Map<String, dynamic> toJson({required String adminUid}) {
     return {
       "title": title,
-      "desc": "",
+      "desc": description,
 
       "visibility": visibility == ProcedureVisibility.all
           ? ["user", "faculty"]

@@ -24,6 +24,7 @@ class AdminCreateProcedureScreen extends StatefulWidget {
 class _AdminCreateProcedureScreenState
     extends State<AdminCreateProcedureScreen> {
   final TextEditingController _titleController = TextEditingController();
+  final TextEditingController _descriptionController = TextEditingController();
 
   // Firebase details
   final FirebaseProcedureRepository _procedureRepo =
@@ -212,6 +213,13 @@ class _AdminCreateProcedureScreenState
       return;
     }
 
+    if (_descriptionController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Procedure description is required')),
+      );
+      return;
+    }
+
     for (final field in _formFields) {
       if (field.type == FormFieldType.singleChoice ||
           field.type == FormFieldType.multipleChoice) {
@@ -245,6 +253,7 @@ class _AdminCreateProcedureScreenState
 
     final procedure = ProcedureDraft(
       title: _titleController.text.trim(),
+      description: _descriptionController.text.trim(),
       formSchema: List.from(_formFields),
       approvalLevels: _approvalLevels.map((level) {
         return ApprovalLevelDraft(
@@ -347,6 +356,14 @@ class _AdminCreateProcedureScreenState
             decoration: const InputDecoration(
               labelText: 'Procedure Title',
               hintText: 'Eg: Leave Application',
+            ),
+          ),
+
+          TextField(
+            controller: _descriptionController,
+            decoration: const InputDecoration(
+              labelText: 'Procedure Description',
+              hintText: 'Enter a brief description',
             ),
           ),
 
