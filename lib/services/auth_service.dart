@@ -168,6 +168,8 @@ class AuthService {
             return AuthResolution.admin;
           case 'faculty':
             return AuthResolution.faculty;
+          case 'student':
+            return AuthResolution.student;
           default:
             return AuthResolution.notAdded;
         }
