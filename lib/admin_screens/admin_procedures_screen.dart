@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sams_final/admin_screens/admin_workflow_canvas_screen.dart';
 import '../styles/app_theme.dart';
 import '../widgets/admin_dashboard_layout.dart';
 
@@ -26,22 +27,30 @@ class AdminProceduresScreen extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     'Manage approval procedures and workflows',
-                    style: Theme.of(context)
-                        .textTheme
-                        .bodyLarge
-                        ?.copyWith(color: AppTheme.textLight),
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodyLarge?.copyWith(color: AppTheme.textLight),
                   ),
                 ],
               ),
               ElevatedButton.icon(
-                onPressed: () {},
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const AdminCreateProcedureScreen(),
+                    ),
+                  );
+                },
                 icon: const Icon(Icons.add),
                 label: const Text('Create Procedure'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppTheme.primary,
                   foregroundColor: Colors.white,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 14,
+                  ),
                 ),
               ),
             ],
@@ -69,7 +78,10 @@ class AdminProceduresScreen extends StatelessWidget {
                   child: DropdownButtonFormField<String>(
                     initialValue: 'all',
                     items: const [
-                      DropdownMenuItem(value: 'all', child: Text('All Formats')),
+                      DropdownMenuItem(
+                        value: 'all',
+                        child: Text('All Formats'),
+                      ),
                       DropdownMenuItem(value: 'form', child: Text('Form')),
                       DropdownMenuItem(value: 'letter', child: Text('Letter')),
                       DropdownMenuItem(value: 'sheet', child: Text('Sheet')),
@@ -125,8 +137,10 @@ class _ProcedureCard extends StatelessWidget {
             children: [
               Icon(data.icon, color: data.color, size: 28),
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: AppTheme.success.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(20),
@@ -156,8 +170,7 @@ class _ProcedureCard extends StatelessWidget {
             data.description,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style:
-                const TextStyle(color: AppTheme.textLight, fontSize: 13),
+            style: const TextStyle(color: AppTheme.textLight, fontSize: 13),
           ),
 
           const Spacer(),
@@ -210,10 +223,7 @@ class _ProcedureCard extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 2),
-        Text(
-          value,
-          style: const TextStyle(fontWeight: FontWeight.w600),
-        ),
+        Text(value, style: const TextStyle(fontWeight: FontWeight.w600)),
       ],
     );
   }
@@ -281,28 +291,27 @@ class _Procedure {
 
 /// ───────────────── Styling Helpers ─────────────────
 BoxDecoration _cardBox() => BoxDecoration(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(12),
-      border: Border.all(color: Colors.grey.shade200),
-    );
+  color: Colors.white,
+  borderRadius: BorderRadius.circular(12),
+  border: Border.all(color: Colors.grey.shade200),
+);
 
-InputDecoration _inputDecoration(String hint, IconData icon) =>
-    InputDecoration(
-      hintText: hint,
-      prefixIcon: Icon(icon, color: AppTheme.textLight),
-      filled: true,
-      fillColor: AppTheme.backgroundLight,
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(8),
-        borderSide: BorderSide.none,
-      ),
-    );
+InputDecoration _inputDecoration(String hint, IconData icon) => InputDecoration(
+  hintText: hint,
+  prefixIcon: Icon(icon, color: AppTheme.textLight),
+  filled: true,
+  fillColor: AppTheme.backgroundLight,
+  border: OutlineInputBorder(
+    borderRadius: BorderRadius.circular(8),
+    borderSide: BorderSide.none,
+  ),
+);
 
 InputDecoration _dropdownDecoration() => InputDecoration(
-      filled: true,
-      fillColor: AppTheme.backgroundLight,
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(8),
-        borderSide: BorderSide.none,
-      ),
-    );
+  filled: true,
+  fillColor: AppTheme.backgroundLight,
+  border: OutlineInputBorder(
+    borderRadius: BorderRadius.circular(8),
+    borderSide: BorderSide.none,
+  ),
+);
