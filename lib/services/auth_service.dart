@@ -32,10 +32,9 @@ class AuthService {
         return AuthResolution.unauthenticated;
       }
 
-      print("ResolveUser: User found: ${user.email}");
       final email = user.email;
       String emailPrefix = extractEmailPrefix(email);
-      final uid = user.email;
+      final uid = user.uid;
 
       if (!isMgitsEmail(email)) {
         //  print("ResolveUser: invalid domain");
@@ -62,6 +61,8 @@ class AuthService {
         final snapshot = await _db.collection('profiles').doc(emailPrefix).get();
         print(snapshot.data());
         print(user);
+      
+        
         _userProfile = UserProfile.fromMap(
           data: snapshot.data(),
           authUid: user.uid,
@@ -180,7 +181,8 @@ class AuthService {
         final data = profileDoc.data();
         if (data == null) return AuthResolution.unauthenticated;
 
-        // print("ResolveUser: Loading Existing Profile...");
+
+        print("ResolveUser: Loading Existing Profile...");
         _userProfile = UserProfile.fromMap(
           data: data,
           authUid: user.uid,
@@ -189,8 +191,8 @@ class AuthService {
           photoUrl: user.photoURL,
         );
         // print("ResolveUser: Memory Profile Set");
-
-        //_printProfileDetails();
+        print(_userProfile);
+        _printProfileDetails();
         if (data['isActive'] == true) {
           if (data['banned'] != true) {
             switch (_userProfile!.role) {
