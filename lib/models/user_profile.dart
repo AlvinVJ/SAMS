@@ -43,8 +43,8 @@ class UserProfile {
     return UserProfile(
       authUid: authUid,
       email: email,
-      displayName: displayName,
-      photoUrl: photoUrl,
+      // displayName: displayName,R
+      // photoUrl: photoUrl,
       role: data?['role'],
       isActive: data?['isActive'],
       banned: data?['banned'],
