@@ -7,16 +7,28 @@ import 'package:sams_final/services/auth_service.dart';
 import 'firebase_options.dart';
 //import 'services/auth_service.dart';
 
-//import 'screens/dashboard_screen.dart';
+//
+// Student screens
+import 'faculty_screens/faculty_acted_requests_screen.dart';
+import 'faculty_screens/faculty_profile_screen.dart';
+import 'screens/dashboard_screen.dart';
 import 'screens/requests_screen.dart';
 import 'screens/create_request_screen.dart';
 import 'screens/notifications_screen.dart';
 import 'screens/settings_screen.dart';
+
+// Admin screens
 import 'admin_screens/admin_dashboard_screen.dart';
 import 'admin_screens/admin_requests_screen.dart';
 import 'admin_screens/admin_settings_screen.dart';
 import 'admin_screens/admin_users_screen.dart';
 import 'admin_screens/admin_procedures_screen.dart';
+
+// Faculty screens
+import 'faculty_screens/faculty_dashboard_screen.dart';
+import 'faculty_screens/faculty_create_request_screen.dart';
+import 'faculty_screens/faculty_requests_screen.dart';
+import 'faculty_screens/faculty_request_history_screen.dart';
 //import 'admin_screens/admin_workflow_canvas_screen.dart';
 
 import 'widgets/role_guard.dart';
@@ -41,8 +53,10 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'SAMS',
       theme: ThemeData(useMaterial3: true),
+      debugShowCheckedModeBanner: false,
+
+      // initialRoute: '/',
       home: const AuthGate(),
-      //initialRoute: '/',
       routes: {
         //'/': (context) => const DashboardScreen(),
         '/requests': (context) => const RoleGuard(
@@ -82,9 +96,41 @@ class MyApp extends StatelessWidget {
           allowedRoles: [AuthResolution.admin],
           child: AdminProceduresScreen(),
         ),
-        // '/admin/procedures/create': (context) => const AdminCreateProcedureScreen(),
+        // ================= FACULTY =================
+        '/faculty/dashboard': (context) => RoleGuard( 
+          allowedRoles: [AuthResolution.faculty] ,
+          child: FacultyDashboardScreen(),
+        ),
+
+        '/faculty/create-request': (context) => const RoleGuard(
+          allowedRoles: [AuthResolution.faculty],
+          child : FacultyCreateRequestScreen(),
+        ),
+ 
+        '/faculty/requests': (context) => const RoleGuard(
+          allowedRoles: [AuthResolution.faculty], 
+          child:  FacultyRequestsForApprovalScreen(), 
+        ), 
+
+
+        '/faculty/history': (context) =>const RoleGuard(
+          allowedRoles: [AuthResolution.faculty], 
+          child:FacultyRequestHistoryScreen(),
+        ),
+
+        
+        '/faculty/request-status': (context) => const RoleGuard(
+          allowedRoles: [AuthResolution.faculty], 
+          child: FacultyActedRequestsScreen(),
+        ),
+
+        '/faculty/profile': (context) =>  RoleGuard(
+          allowedRoles: [AuthResolution.faculty], 
+          child:FacultyProfileScreen(),
+
+        )
+        
       },
-      debugShowCheckedModeBanner: false,
     );
   }
 }

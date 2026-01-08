@@ -228,7 +228,9 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
   }) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(24),
+      // padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.fromLTRB(24, 24, 24, 8), // bottom reduced
+
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
