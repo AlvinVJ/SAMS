@@ -31,7 +31,9 @@ class _AdminCreateProcedureScreenState
   //     FirebaseProcedureRepository();
 
   // api call variable
-  final ApiProcedureRepository _procedureRepo = ApiProcedureRepository("http://localhost:3000");
+  final ApiProcedureRepository _procedureRepo = ApiProcedureRepository(
+    "http://localhost:3000",
+  );
   // Visibility toggle variable
   ProcedureVisibility _visibility = ProcedureVisibility.all;
 
@@ -314,7 +316,7 @@ class _AdminCreateProcedureScreenState
           Container(
             margin: const EdgeInsets.only(bottom: 24),
             padding: const EdgeInsets.all(16),
-            decoration: _cardBox(),
+            color: AppTheme.backgroundLight,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -355,19 +357,27 @@ class _AdminCreateProcedureScreenState
             ),
           ),
           // ───────────────── Title Input ─────────────────
-          TextField(
-            controller: _titleController,
-            decoration: const InputDecoration(
-              labelText: 'Procedure Title',
-              hintText: 'Eg: Leave Application',
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: TextField(
+              controller: _titleController,
+              decoration: const InputDecoration(
+                labelText: 'Procedure Title',
+                hintText: 'Eg: Leave Application',
+              ),
             ),
           ),
 
-          TextField(
-            controller: _descriptionController,
-            decoration: const InputDecoration(
-              labelText: 'Procedure Description',
-              hintText: 'Enter a brief description',
+          const SizedBox(height: 12),
+
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: TextField(
+              controller: _descriptionController,
+              decoration: const InputDecoration(
+                labelText: 'Procedure Description',
+                hintText: 'Enter a brief description',
+              ),
             ),
           ),
 

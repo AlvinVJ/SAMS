@@ -32,7 +32,7 @@ class ApiProcedureRepository {
       throw Exception('Auth token is missing');
     }
     final response = await http.post(
-      Uri.parse('$baseUrl/api/admin/procedures'),
+      Uri.parse('$baseUrl/api/admin/saveProcedure'),
       headers: {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $authToken',
