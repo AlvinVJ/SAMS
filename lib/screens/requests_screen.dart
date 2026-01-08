@@ -2,15 +2,30 @@ import 'package:flutter/material.dart';
 import '../styles/app_theme.dart';
 import '../widgets/dashboard_layout.dart';
 
-class RequestsScreen extends StatelessWidget {
+import '../services/user_request_service.dart';
+
+class RequestsScreen extends StatefulWidget {
   const RequestsScreen({super.key});
+
+  @override
+  State<RequestsScreen> createState() => _RequestsScreenState();
+}
+
+class _RequestsScreenState extends State<RequestsScreen> {
+  final UserRequestService _requestService = UserRequestService();
+  late Future<List<UserRequest>> _requestsFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _requestsFuture = _requestService.fetchUserRequests();
+  }
 
   @override
   Widget build(BuildContext context) {
     return DashboardLayout(
       activeRoute: '/requests',
       child: SizedBox(
-        // 🔑 FORCE FULL WIDTH
         width: double.infinity,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -37,7 +52,10 @@ class RequestsScreen extends StatelessWidget {
                   ],
                 ),
                 ElevatedButton.icon(
-                  onPressed: () {},
+                  onPressed: () {
+                    // Navigate to create request
+                    Navigator.pushNamed(context, '/create-request');
+                  },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppTheme.primary,
                     foregroundColor: Colors.white,
@@ -63,7 +81,7 @@ class RequestsScreen extends StatelessWidget {
 
             // filters bar
             Container(
-              width: double.infinity, // 🔑 ensure stretch
+              width: double.infinity,
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: Colors.white,
@@ -132,7 +150,7 @@ class RequestsScreen extends StatelessWidget {
                   const SizedBox(width: 16),
                   Expanded(
                     child: DropdownButtonFormField<String>(
-                      initialValue: '30',
+                      value: '30',
                       decoration: InputDecoration(
                         filled: true,
                         fillColor: AppTheme.backgroundLight,
@@ -170,7 +188,7 @@ class RequestsScreen extends StatelessWidget {
 
             // table container
             Container(
-              width: double.infinity, // 🔑 KEY FIX
+              width: double.infinity,
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(12),
@@ -183,140 +201,175 @@ class RequestsScreen extends StatelessWidget {
                   ),
                 ],
               ),
-              child: Column(
-                children: [
-                  LayoutBuilder(
-                    builder: (context, constraints) {
-                      return SizedBox(
-                        width: constraints.maxWidth,
-                        child: DataTable(
-                          headingRowColor: WidgetStateProperty.all(
-                            AppTheme.backgroundLight,
-                          ),
-                          dataRowMinHeight: 60,
-                          dataRowMaxHeight: 60,
-                          columnSpacing: 32,
-                          horizontalMargin: 24,
-                          columns: const [
-                            DataColumn(
-                              label: Text(
-                                'Request ID',
-                                style: TextStyle(fontWeight: FontWeight.bold),
-                              ),
-                            ),
-                            DataColumn(
-                              label: Text(
-                                'Procedure Title',
-                                style: TextStyle(fontWeight: FontWeight.bold),
-                              ),
-                            ),
-                            DataColumn(
-                              label: Text(
-                                'Submission Date',
-                                style: TextStyle(fontWeight: FontWeight.bold),
-                              ),
-                            ),
-                            DataColumn(
-                              label: Text(
-                                'Current Level',
-                                style: TextStyle(fontWeight: FontWeight.bold),
-                              ),
-                            ),
-                            DataColumn(
-                              label: Text(
-                                'Status',
-                                style: TextStyle(fontWeight: FontWeight.bold),
-                              ),
-                            ),
-                            DataColumn(
-                              label: Text(
-                                'Action',
-                                style: TextStyle(fontWeight: FontWeight.bold),
-                              ),
-                            ),
-                          ],
-                          rows: [
-                            _buildRow(
-                              '#REQ-2023-892',
-                              'Dormitory Application',
-                              'Oct 12, 2023',
-                              'Warden Review',
-                              'Pending',
-                              AppTheme.warning,
-                            ),
-                            _buildRow(
-                              '#REQ-2023-855',
-                              'Scholarship Appeal',
-                              'Sept 05, 2023',
-                              "Dean's Office",
-                              'Approved',
-                              AppTheme.success,
-                            ),
-                            _buildRow(
-                              '#REQ-2023-720',
-                              'Late Course Add',
-                              'Aug 20, 2023',
-                              'Registrar',
-                              'Rejected',
-                              AppTheme.error,
-                            ),
-                            _buildRow(
-                              '#REQ-2023-690',
-                              'Transcript Request',
-                              'Aug 15, 2023',
-                              'Completed',
-                              'Approved',
-                              AppTheme.success,
-                            ),
-                            _buildRow(
-                              '#REQ-2023-611',
-                              'Club Event Approval',
-                              'Jul 10, 2023',
-                              'Student Affairs',
-                              'Pending',
-                              AppTheme.warning,
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
-
-                  // footer
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 24,
-                      vertical: 16,
-                    ),
-                    decoration: BoxDecoration(
-                      border: Border(
-                        top: BorderSide(color: Colors.grey.shade200),
+              child: FutureBuilder<List<UserRequest>>(
+                future: _requestsFuture,
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(64.0),
+                        child: CircularProgressIndicator(),
                       ),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text(
-                          'Showing 1 to 5 of 12 requests',
-                          style: TextStyle(color: AppTheme.textLight),
-                        ),
-                        Row(
+                    );
+                  } else if (snapshot.hasError) {
+                    return Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(64.0),
+                        child: Column(
                           children: [
-                            OutlinedButton(
-                              onPressed: null,
-                              child: const Text('Previous'),
+                            const Icon(
+                              Icons.error_outline,
+                              color: AppTheme.error,
+                              size: 48,
                             ),
-                            const SizedBox(width: 8),
-                            OutlinedButton(
-                              onPressed: () {},
-                              child: const Text('Next'),
+                            const SizedBox(height: 16),
+                            Text(
+                              'Error: ${snapshot.error}',
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 16),
+                            ElevatedButton(
+                              onPressed: () {
+                                setState(() {
+                                  _requestsFuture = _requestService
+                                      .fetchUserRequests();
+                                });
+                              },
+                              child: const Text('Retry'),
                             ),
                           ],
                         ),
-                      ],
-                    ),
-                  ),
-                ],
+                      ),
+                    );
+                  } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                    return const Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(64.0),
+                        child: Text('No requests found.'),
+                      ),
+                    );
+                  }
+
+                  final requests = snapshot.data!;
+
+                  return Column(
+                    children: [
+                      LayoutBuilder(
+                        builder: (context, constraints) {
+                          return SizedBox(
+                            width: constraints.maxWidth,
+                            child: DataTable(
+                              headingRowColor: WidgetStateProperty.all(
+                                AppTheme.backgroundLight,
+                              ),
+                              dataRowMinHeight: 60,
+                              dataRowMaxHeight: 60,
+                              columnSpacing: 32,
+                              horizontalMargin: 24,
+                              columns: const [
+                                DataColumn(
+                                  label: Text(
+                                    'Request ID',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                                DataColumn(
+                                  label: Text(
+                                    'Procedure Title',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                                DataColumn(
+                                  label: Text(
+                                    'Submission Date',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                                DataColumn(
+                                  label: Text(
+                                    'Current Level',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                                DataColumn(
+                                  label: Text(
+                                    'Status',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                                DataColumn(
+                                  label: Text(
+                                    'Action',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                              rows: requests
+                                  .map(
+                                    (req) => _buildRow(
+                                      req.id,
+                                      req.title,
+                                      req.date,
+                                      req.level,
+                                      req.status,
+                                      req.statusColor,
+                                    ),
+                                  )
+                                  .toList(),
+                            ),
+                          );
+                        },
+                      ),
+
+                      // footer
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 24,
+                          vertical: 16,
+                        ),
+                        decoration: BoxDecoration(
+                          border: Border(
+                            top: BorderSide(color: Colors.grey.shade200),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Showing ${requests.length} requests',
+                              style: const TextStyle(color: AppTheme.textLight),
+                            ),
+                            Row(
+                              children: [
+                                OutlinedButton(
+                                  onPressed: null,
+                                  child: const Text('Previous'),
+                                ),
+                                const SizedBox(width: 8),
+                                OutlinedButton(
+                                  onPressed: null, // Placeholder
+                                  child: const Text('Next'),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  );
+                },
               ),
             ),
           ],

@@ -1,4 +1,3 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'services/auth_service.dart';
 import 'state/auth_resolution.dart';
@@ -162,7 +161,10 @@ class AuthGate extends StatelessWidget {
     );
   }
 
-  void _showInactiveAccountDialog(BuildContext context, AuthService authService) {
+  void _showInactiveAccountDialog(
+    BuildContext context,
+    AuthService authService,
+  ) {
     showDialog(
       context: context,
       barrierDismissible: false,
