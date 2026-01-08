@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../styles/app_theme.dart';
-import '../widgets/faculty_app_header.dart';
+import '../widgets/app_header.dart';
 import '../widgets/faculty_sidebar.dart';
 
 /// =====================
@@ -103,7 +103,7 @@ class _FacultyRequestsForApprovalScreenState
           Expanded(
             child: Column(
               children: [
-                const FacultyAppHeader(facultyName: "Dr. Sarah Johnson"),
+                const AppHeader(),
 
                 Expanded(
                   child: SingleChildScrollView(

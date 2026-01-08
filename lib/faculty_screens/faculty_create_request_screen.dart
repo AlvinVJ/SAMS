@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../styles/app_theme.dart';
-import '../widgets/faculty_app_header.dart';
+import '../widgets/app_header.dart';
 import '../widgets/faculty_sidebar.dart';
 
 class FacultyCreateRequestScreen extends StatelessWidget {
@@ -20,7 +20,7 @@ class FacultyCreateRequestScreen extends StatelessWidget {
           Expanded(
             child: Column(
               children: [
-                FacultyAppHeader(facultyName: facultyName),
+                AppHeader(),
 
                 Expanded(
                   child: SingleChildScrollView(
