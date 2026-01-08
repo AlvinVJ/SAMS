@@ -44,7 +44,7 @@ class ApiProcedureRepository {
         "procedure": {
           "title": procedure.title,
           "desc": procedure.description,
-          "visibility": procedure.visibility.name,
+          "visibility": procedure.visibility,
           "priority": "NORMAL",
           "isActive": true,
 

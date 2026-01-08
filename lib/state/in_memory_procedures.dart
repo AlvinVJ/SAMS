@@ -19,7 +19,7 @@ class ProcedureDraft {
   final String description;
   final List<FormFieldDraft> formSchema;
   final List<ApprovalLevelDraft> approvalLevels;
-  final ProcedureVisibility visibility;
+  final Set<ProcedureVisibility> visibility;
 
   ProcedureDraft({
     required this.title,
@@ -64,7 +64,7 @@ class ApprovalLevelDraft {
 
 // visibility button
 
-enum ProcedureVisibility { user, faculty, all }
+enum ProcedureVisibility { user, faculty, guest, all }
 
 extension FormFieldDraftJson on FormFieldDraft {
   Map<String, dynamic> toJson() {
@@ -103,9 +103,9 @@ extension ProcedureDraftJson on ProcedureDraft {
       "title": title,
       "desc": description,
 
-      "visibility": visibility == ProcedureVisibility.all
-          ? ["user", "faculty"]
-          : [visibility.name],
+      "visibility": visibility.contains(ProcedureVisibility.all)
+          ? ["all"]
+          : visibility.map((v) => v.name).toList(),
 
       "requestFormat": 0,
       "priority": "NORMAL",

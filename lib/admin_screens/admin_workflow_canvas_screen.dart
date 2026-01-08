@@ -35,7 +35,7 @@ class _AdminCreateProcedureScreenState
     "http://localhost:3000",
   );
   // Visibility toggle variable
-  ProcedureVisibility _visibility = ProcedureVisibility.all;
+  Set<ProcedureVisibility> _visibility = {};
 
   // Local UI state for form builder
   bool _hasForm = false;
@@ -328,13 +328,36 @@ class _AdminCreateProcedureScreenState
 
                 ToggleButtons(
                   isSelected: [
-                    _visibility == ProcedureVisibility.user,
-                    _visibility == ProcedureVisibility.faculty,
-                    _visibility == ProcedureVisibility.all,
+                    _visibility.contains(ProcedureVisibility.user),
+                    _visibility.contains(ProcedureVisibility.faculty),
+                    _visibility.contains(ProcedureVisibility.guest),
+                    _visibility.contains(ProcedureVisibility.all),
                   ],
                   onPressed: (index) {
                     setState(() {
-                      _visibility = ProcedureVisibility.values[index];
+                      final selected = ProcedureVisibility.values[index];
+
+                      // If ALL is active, block other selections
+                      if (_visibility.contains(ProcedureVisibility.all) &&
+                          selected != ProcedureVisibility.all) {
+                        return;
+                      }
+
+                      if (selected == ProcedureVisibility.all) {
+                        // Toggle ALL
+                        if (_visibility.contains(ProcedureVisibility.all)) {
+                          _visibility.remove(ProcedureVisibility.all);
+                        } else {
+                          _visibility = {ProcedureVisibility.all};
+                        }
+                      } else {
+                        // Normal toggle behavior
+                        if (_visibility.contains(selected)) {
+                          _visibility.remove(selected);
+                        } else {
+                          _visibility.add(selected);
+                        }
+                      }
                     });
                   },
                   borderRadius: BorderRadius.circular(8),
@@ -346,6 +369,10 @@ class _AdminCreateProcedureScreenState
                     Padding(
                       padding: EdgeInsets.symmetric(horizontal: 16),
                       child: Text('Faculty'),
+                    ),
+                    Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 16),
+                      child: Text('Guest'),
                     ),
                     Padding(
                       padding: EdgeInsets.symmetric(horizontal: 16),
