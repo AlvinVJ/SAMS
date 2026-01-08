@@ -1,9 +1,47 @@
 import 'package:flutter/material.dart';
 import '../styles/app_theme.dart';
 import '../widgets/dashboard_layout.dart';
+import '../services/auth_service.dart';
 
-class DashboardScreen extends StatelessWidget {
+class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
+
+  @override
+  State<DashboardScreen> createState() => _DashboardScreenState();
+}
+
+class _DashboardScreenState extends State<DashboardScreen> {
+  String _userName = 'User';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserProfile(); // Renamed method to reflect broader loading
+  }
+
+  void _loadUserProfile() {
+    final profile = AuthService().userProfile;
+    final fbUser = AuthService().currentUser; // Keep fbUser for fallback
+
+    if (profile == null) return;
+
+    setState(() {
+      // Logic for display name
+      final rawName =
+          profile.displayName ??
+          fbUser?.displayName ??
+          profile.email.split('@').first;
+
+      // Capitalize each word (e.g., ASHMITHA -> Ashmitha)
+      _userName = rawName
+          .split(' ')
+          .map((word) {
+            if (word.isEmpty) return word;
+            return word[0].toUpperCase() + word.substring(1).toLowerCase();
+          })
+          .join(' ');
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -12,7 +50,7 @@ class DashboardScreen extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header Section
+          // ───────────────── Header Section ─────────────────
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.end,
@@ -21,15 +59,15 @@ class DashboardScreen extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Welcome back, Alex!',
+                    'Welcome back, $_userName!',
                     style: Theme.of(context).textTheme.headlineLarge,
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    "Here is what's happening with your approvals today.",
+                    "Here is the status of your recent applications.",
                     style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                       color: AppTheme.textLight,
-                      fontSize: 18,
+                      fontSize: 16,
                     ),
                   ),
                 ],
@@ -44,15 +82,16 @@ class DashboardScreen extends StatelessWidget {
                   borderRadius: BorderRadius.circular(20),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.05),
+                      color: Colors.black.withOpacity(0.05),
                       blurRadius: 4,
                       offset: const Offset(0, 2),
                     ),
                   ],
                 ),
-                child: const Text(
-                  'October 24, 2023',
-                  style: TextStyle(
+                child: Text(
+                  // Simple date formatting or hardcoded for now
+                  '${DateTime.now().day}/${DateTime.now().month}/${DateTime.now().year}',
+                  style: const TextStyle(
                     color: AppTheme.textLight,
                     fontWeight: FontWeight.bold,
                   ),
@@ -63,111 +102,95 @@ class DashboardScreen extends StatelessWidget {
 
           const SizedBox(height: 32),
 
-          // Stats Cards
+          // ───────────────── Section 1: Active Applications ─────────────────
           Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              _buildStatsCard(
-                icon: Icons.check,
-                color: AppTheme.success,
-                label: 'Approved',
-                count: '12',
-                bgIcon: Icons.check_circle_outline,
+              Text(
+                'Active Applications',
+                style: Theme.of(context).textTheme.titleLarge,
               ),
-              const SizedBox(width: 24),
-              _buildStatsCard(
-                icon: Icons.hourglass_empty,
-                color: AppTheme.warning,
-                label: 'Pending',
-                count: '5',
-                bgIcon: Icons.hourglass_bottom,
-              ),
-              const SizedBox(width: 24),
-              _buildStatsCard(
-                icon: Icons.close,
-                color: AppTheme.error,
-                label: 'Rejected',
-                count: '2',
-                bgIcon: Icons.cancel_outlined,
+              TextButton(
+                onPressed: () {
+                  // Navigate to Requests tab
+                  // This relies on your Sidebar navigation mainly
+                },
+                child: const Text('View All'),
               ),
             ],
+          ),
+          const SizedBox(height: 16),
+
+          // Horizontal List of Cards
+          SizedBox(
+            height: 160,
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              children: [
+                _buildActiveRequestCard(
+                  title: 'Medical Leave',
+                  date: 'Oct 24, 2023',
+                  status: 'Pending',
+                  statusColor: AppTheme.warning,
+                  icon: Icons.medical_services,
+                ),
+                const SizedBox(width: 16),
+                _buildActiveRequestCard(
+                  title: 'Lab Access',
+                  date: 'Oct 22, 2023',
+                  status: 'Approved',
+                  statusColor: AppTheme.success,
+                  icon: Icons.science,
+                ),
+                const SizedBox(width: 16),
+                _buildActiveRequestCard(
+                  title: 'Event Permission',
+                  date: 'Oct 20, 2023',
+                  status: 'In Review',
+                  statusColor: Colors.blue,
+                  icon: Icons.event,
+                ),
+              ],
+            ),
           ),
 
           const SizedBox(height: 32),
 
-          // Bottom Grid
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          // ───────────────── Section 2: Notifications ─────────────────
+          Text('Notifications', style: Theme.of(context).textTheme.titleLarge),
+          const SizedBox(height: 16),
+
+          ListView(
+            shrinkWrap:
+                true, // Key fix: Allows it to exist inside SingleChildScrollView
+            physics:
+                const NeverScrollableScrollPhysics(), // Disables internal scrolling
             children: [
-              // Quick Actions (1/3)
-              Expanded(
-                flex: 1,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Quick Actions',
-                      style: Theme.of(context).textTheme.titleLarge,
-                    ),
-                    const SizedBox(height: 24),
-                    _buildCreateRequestButton(),
-                    const SizedBox(height: 24),
-                    _buildViewRequestsButton(),
-                  ],
-                ),
+              _buildNotificationItem(
+                title: 'Request Approved',
+                description:
+                    'Your request for "Lab Access" has been approved by the HOD.',
+                time: '2 hours ago',
+                icon: Icons.check_circle,
+                color: AppTheme.success,
               ),
-
-              const SizedBox(width: 32),
-
-              // Recent Activity (2/3)
-              Expanded(
-                flex: 2,
-                child: Column(
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'Recent Activity',
-                          style: Theme.of(context).textTheme.titleLarge,
-                        ),
-                        TextButton(
-                          onPressed: () {},
-                          child: const Text('View All'),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 24),
-                    _buildActivityItem(
-                      icon: Icons.verified,
-                      iconColor: AppTheme.primary,
-                      iconBg: Colors.blue.shade50,
-                      title: 'Request Approved',
-                      time: '2 min ago',
-                      description:
-                          'Your request for Lab Equipment has been approved by the department head.',
-                    ),
-                    const SizedBox(height: 12),
-                    _buildActivityItem(
-                      icon: Icons.comment,
-                      iconColor: AppTheme.warning,
-                      iconBg: Colors.orange.shade50,
-                      title: 'New Comment',
-                      time: '1 hour ago',
-                      description:
-                          'Advisor Smith commented on Leave Application: "Please attach the medical certificate."',
-                    ),
-                    const SizedBox(height: 12),
-                    _buildActivityItem(
-                      icon: Icons.info,
-                      iconColor: AppTheme.textLight,
-                      iconBg: Colors.grey.shade100,
-                      title: 'System Maintenance',
-                      time: 'Yesterday',
-                      description:
-                          'SAMS will be undergoing scheduled maintenance on Saturday from 10 PM to 12 AM.',
-                    ),
-                  ],
-                ),
+              const SizedBox(height: 12),
+              _buildNotificationItem(
+                title: 'Action Required',
+                description:
+                    'Please upload the medical certificate for your "Medical Leave" request.',
+                time: 'Yesterday',
+                icon: Icons.warning,
+                color: AppTheme.warning,
+              ),
+              const SizedBox(height: 12),
+              _buildNotificationItem(
+                title: 'System Update',
+                description:
+                    'SAMS will be down for maintenance this Sunday from 2 AM to 4 AM.',
+                time: '2 days ago',
+                icon: Icons.info,
+                color: Colors.blue,
               ),
             ],
           ),
@@ -176,165 +199,92 @@ class DashboardScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildStatsCard({
+  Widget _buildActiveRequestCard({
+    required String title,
+    required String date,
+    required String status,
+    required Color statusColor,
     required IconData icon,
-    required Color color,
-    required String label,
-    required String count,
-    required IconData bgIcon,
   }) {
-    return Expanded(
-      child: Container(
-        height: 180,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.grey.shade100),
-        ),
-        child: Stack(
-          children: [
-            Positioned(
-              right: -10,
-              top: -10,
-              child: Opacity(
-                opacity: 0.1,
-                child: Icon(bgIcon, size: 120, color: color),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(24.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    width: 48,
-                    height: 48,
-                    decoration: BoxDecoration(
-                      color: color.withValues(alpha: 0.1),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(icon, color: color),
-                  ),
-                  const Spacer(),
-                  Text(
-                    label,
-                    style: const TextStyle(
-                      color: AppTheme.textLight,
-                      fontWeight: FontWeight.w500,
-                      fontSize: 16,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    count,
-                    style: const TextStyle(
-                      color: AppTheme.textDark,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 36,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCreateRequestButton() {
     return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(32),
+      width: 260,
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AppTheme.primary,
+        color: Colors.white,
         borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.shade200),
         boxShadow: [
           BoxShadow(
-            color: AppTheme.primary.withValues(alpha: 0.3),
-            blurRadius: 10,
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 8,
             offset: const Offset(0, 4),
           ),
         ],
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.2),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(Icons.add, color: Colors.white, size: 32),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: AppTheme.primary.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icon, color: AppTheme.primary, size: 20),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
+                decoration: BoxDecoration(
+                  color: statusColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  status,
+                  style: TextStyle(
+                    color: statusColor,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 16),
-          const Text(
-            'Create New Request',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            'Start a new approval process',
-            style: TextStyle(color: Colors.blue.shade100, fontSize: 14),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildViewRequestsButton() {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade100),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.grey.shade100,
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(Icons.visibility, color: AppTheme.primary),
-          ),
-          const SizedBox(width: 16),
-          const Column(
+          Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'View My Requests',
-                style: TextStyle(
+                title,
+                style: const TextStyle(
+                  fontSize: 16,
                   fontWeight: FontWeight.bold,
                   color: AppTheme.textDark,
                 ),
               ),
+              const SizedBox(height: 4),
               Text(
-                'Check status of existing items',
-                style: TextStyle(color: AppTheme.textLight, fontSize: 12),
+                'Submitted on $date',
+                style: const TextStyle(fontSize: 12, color: AppTheme.textLight),
               ),
             ],
           ),
-          const Spacer(),
-          const Icon(Icons.arrow_forward, color: Colors.grey),
         ],
       ),
     );
   }
 
-  Widget _buildActivityItem({
-    required IconData icon,
-    required Color iconColor,
-    required Color iconBg,
+  Widget _buildNotificationItem({
     required String title,
-    required String time,
     required String description,
+    required String time,
+    required IconData icon,
+    required Color color,
   }) {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -347,10 +297,21 @@ class DashboardScreen extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(color: iconBg, shape: BoxShape.circle),
-            child: Icon(icon, color: iconColor, size: 20),
+            padding: const EdgeInsets.all(2), // border width
+            decoration: BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+              border: Border.all(color: color.withOpacity(0.3), width: 2),
+            ),
+            child: Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, color: color, size: 18),
+            ),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -365,6 +326,7 @@ class DashboardScreen extends StatelessWidget {
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         color: AppTheme.textDark,
+                        fontSize: 15,
                       ),
                     ),
                     Text(
@@ -381,7 +343,8 @@ class DashboardScreen extends StatelessWidget {
                   description,
                   style: const TextStyle(
                     color: AppTheme.textLight,
-                    height: 1.5,
+                    fontSize: 13,
+                    height: 1.4,
                   ),
                 ),
               ],

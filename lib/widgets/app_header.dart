@@ -1,8 +1,47 @@
 import 'package:flutter/material.dart';
 import '../styles/app_theme.dart';
+import '../services/auth_service.dart';
 
-class AppHeader extends StatelessWidget implements PreferredSizeWidget {
+class AppHeader extends StatefulWidget implements PreferredSizeWidget {
   const AppHeader({super.key});
+
+  @override
+  State<AppHeader> createState() => _AppHeaderState();
+
+  @override
+  Size get preferredSize => const Size.fromHeight(80);
+}
+
+class _AppHeaderState extends State<AppHeader> {
+  String _displayName = '...';
+  String _displayRole = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserData();
+  }
+
+  void _loadUserData() {
+    final profile = AuthService().userProfile;
+    if (profile != null) {
+      setState(() {
+        final rawName = profile.displayName ?? 'User';
+        _displayName = rawName
+            .split(' ')
+            .map((word) {
+              if (word.isEmpty) return word;
+              return word[0].toUpperCase() + word.substring(1).toLowerCase();
+            })
+            .join(' ');
+
+        final rawRole = profile.role;
+        _displayRole = rawRole.isNotEmpty
+            ? rawRole[0].toUpperCase() + rawRole.substring(1).toLowerCase()
+            : '';
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -14,35 +53,8 @@ class AppHeader extends StatelessWidget implements PreferredSizeWidget {
         border: Border(bottom: BorderSide(color: Colors.transparent)),
       ),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        mainAxisAlignment: MainAxisAlignment.end,
         children: [
-          // Search Bar (Desktop)
-          Container(
-            width: 380,
-            height: 44,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(30),
-              border: Border.all(color: Colors.grey.shade200),
-            ),
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Row(
-              children: [
-                Icon(Icons.search, color: Colors.grey.shade400, size: 20),
-                const SizedBox(width: 12),
-                const Expanded(
-                  child: TextField(
-                    decoration: InputDecoration(
-                      hintText: 'Search requests...',
-                      border: InputBorder.none,
-                      isDense: true,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-
           // Right Actions
           Row(
             children: [
@@ -80,16 +92,16 @@ class AppHeader extends StatelessWidget implements PreferredSizeWidget {
                     mainAxisAlignment: MainAxisAlignment.center,
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      const Text(
-                        'Alex Morgan',
-                        style: TextStyle(
+                      Text(
+                        _displayName,
+                        style: const TextStyle(
                           fontWeight: FontWeight.bold,
                           color: AppTheme.textDark,
                           fontSize: 14,
                         ),
                       ),
                       Text(
-                        'Computer Science',
+                        _displayRole,
                         style: Theme.of(context).textTheme.bodySmall,
                       ),
                     ],
@@ -109,7 +121,4 @@ class AppHeader extends StatelessWidget implements PreferredSizeWidget {
       ),
     );
   }
-
-  @override
-  Size get preferredSize => const Size.fromHeight(80);
 }

@@ -1,7 +1,6 @@
-
 import 'package:flutter/material.dart';
 import '../styles/app_theme.dart';
-import '../widgets/faculty_app_header.dart'; // 👈 changed header
+import '../widgets/app_header.dart'; // 👈 changed header
 import '../widgets/faculty_sidebar.dart';
 
 /// =====================
@@ -30,31 +29,30 @@ class FacultyRequestHistoryScreen extends StatelessWidget {
   const FacultyRequestHistoryScreen({super.key});
 
   List<FacultyRequestHistory> get requests => [
-        FacultyRequestHistory(
-          title: 'Conference Leave - IEEE 2023',
-          requestId: 'REQ-2023-001',
-          date: 'Oct 24, 2023',
-          status: 'Pending',
-          comment:
-              'Please attach the official acceptance letter PDF. The current screenshot is not sufficient for funding approval.',
-        ),
-        FacultyRequestHistory(
-          title: 'Lab Equipment Purchase - Oscilloscopes',
-          requestId: 'REQ-2023-014',
-          date: 'Sep 12, 2023',
-          status: 'Approved',
-          comment:
-              'Final approval granted by Dean\'s Office on Sep 15, 2023.',
-        ),
-        FacultyRequestHistory(
-          title: 'Curriculum Change Proposal - CS101',
-          requestId: 'REQ-2023-009',
-          date: 'Aug 05, 2023',
-          status: 'Rejected',
-          comment:
-              'The proposed changes overlap significantly with existing curriculum.',
-        ),
-      ];
+    FacultyRequestHistory(
+      title: 'Conference Leave - IEEE 2023',
+      requestId: 'REQ-2023-001',
+      date: 'Oct 24, 2023',
+      status: 'Pending',
+      comment:
+          'Please attach the official acceptance letter PDF. The current screenshot is not sufficient for funding approval.',
+    ),
+    FacultyRequestHistory(
+      title: 'Lab Equipment Purchase - Oscilloscopes',
+      requestId: 'REQ-2023-014',
+      date: 'Sep 12, 2023',
+      status: 'Approved',
+      comment: 'Final approval granted by Dean\'s Office on Sep 15, 2023.',
+    ),
+    FacultyRequestHistory(
+      title: 'Curriculum Change Proposal - CS101',
+      requestId: 'REQ-2023-009',
+      date: 'Aug 05, 2023',
+      status: 'Rejected',
+      comment:
+          'The proposed changes overlap significantly with existing curriculum.',
+    ),
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -68,7 +66,7 @@ class FacultyRequestHistoryScreen extends StatelessWidget {
             child: Column(
               children: [
                 /// 👇 REPLACED AppHeader with FacultyAppHeader
-                const FacultyAppHeader(facultyName: "Dr. Sarah Johnson"),
+                const AppHeader(),
 
                 Expanded(
                   child: SingleChildScrollView(
@@ -79,13 +77,15 @@ class FacultyRequestHistoryScreen extends StatelessWidget {
                         /// Breadcrumb
                         Row(
                           children: const [
-                            Text('Home',
-                                style:
-                                    TextStyle(color: AppTheme.textLight)),
+                            Text(
+                              'Home',
+                              style: TextStyle(color: AppTheme.textLight),
+                            ),
                             Icon(Icons.chevron_right, size: 18),
-                            Text('Request History',
-                                style: TextStyle(
-                                    fontWeight: FontWeight.w600)),
+                            Text(
+                              'Request History',
+                              style: TextStyle(fontWeight: FontWeight.w600),
+                            ),
                           ],
                         ),
 
@@ -108,8 +108,7 @@ class FacultyRequestHistoryScreen extends StatelessWidget {
                                 SizedBox(height: 6),
                                 Text(
                                   'Track the status and progress of your submitted approvals.',
-                                  style: TextStyle(
-                                      color: AppTheme.textLight),
+                                  style: TextStyle(color: AppTheme.textLight),
                                 ),
                               ],
                             ),
@@ -120,7 +119,9 @@ class FacultyRequestHistoryScreen extends StatelessWidget {
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: AppTheme.primary,
                                 padding: const EdgeInsets.symmetric(
-                                    horizontal: 20, vertical: 12),
+                                  horizontal: 20,
+                                  vertical: 12,
+                                ),
                               ),
                             ),
                           ],
@@ -132,32 +133,35 @@ class FacultyRequestHistoryScreen extends StatelessWidget {
                         GridView.count(
                           crossAxisCount: 4,
                           shrinkWrap: true,
-                          physics:
-                              const NeverScrollableScrollPhysics(),
+                          physics: const NeverScrollableScrollPhysics(),
                           crossAxisSpacing: 16,
                           mainAxisSpacing: 16,
                           childAspectRatio:
                               2.7, // 👈 WIDER THAN TALL = LOWER CARD HEIGHT
                           children: const [
                             _StatCard(
-                                label: 'Total Requests',
-                                value: '12',
-                                icon: Icons.folder_open),
+                              label: 'Total Requests',
+                              value: '12',
+                              icon: Icons.folder_open,
+                            ),
                             _StatCard(
-                                label: 'Pending',
-                                value: '3',
-                                icon: Icons.hourglass_empty,
-                                color: Colors.orange),
+                              label: 'Pending',
+                              value: '3',
+                              icon: Icons.hourglass_empty,
+                              color: Colors.orange,
+                            ),
                             _StatCard(
-                                label: 'Approved',
-                                value: '8',
-                                icon: Icons.check_circle,
-                                color: Colors.green),
+                              label: 'Approved',
+                              value: '8',
+                              icon: Icons.check_circle,
+                              color: Colors.green,
+                            ),
                             _StatCard(
-                                label: 'Rejected',
-                                value: '1',
-                                icon: Icons.cancel,
-                                color: Colors.red),
+                              label: 'Rejected',
+                              value: '1',
+                              icon: Icons.cancel,
+                              color: Colors.red,
+                            ),
                           ],
                         ),
 
@@ -169,23 +173,19 @@ class FacultyRequestHistoryScreen extends StatelessWidget {
                           decoration: BoxDecoration(
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(12),
-                            border:
-                                Border.all(color: Colors.grey.shade200),
+                            border: Border.all(color: Colors.grey.shade200),
                           ),
                           child: Row(
                             children: [
                               Expanded(
                                 child: TextField(
                                   decoration: InputDecoration(
-                                    prefixIcon:
-                                        const Icon(Icons.search),
-                                    hintText:
-                                        'Search by ID or Subject...',
+                                    prefixIcon: const Icon(Icons.search),
+                                    hintText: 'Search by ID or Subject...',
                                     filled: true,
                                     fillColor: Colors.grey.shade50,
                                     border: OutlineInputBorder(
-                                      borderRadius:
-                                          BorderRadius.circular(8),
+                                      borderRadius: BorderRadius.circular(8),
                                       borderSide: BorderSide.none,
                                     ),
                                   ),
@@ -241,7 +241,10 @@ class _StatCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = color ?? Colors.blueGrey;
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16), // 👈 smaller
+      padding: const EdgeInsets.symmetric(
+        vertical: 12,
+        horizontal: 16,
+      ), // 👈 smaller
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(10), // slightly smaller
@@ -255,10 +258,13 @@ class _StatCard extends StatelessWidget {
           const SizedBox(height: 6),
           Text(label, style: const TextStyle(color: AppTheme.textLight)),
           const SizedBox(height: 4),
-          Text(value,
-              style: const TextStyle(
-                  fontSize: 20, // 👈 smaller
-                  fontWeight: FontWeight.bold)),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 20, // 👈 smaller
+              fontWeight: FontWeight.bold,
+            ),
+          ),
         ],
       ),
     );
@@ -273,8 +279,7 @@ class _DropdownFilter extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: 160,
-      padding:
-          const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(8),
         border: Border.all(color: Colors.grey.shade300),
@@ -282,10 +287,9 @@ class _DropdownFilter extends StatelessWidget {
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String>(
           value: label,
-          items: [label]
-              .map((e) =>
-                  DropdownMenuItem(value: e, child: Text(e)))
-              .toList(),
+          items: [
+            label,
+          ].map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
           onChanged: (_) {},
         ),
       ),
@@ -330,23 +334,19 @@ class _HistoryCard extends StatelessWidget {
                   Text(
                     request.title,
                     style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold),
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   const SizedBox(width: 12),
                   Chip(
                     label: Text(request.status),
-                    backgroundColor:
-                        statusColor.withOpacity(0.1),
-                    labelStyle:
-                        TextStyle(color: statusColor),
+                    backgroundColor: statusColor.withOpacity(0.1),
+                    labelStyle: TextStyle(color: statusColor),
                   ),
                 ],
               ),
-              TextButton(
-                onPressed: () {},
-                child: const Text('View Details'),
-              ),
+              TextButton(onPressed: () {}, child: const Text('View Details')),
             ],
           ),
 
@@ -355,13 +355,15 @@ class _HistoryCard extends StatelessWidget {
           /// Meta
           Row(
             children: [
-              Text(request.requestId,
-                  style: const TextStyle(
-                      color: AppTheme.textLight)),
+              Text(
+                request.requestId,
+                style: const TextStyle(color: AppTheme.textLight),
+              ),
               const SizedBox(width: 16),
-              Text(request.date,
-                  style: const TextStyle(
-                      color: AppTheme.textLight)),
+              Text(
+                request.date,
+                style: const TextStyle(color: AppTheme.textLight),
+              ),
             ],
           ),
 
