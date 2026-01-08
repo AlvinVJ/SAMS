@@ -33,10 +33,13 @@ class ProcedureService {
       );
 
       if (response.statusCode == 200) {
-        // Parsing the body which is a List of Lists: [[id, title, desc], ...]
-        final List<dynamic> data = json.decode(response.body);
+        // Parse the JSON response
+        final Map<String, dynamic> jsonResponse = json.decode(response.body);
 
-        return data.map((item) {
+        // Navigate to the procedures array: response.data.procedures
+        final List<dynamic> proceduresData = jsonResponse['data']['procedures'];
+
+        return proceduresData.map((item) {
           return ProcedureSummary.fromArray(item as List<dynamic>);
         }).toList();
       } else {

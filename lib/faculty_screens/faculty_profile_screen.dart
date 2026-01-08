@@ -1,11 +1,10 @@
-
 import 'package:flutter/material.dart';
 import '../styles/app_theme.dart';
 import '../widgets/faculty_app_header.dart';
 import '../widgets/faculty_sidebar.dart';
 
 class FacultyProfileScreen extends StatelessWidget {
-   FacultyProfileScreen({super.key});
+  FacultyProfileScreen({super.key});
 
   // ===== Dummy Data (API-ready later) =====
   final String facultyName = "Dr. Sarah Johnson";
@@ -13,10 +12,7 @@ class FacultyProfileScreen extends StatelessWidget {
   final String department = "Computer Science";
   final String designation = "Associate Professor";
   final String assignedClass = "S6 CSE A";
-  final List<String> roles = [
-    "IEEE Faculty Advisor",
-    "Innovation Cell Mentor",
-  ];
+  final List<String> roles = ["IEEE Faculty Advisor", "Innovation Cell Mentor"];
 
   @override
   Widget build(BuildContext context) {
@@ -40,11 +36,21 @@ class FacultyProfileScreen extends StatelessWidget {
                         /// ================= BREADCRUMB =================
                         Row(
                           children: const [
-                            Text('Home', style: TextStyle(color: AppTheme.textLight)),
+                            Text(
+                              'Home',
+                              style: TextStyle(color: AppTheme.textLight),
+                            ),
                             SizedBox(width: 6),
-                            Icon(Icons.chevron_right, size: 16, color: AppTheme.textLight),
+                            Icon(
+                              Icons.chevron_right,
+                              size: 16,
+                              color: AppTheme.textLight,
+                            ),
                             SizedBox(width: 6),
-                            Text('Profile', style: TextStyle(fontWeight: FontWeight.w600)),
+                            Text(
+                              'Profile',
+                              style: TextStyle(fontWeight: FontWeight.w600),
+                            ),
                           ],
                         ),
 
@@ -91,7 +97,10 @@ class FacultyProfileScreen extends StatelessWidget {
                         const Center(
                           child: Text(
                             '© 2023 SAMS Faculty Portal. All rights reserved.',
-                            style: TextStyle(fontSize: 12, color: AppTheme.textLight),
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: AppTheme.textLight,
+                            ),
                           ),
                         ),
                       ],
@@ -130,7 +139,10 @@ class FacultyProfileScreen extends StatelessWidget {
               children: [
                 Text(
                   facultyName,
-                  style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 const SizedBox(height: 4),
                 Text(
@@ -147,7 +159,11 @@ class FacultyProfileScreen extends StatelessWidget {
                 /// Assigned Class
                 Row(
                   children: [
-                    const Icon(Icons.group, size: 18, color: AppTheme.textLight),
+                    const Icon(
+                      Icons.group,
+                      size: 18,
+                      color: AppTheme.textLight,
+                    ),
                     const SizedBox(width: 8),
                     Text(
                       "Class Faculty: $assignedClass",
@@ -235,8 +251,10 @@ class _ContactInfoCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: const [
-          Text("Contact Information",
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          Text(
+            "Contact Information",
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
           Divider(height: 28),
           _InfoRow(Icons.mail, "Email", "s.johnson@university.edu"),
         ],
@@ -264,10 +282,18 @@ class _InfoRow extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(label.toUpperCase(),
-                    style: const TextStyle(fontSize: 11, color: AppTheme.textLight)),
+                Text(
+                  label.toUpperCase(),
+                  style: const TextStyle(
+                    fontSize: 11,
+                    color: AppTheme.textLight,
+                  ),
+                ),
                 const SizedBox(height: 2),
-                Text(value, style: const TextStyle(fontWeight: FontWeight.w600)),
+                Text(
+                  value,
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                ),
               ],
             ),
           ),
@@ -294,7 +320,11 @@ class _Badge extends StatelessWidget {
       ),
       child: Text(
         text,
-        style: TextStyle(fontSize: 12, color: color, fontWeight: FontWeight.w600),
+        style: TextStyle(
+          fontSize: 12,
+          color: color,
+          fontWeight: FontWeight.w600,
+        ),
       ),
     );
   }

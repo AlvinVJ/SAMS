@@ -3,7 +3,7 @@ import '../styles/app_theme.dart';
 
 class FacultyAppHeader extends StatelessWidget {
   final String facultyName;
-  final String facultyRole; 
+  final String facultyRole;
 
   const FacultyAppHeader({
     super.key,
@@ -18,9 +18,7 @@ class FacultyAppHeader extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 32),
       decoration: const BoxDecoration(
         color: Colors.white,
-        border: Border(
-          bottom: BorderSide(color: Color(0xFFE5E7EB)),
-        ),
+        border: Border(bottom: BorderSide(color: Color(0xFFE5E7EB))),
       ),
       child: Row(
         children: [
@@ -51,8 +49,10 @@ class FacultyAppHeader extends StatelessWidget {
           // ===== Notifications =====
           IconButton(
             onPressed: () {},
-            icon: const Icon(Icons.notifications_outlined,
-                color: AppTheme.textDark),
+            icon: const Icon(
+              Icons.notifications_outlined,
+              color: AppTheme.textDark,
+            ),
           ),
 
           const SizedBox(width: 8),
@@ -65,7 +65,7 @@ class FacultyAppHeader extends StatelessWidget {
                 backgroundColor: AppTheme.primary,
                 child: Text(
                   // facultyName[0], // first letter
-                   facultyName.isNotEmpty ? facultyName[0].toUpperCase() : "?",
+                  facultyName.isNotEmpty ? facultyName[0].toUpperCase() : "?",
                   style: const TextStyle(color: Colors.white, fontSize: 18),
                 ),
               ),
@@ -74,16 +74,24 @@ class FacultyAppHeader extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(facultyName,
-                      style: const TextStyle(
-                          fontWeight: FontWeight.bold, fontSize: 14)),
-                  Text(facultyRole,
-                      style: const TextStyle(
-                          fontSize: 12, color: AppTheme.textLight)),
+                  Text(
+                    facultyName,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
+                  ),
+                  Text(
+                    facultyRole,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: AppTheme.textLight,
+                    ),
+                  ),
                 ],
               ),
             ],
-          )
+          ),
         ],
       ),
     );

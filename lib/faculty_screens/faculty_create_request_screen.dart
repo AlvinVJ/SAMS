@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import '../styles/app_theme.dart';
 import '../widgets/faculty_app_header.dart';
@@ -51,7 +50,7 @@ class FacultyCreateRequestScreen extends StatelessWidget {
                             // ===== REQUEST TYPE CARDS (reduced size) =====
                             GridView.count(
                               crossAxisCount: 2,
-                              childAspectRatio: 3.2,       // << reduced height
+                              childAspectRatio: 3.2, // << reduced height
                               crossAxisSpacing: 20,
                               mainAxisSpacing: 20,
                               shrinkWrap: true,
@@ -74,19 +73,20 @@ class FacultyCreateRequestScreen extends StatelessWidget {
 
                             // ===== COMING SOON =====
                             Container(
-                              height: 140,    // reduced height
+                              height: 140, // reduced height
                               decoration: BoxDecoration(
                                 color: Colors.grey.shade100,
                                 borderRadius: BorderRadius.circular(16),
-                                border: Border.all(
-                                  color: Colors.grey.shade300,
-                                ),
+                                border: Border.all(color: Colors.grey.shade300),
                               ),
                               child: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: const [
-                                  Icon(Icons.add_circle_outline,
-                                      size: 30, color: Colors.grey),
+                                  Icon(
+                                    Icons.add_circle_outline,
+                                    size: 30,
+                                    color: Colors.grey,
+                                  ),
                                   SizedBox(height: 8),
                                   Text(
                                     'New Request Types Coming Soon',
@@ -115,22 +115,18 @@ class FacultyCreateRequestScreen extends StatelessWidget {
   }
 }
 
-
 /* ================= REQUEST TYPE CARD (reduced size) ================= */
 
 class _RequestTypeCard extends StatelessWidget {
   final String title;
   final String description;
 
-  const _RequestTypeCard({
-    required this.title,
-    required this.description,
-  });
+  const _RequestTypeCard({required this.title, required this.description});
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(20),  // tighter padding
+      padding: const EdgeInsets.all(20), // tighter padding
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
@@ -146,17 +142,21 @@ class _RequestTypeCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title,
-              style: const TextStyle(
-                fontSize: 18,  // reduced
-                fontWeight: FontWeight.bold,
-              )),
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 18, // reduced
+              fontWeight: FontWeight.bold,
+            ),
+          ),
           const SizedBox(height: 6),
           Expanded(
             child: Text(
               description,
-              style:
-                  const TextStyle(color: AppTheme.textLight, fontSize: 13), // smaller
+              style: const TextStyle(
+                color: AppTheme.textLight,
+                fontSize: 13,
+              ), // smaller
             ),
           ),
           const SizedBox(height: 8),
@@ -165,7 +165,10 @@ class _RequestTypeCard extends StatelessWidget {
             child: ElevatedButton(
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppTheme.primary,
-                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 18,
+                  vertical: 10,
+                ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
                 ),

@@ -340,8 +340,7 @@ class FacultyActedRequestsScreen extends StatelessWidget {
                           decoration: BoxDecoration(
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(12),
-                            border:
-                                Border.all(color: Colors.grey.shade200),
+                            border: Border.all(color: Colors.grey.shade200),
                           ),
                           child: Column(
                             children: [
@@ -399,16 +398,12 @@ class FacultyActedRequestsScreen extends StatelessWidget {
       width: 160,
       child: DropdownButtonFormField(
         value: label,
-        items: [label]
-            .map(
-              (e) => DropdownMenuItem(value: e, child: Text(e)),
-            )
-            .toList(),
+        items: [
+          label,
+        ].map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
         onChanged: (_) {},
         decoration: InputDecoration(
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
         ),
       ),
     );
@@ -469,9 +464,7 @@ class FacultyActedRequestsScreen extends StatelessWidget {
           // ✅ FIXED ALIGNMENT FOR BADGE
           SizedBox(
             width: 140,
-            child: Center(
-              child: _Badge(yourAction, _statusColor(yourAction)),
-            ),
+            child: Center(child: _Badge(yourAction, _statusColor(yourAction))),
           ),
 
           _Cell(status),
