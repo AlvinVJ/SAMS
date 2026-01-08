@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:sams_final/faculty_screens/faculty_dashboard_screen.dart';
 import 'services/auth_service.dart';
 import 'state/auth_resolution.dart';
 
@@ -82,6 +83,8 @@ class AuthGate extends StatelessWidget {
 
               case AuthResolution.unauthenticated:
                 return const LoginScreen();
+              case AuthResolution.faculty:
+                return  FacultyDashboardScreen();
 
               //add routing to faculty dashboard
 
