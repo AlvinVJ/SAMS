@@ -16,13 +16,14 @@ class InMemoryProcedures {
 /// Represents a procedure created in the UI
 class ProcedureDraft {
   final String title;
+  final String description;
   final List<FormFieldDraft> formSchema;
   final List<ApprovalLevelDraft> approvalLevels;
-   final ProcedureVisibility visibility;
-
+  final Set<ProcedureVisibility> visibility;
 
   ProcedureDraft({
     required this.title,
+    required this.description,
     required this.formSchema,
     required this.approvalLevels,
     required this.visibility,
@@ -36,16 +37,18 @@ class FormFieldDraft {
   String label;
   FormFieldType type;
   bool required;
+  List<String>? options; // for choice based fields
 
   FormFieldDraft({
     required this.fieldId,
     required this.label,
     required this.type,
     required this.required,
+    this.options,
   });
 }
 
-enum FormFieldType { text, file }
+enum FormFieldType { text, file, singleChoice, multipleChoice, date }
 
 class ApprovalLevelDraft {
   List<Map<String, String>> roles;
@@ -61,16 +64,23 @@ class ApprovalLevelDraft {
 
 // visibility button
 
-enum ProcedureVisibility { user, faculty, all }
+enum ProcedureVisibility { user, faculty, guest, all }
 
 extension FormFieldDraftJson on FormFieldDraft {
   Map<String, dynamic> toJson() {
-    return {
+    final json = {
       "fieldId": fieldId,
       "type": type.name,
       "label": label,
       "required": required,
     };
+
+    if (type == FormFieldType.singleChoice ||
+        type == FormFieldType.multipleChoice) {
+      json["options"] = options ?? [];
+    }
+
+    return json;
   }
 }
 
@@ -91,11 +101,11 @@ extension ProcedureDraftJson on ProcedureDraft {
   Map<String, dynamic> toJson({required String adminUid}) {
     return {
       "title": title,
-      "desc": "",
+      "desc": description,
 
-      "visibility": visibility == ProcedureVisibility.all
-          ? ["user", "faculty"]
-          : [visibility.name],
+      "visibility": visibility.contains(ProcedureVisibility.all)
+          ? ["all"]
+          : visibility.map((v) => v.name).toList(),
 
       "requestFormat": 0,
       "priority": "NORMAL",

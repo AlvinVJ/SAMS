@@ -28,7 +28,7 @@ class UserProfile {
   });
 
   factory UserProfile.fromMap({
-    required Map<String, dynamic> data,
+    required Map<String, dynamic>? data,
     required String authUid,
     required String email,
     String? displayName,
@@ -43,13 +43,13 @@ class UserProfile {
     return UserProfile(
       authUid: authUid,
       email: email,
-      displayName: displayName,
-      photoUrl: photoUrl,
-      role: data['role'],
-      isActive: data['isActive'],
-      banned: data['banned'],
-      studentId: data['uid'],
-      createdAt: getDoB(data['createdAt']),
+      // displayName: displayName,R
+      // photoUrl: photoUrl,
+      role: data?['role'],
+      isActive: data?['isActive'],
+      banned: data?['banned'],
+      studentId: data?['uid'],
+      createdAt: getDoB(data?['createdAt']),
     );
   }
 

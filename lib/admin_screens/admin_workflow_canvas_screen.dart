@@ -24,13 +24,18 @@ class AdminCreateProcedureScreen extends StatefulWidget {
 class _AdminCreateProcedureScreenState
     extends State<AdminCreateProcedureScreen> {
   final TextEditingController _titleController = TextEditingController();
+  final TextEditingController _descriptionController = TextEditingController();
 
   // Firebase details
-  final FirebaseProcedureRepository _procedureRepo =
-      FirebaseProcedureRepository();
+  // final FirebaseProcedureRepository _procedureRepo =
+  //     FirebaseProcedureRepository();
 
+  // api call variable
+  final ApiProcedureRepository _procedureRepo = ApiProcedureRepository(
+    "http://localhost:3000",
+  );
   // Visibility toggle variable
-  ProcedureVisibility _visibility = ProcedureVisibility.all;
+  Set<ProcedureVisibility> _visibility = {};
 
   // Local UI state for form builder
   bool _hasForm = false;
@@ -212,6 +217,28 @@ class _AdminCreateProcedureScreenState
       return;
     }
 
+    if (_descriptionController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Procedure description is required')),
+      );
+      return;
+    }
+
+    for (final field in _formFields) {
+      if (field.type == FormFieldType.singleChoice ||
+          field.type == FormFieldType.multipleChoice) {
+        final hasEmptyOption = field.options!.any((opt) => opt.trim().isEmpty);
+
+        if (hasEmptyOption) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Choice fields cannot have empty options'),
+            ),
+          );
+          return;
+        }
+      }
+    }
     // InMemoryProcedures.addProcedure(
     //   ProcedureDraft(
     //     title: _titleController.text.trim(),
@@ -227,9 +254,11 @@ class _AdminCreateProcedureScreenState
     //   ),
     // );
     final adminUid = FirebaseAuth.instance.currentUser!.uid;
+    final authToken = await FirebaseAuth.instance.currentUser!.getIdToken();
 
     final procedure = ProcedureDraft(
       title: _titleController.text.trim(),
+      description: _descriptionController.text.trim(),
       formSchema: List.from(_formFields),
       approvalLevels: _approvalLevels.map((level) {
         return ApprovalLevelDraft(
@@ -245,6 +274,7 @@ class _AdminCreateProcedureScreenState
     await _procedureRepo.saveProcedure(
       procedure: procedure,
       adminUid: adminUid,
+      authToken: authToken,
     );
 
     Navigator.pop(context); // only allowed exit
@@ -286,7 +316,7 @@ class _AdminCreateProcedureScreenState
           Container(
             margin: const EdgeInsets.only(bottom: 24),
             padding: const EdgeInsets.all(16),
-            decoration: _cardBox(),
+            color: AppTheme.backgroundLight,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -298,13 +328,36 @@ class _AdminCreateProcedureScreenState
 
                 ToggleButtons(
                   isSelected: [
-                    _visibility == ProcedureVisibility.user,
-                    _visibility == ProcedureVisibility.faculty,
-                    _visibility == ProcedureVisibility.all,
+                    _visibility.contains(ProcedureVisibility.user),
+                    _visibility.contains(ProcedureVisibility.faculty),
+                    _visibility.contains(ProcedureVisibility.guest),
+                    _visibility.contains(ProcedureVisibility.all),
                   ],
                   onPressed: (index) {
                     setState(() {
-                      _visibility = ProcedureVisibility.values[index];
+                      final selected = ProcedureVisibility.values[index];
+
+                      // If ALL is active, block other selections
+                      if (_visibility.contains(ProcedureVisibility.all) &&
+                          selected != ProcedureVisibility.all) {
+                        return;
+                      }
+
+                      if (selected == ProcedureVisibility.all) {
+                        // Toggle ALL
+                        if (_visibility.contains(ProcedureVisibility.all)) {
+                          _visibility.remove(ProcedureVisibility.all);
+                        } else {
+                          _visibility = {ProcedureVisibility.all};
+                        }
+                      } else {
+                        // Normal toggle behavior
+                        if (_visibility.contains(selected)) {
+                          _visibility.remove(selected);
+                        } else {
+                          _visibility.add(selected);
+                        }
+                      }
                     });
                   },
                   borderRadius: BorderRadius.circular(8),
@@ -319,6 +372,10 @@ class _AdminCreateProcedureScreenState
                     ),
                     Padding(
                       padding: EdgeInsets.symmetric(horizontal: 16),
+                      child: Text('Guest'),
+                    ),
+                    Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 16),
                       child: Text('All'),
                     ),
                   ],
@@ -327,11 +384,27 @@ class _AdminCreateProcedureScreenState
             ),
           ),
           // ───────────────── Title Input ─────────────────
-          TextField(
-            controller: _titleController,
-            decoration: const InputDecoration(
-              labelText: 'Procedure Title',
-              hintText: 'Eg: Leave Application',
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: TextField(
+              controller: _titleController,
+              decoration: const InputDecoration(
+                labelText: 'Procedure Title',
+                hintText: 'Eg: Leave Application',
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 12),
+
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: TextField(
+              controller: _descriptionController,
+              decoration: const InputDecoration(
+                labelText: 'Procedure Description',
+                hintText: 'Enter a brief description',
+              ),
             ),
           ),
 
@@ -517,79 +590,165 @@ class FormBuilderSection extends StatelessWidget {
 
               return Padding(
                 padding: const EdgeInsets.only(bottom: 12),
-                child: Row(
+                child: Column(
                   children: [
-                    // Label
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          TextFormField(
-                            initialValue: field.label,
-                            decoration: const InputDecoration(
-                              labelText: 'Field Label',
-                            ),
-                            validator: (val) {
-                              if (val == null || val.trim().isEmpty) {
-                                return 'Label is required';
-                              }
-                              return null;
-                            },
-                            onChanged: (val) {
-                              field.label = val;
-                              field.fieldId = generateFieldId(val);
-                              onChanged();
-                            },
+                    Row(
+                      children: [
+                        // Label
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              TextFormField(
+                                initialValue: field.label,
+                                decoration: const InputDecoration(
+                                  labelText: 'Field Label',
+                                ),
+                                validator: (val) {
+                                  if (val == null || val.trim().isEmpty) {
+                                    return 'Label is required';
+                                  }
+                                  return null;
+                                },
+                                onChanged: (val) {
+                                  field.label = val;
+                                  field.fieldId = generateFieldId(val);
+                                  onChanged();
+                                },
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'ID: ${field.fieldId}',
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey,
+                                ),
+                              ),
+                            ],
                           ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'ID: ${field.fieldId}',
-                            style: const TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    const SizedBox(width: 12),
-
-                    // Type
-                    DropdownButton<FormFieldType>(
-                      value: field.type,
-                      items: const [
-                        DropdownMenuItem(
-                          value: FormFieldType.text,
-                          child: Text('Text'),
                         ),
-                        DropdownMenuItem(
-                          value: FormFieldType.file,
-                          child: Text('File'),
+
+                        const SizedBox(width: 12),
+
+                        // Type
+                        DropdownButton<FormFieldType>(
+                          value: field.type,
+                          items: const [
+                            DropdownMenuItem(
+                              value: FormFieldType.text,
+                              child: Text('Text'),
+                            ),
+                            DropdownMenuItem(
+                              value: FormFieldType.file,
+                              child: Text('File'),
+                            ),
+                            DropdownMenuItem(
+                              value: FormFieldType.singleChoice,
+                              child: Text('Single choice'),
+                            ),
+                            DropdownMenuItem(
+                              value: FormFieldType.multipleChoice,
+                              child: Text('Multiple choice'),
+                            ),
+                            DropdownMenuItem(
+                              value: FormFieldType.date,
+                              child: Text('Date'),
+                            ),
+                          ],
+
+                          onChanged: (val) {
+                            if (val != null) {
+                              field.type = val;
+
+                              if (val == FormFieldType.singleChoice ||
+                                  val == FormFieldType.multipleChoice) {
+                                field.options ??= [''];
+                              } else {
+                                field.options = null;
+                              }
+
+                              onChanged();
+                            }
+                          },
+                        ),
+
+                        const SizedBox(width: 12),
+
+                        // Required
+                        Checkbox(
+                          value: field.required,
+                          onChanged: (val) {
+                            field.required = val ?? false;
+                            onChanged();
+                          },
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close),
+                          onPressed: () => onRemove(index),
                         ),
                       ],
-                      onChanged: (val) {
-                        if (val != null) {
-                          field.type = val;
-                          onChanged();
-                        }
-                      },
                     ),
+                    if (field.type == FormFieldType.singleChoice ||
+                        field.type == FormFieldType.multipleChoice)
+                      Padding(
+                        padding: const EdgeInsets.only(left: 16, top: 8),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Options',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
 
-                    const SizedBox(width: 12),
+                            ...List.generate(field.options!.length, (optIndex) {
+                              return Padding(
+                                padding: const EdgeInsets.only(bottom: 6),
+                                child: Row(
+                                  children: [
+                                    Expanded(
+                                      child: TextFormField(
+                                        initialValue: field.options![optIndex],
+                                        onChanged: (val) {
+                                          field.options![optIndex] = val;
+                                          onChanged();
+                                        },
+                                        decoration: InputDecoration(
+                                          hintText: 'Option ${optIndex + 1}',
+                                          isDense: true,
+                                        ),
+                                      ),
+                                    ),
+                                    IconButton(
+                                      icon: const Icon(Icons.close, size: 18),
+                                      onPressed: field.options!.length <= 1
+                                          ? null
+                                          : () {
+                                              field.options!.removeAt(optIndex);
+                                              onChanged();
+                                            },
+                                    ),
+                                  ],
+                                ),
+                              );
+                            }),
 
-                    // Required
-                    Checkbox(
-                      value: field.required,
-                      onChanged: (val) {
-                        field.required = val ?? false;
-                        onChanged();
-                      },
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.close),
-                      onPressed: () => onRemove(index),
-                    ),
+                            TextButton.icon(
+                              onPressed: () {
+                                field.options!.add(
+                                  'Option ${field.options!.length + 1}',
+                                );
+                                onChanged();
+                              },
+                              icon: const Icon(Icons.add, size: 18),
+                              label: const Text('Add option'),
+                            ),
+                          ],
+                        ),
+                      ),
                   ],
                 ),
               );
