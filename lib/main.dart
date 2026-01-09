@@ -13,7 +13,7 @@ import 'faculty_screens/faculty_acted_requests_screen.dart';
 import 'faculty_screens/faculty_profile_screen.dart';
 import 'screens/dashboard_screen.dart';
 import 'screens/requests_screen.dart';
-import 'screens/create_request_screen.dart';
+import 'screens/unified_create_request_screen.dart';
 import 'screens/notifications_screen.dart';
 import 'screens/settings_screen.dart';
 
@@ -26,7 +26,6 @@ import 'admin_screens/admin_procedures_screen.dart';
 
 // Faculty screens
 import 'faculty_screens/faculty_dashboard_screen.dart';
-import 'faculty_screens/faculty_create_request_screen.dart';
 import 'faculty_screens/faculty_requests_screen.dart';
 import 'faculty_screens/faculty_request_history_screen.dart';
 //import 'admin_screens/admin_workflow_canvas_screen.dart';
@@ -65,7 +64,7 @@ class MyApp extends StatelessWidget {
         ),
         '/create-request': (context) => const RoleGuard(
           allowedRoles: [AuthResolution.student],
-          child: CreateRequestScreen(),
+          child: UnifiedCreateRequestScreen(userRole: 'student'),
         ),
         '/notifications': (context) => const RoleGuard(
           allowedRoles: [AuthResolution.student], // Both allowed
@@ -97,39 +96,35 @@ class MyApp extends StatelessWidget {
           child: AdminProceduresScreen(),
         ),
         // ================= FACULTY =================
-        '/faculty/dashboard': (context) => RoleGuard( 
-          allowedRoles: [AuthResolution.faculty] ,
+        '/faculty/dashboard': (context) => RoleGuard(
+          allowedRoles: [AuthResolution.faculty],
           child: FacultyDashboardScreen(),
         ),
 
         '/faculty/create-request': (context) => const RoleGuard(
           allowedRoles: [AuthResolution.faculty],
-          child : FacultyCreateRequestScreen(),
+          child: UnifiedCreateRequestScreen(userRole: 'faculty'),
         ),
- 
+
         '/faculty/requests': (context) => const RoleGuard(
-          allowedRoles: [AuthResolution.faculty], 
-          child:  FacultyRequestsForApprovalScreen(), 
-        ), 
-
-
-        '/faculty/history': (context) =>const RoleGuard(
-          allowedRoles: [AuthResolution.faculty], 
-          child:FacultyRequestHistoryScreen(),
+          allowedRoles: [AuthResolution.faculty],
+          child: FacultyRequestsForApprovalScreen(),
         ),
 
-        
+        '/faculty/history': (context) => const RoleGuard(
+          allowedRoles: [AuthResolution.faculty],
+          child: FacultyRequestHistoryScreen(),
+        ),
+
         '/faculty/request-status': (context) => const RoleGuard(
-          allowedRoles: [AuthResolution.faculty], 
+          allowedRoles: [AuthResolution.faculty],
           child: FacultyActedRequestsScreen(),
         ),
 
-        '/faculty/profile': (context) =>  RoleGuard(
-          allowedRoles: [AuthResolution.faculty], 
-          child:FacultyProfileScreen(),
-
-        )
-        
+        '/faculty/profile': (context) => RoleGuard(
+          allowedRoles: [AuthResolution.faculty],
+          child: FacultyProfileScreen(),
+        ),
       },
     );
   }

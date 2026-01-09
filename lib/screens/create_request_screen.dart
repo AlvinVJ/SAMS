@@ -1,9 +1,93 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:sams_final/state/in_memory_procedures.dart';
 import '../styles/app_theme.dart';
 import '../widgets/dashboard_layout.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import '../services/procedure_service.dart';
+// TODO: Import RequestFormScreen once created
+import '../widgets/request_form.dart';
 
-class CreateRequestScreen extends StatelessWidget {
+class CreateRequestScreen extends StatefulWidget {
   const CreateRequestScreen({super.key});
+
+  @override
+  State<CreateRequestScreen> createState() => _CreateRequestScreenState();
+}
+
+class _CreateRequestScreenState extends State<CreateRequestScreen> {
+  final ProcedureService _procedureService = ProcedureService();
+  late Future<List<ProcedureSummary>> _proceduresFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _proceduresFuture = _procedureService.fetchProcedures();
+  }
+
+  /// Handles procedure selection by fetching details from Firebase
+  /// and navigating to the Forms page
+  Future<void> _handleProcedureSelection(String procedureId) async {
+    try {
+      // Show loading indicator
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(child: CircularProgressIndicator()),
+      );
+
+      // Fetch procedure details from Firebase Firestore
+      final firestore = FirebaseFirestore.instance;
+      final docSnapshot = await firestore
+          .collection('procedures')
+          .doc(procedureId)
+          .get();
+
+      if (!docSnapshot.exists) {
+        throw Exception('Procedure not found');
+      }
+
+      // Get the procedure data
+      final procedureData = docSnapshot.data()!;
+
+      // Convert to ProcedureDraft using the factory method
+      final procedureDraft = ProcedureDraft.fromJson(procedureData);
+
+      // Close loading dialog
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
+
+      // Navigate to Request Form Screen
+      if (mounted) {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => RequestFormScreen(
+              procedureId: procedureId,
+              title: procedureDraft.title,
+              description: procedureDraft.description,
+              fields: procedureDraft.formSchema,
+            ),
+          ),
+        );
+      }
+    } catch (error) {
+      // Close loading dialog if open
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
+
+      // Show error message
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error loading procedure: $error'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -24,7 +108,7 @@ class CreateRequestScreen extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               Text(
-                'Select the category of request you would like to submit to the administration.',
+                'Select the category of request you would like to submit.',
                 style: Theme.of(
                   context,
                 ).textTheme.bodyLarge?.copyWith(color: AppTheme.textLight),
@@ -34,58 +118,43 @@ class CreateRequestScreen extends StatelessWidget {
 
           const SizedBox(height: 32),
 
-          // Request Categories Grid
-          GridView.count(
-            crossAxisCount: 3,
-            crossAxisSpacing: 24,
-            mainAxisSpacing: 24,
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            childAspectRatio: 1.2,
-            children: [
-              _buildCategoryCard(
-                icon: Icons.thermostat,
-                title: 'Sick Leave',
-                description:
-                    'Submit medical documents and doctor\'s notes for health-related absence.',
-                onTap: () {},
-              ),
-              _buildCategoryCard(
-                icon: Icons.weekend,
-                title: 'Casual Leave',
-                description:
-                    'Personal time off for urgent family matters or personal business.',
-                onTap: () {},
-              ),
-              _buildCategoryCard(
-                icon: Icons.school,
-                title: 'Duty Leave',
-                description:
-                    'Attendance credit for officially representing the college in competitions.',
-                onTap: () {},
-              ),
-              _buildCategoryCard(
-                icon: Icons.celebration,
-                title: 'Event Permission',
-                description:
-                    'Request administrative approval to organize or host a student event.',
-                onTap: () {},
-              ),
-              _buildCategoryCard(
-                icon: Icons.payments,
-                title: 'Fund Request',
-                description:
-                    'Apply for budget allocation or reimbursement for society projects.',
-                onTap: () {},
-              ),
-              _buildCategoryCard(
-                icon: Icons.description,
-                title: 'General Request',
-                description:
-                    'Submit other inquiries, feedback, or approvals not listed above.',
-                onTap: () {},
-              ),
-            ],
+          // Dynamic Grid using FutureBuilder
+          FutureBuilder<List<ProcedureSummary>>(
+            future: _proceduresFuture,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              } else if (snapshot.hasError) {
+                return Center(
+                  child: Text('Error loading procedures: ${snapshot.error}'),
+                );
+              } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                return const Center(child: Text('No procedures found.'));
+              }
+
+              final procedures = snapshot.data!;
+
+              return GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 3,
+                  crossAxisSpacing: 24,
+                  mainAxisSpacing: 24,
+                  childAspectRatio: 1.2,
+                ),
+                itemCount: procedures.length,
+                itemBuilder: (context, index) {
+                  final procedure = procedures[index];
+                  return _buildCategoryCard(
+                    icon: Icons.description, // Default icon
+                    title: procedure.title,
+                    description: procedure.description,
+                    onTap: () => _handleProcedureSelection(procedure.id),
+                  );
+                },
+              );
+            },
           ),
 
           const SizedBox(height: 32),

@@ -1,7 +1,6 @@
-
 import 'package:flutter/material.dart';
 import '../styles/app_theme.dart';
-import '../widgets/faculty_app_header.dart';
+import '../widgets/app_header.dart';
 import '../widgets/faculty_sidebar.dart';
 
 /// =====================
@@ -104,7 +103,7 @@ class _FacultyRequestsForApprovalScreenState
           Expanded(
             child: Column(
               children: [
-                const FacultyAppHeader(facultyName: "Dr. Sarah Johnson"),
+                const AppHeader(),
 
                 Expanded(
                   child: SingleChildScrollView(
@@ -129,20 +128,19 @@ class _FacultyRequestsForApprovalScreenState
                                 SizedBox(height: 6),
                                 Text(
                                   'Review pending requests and take action.',
-                                  style:
-                                      TextStyle(color: AppTheme.textLight),
+                                  style: TextStyle(color: AppTheme.textLight),
                                 ),
                               ],
                             ),
 
                             Container(
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 12),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                              ),
                               decoration: BoxDecoration(
                                 color: Colors.white,
                                 borderRadius: BorderRadius.circular(10),
-                                border:
-                                    Border.all(color: Colors.grey.shade300),
+                                border: Border.all(color: Colors.grey.shade300),
                               ),
                               child: DropdownButtonHideUnderline(
                                 child: DropdownButton<String>(
@@ -169,19 +167,19 @@ class _FacultyRequestsForApprovalScreenState
                         /// GRID OF REQUESTS (FIXED HEIGHT ISSUE)
                         GridView.builder(
                           shrinkWrap: true,
-                          physics:
-                              const NeverScrollableScrollPhysics(),
+                          physics: const NeverScrollableScrollPhysics(),
                           itemCount: displayRequests.length,
                           gridDelegate:
                               const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 2,
-                            crossAxisSpacing: 24,
-                            mainAxisSpacing: 24,
-                            childAspectRatio: 1.55, // 🔥 KEY FIX
-                          ),
+                                crossAxisCount: 2,
+                                crossAxisSpacing: 24,
+                                mainAxisSpacing: 24,
+                                childAspectRatio: 1.55, // 🔥 KEY FIX
+                              ),
                           itemBuilder: (context, index) {
                             return _RequestCard(
-                                request: displayRequests[index]);
+                              request: displayRequests[index],
+                            );
                           },
                         ),
                       ],
@@ -210,8 +208,7 @@ class _RequestCard extends StatefulWidget {
 }
 
 class _RequestCardState extends State<_RequestCard> {
-  final TextEditingController _commentController =
-      TextEditingController();
+  final TextEditingController _commentController = TextEditingController();
 
   @override
   void dispose() {
@@ -228,8 +225,7 @@ class _RequestCardState extends State<_RequestCard> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(10),
-        border:
-            Border(left: BorderSide(color: request.color, width: 3)),
+        border: Border(left: BorderSide(color: request.color, width: 3)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min, // 🔥 IMPORTANT
@@ -240,15 +236,10 @@ class _RequestCardState extends State<_RequestCard> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Chip(
-                materialTapTargetSize:
-                    MaterialTapTargetSize.shrinkWrap,
+                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 padding: EdgeInsets.zero,
-                label: Text(
-                  request.type,
-                  style: const TextStyle(fontSize: 12),
-                ),
-                backgroundColor:
-                    request.color.withOpacity(0.1),
+                label: Text(request.type, style: const TextStyle(fontSize: 12)),
+                backgroundColor: request.color.withOpacity(0.1),
                 labelStyle: TextStyle(
                   color: request.color,
                   fontWeight: FontWeight.w600,
@@ -256,9 +247,7 @@ class _RequestCardState extends State<_RequestCard> {
               ),
               Text(
                 request.date,
-                style: const TextStyle(
-                    fontSize: 11,
-                    color: AppTheme.textLight),
+                style: const TextStyle(fontSize: 11, color: AppTheme.textLight),
               ),
             ],
           ),
@@ -268,13 +257,11 @@ class _RequestCardState extends State<_RequestCard> {
           /// NAME + META
           Text(
             request.name,
-            style: const TextStyle(
-                fontSize: 14, fontWeight: FontWeight.bold),
+            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
           ),
           Text(
             'ID: ${request.studentId} • ${request.department}',
-            style: const TextStyle(
-                fontSize: 11, color: AppTheme.textLight),
+            style: const TextStyle(fontSize: 11, color: AppTheme.textLight),
           ),
 
           const SizedBox(height: 6),
@@ -297,9 +284,10 @@ class _RequestCardState extends State<_RequestCard> {
             decoration: InputDecoration(
               hintText: 'Add comment (optional)',
               isDense: true,
-              contentPadding:
-                  const EdgeInsets.symmetric(
-                      horizontal: 10, vertical: 8),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 10,
+                vertical: 8,
+              ),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
               ),
@@ -314,24 +302,20 @@ class _RequestCardState extends State<_RequestCard> {
               Expanded(
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    padding:
-                        const EdgeInsets.symmetric(vertical: 10),
+                    padding: const EdgeInsets.symmetric(vertical: 10),
                   ),
                   onPressed: () {},
-                  child: const Text('Approve',
-                      style: TextStyle(fontSize: 13)),
+                  child: const Text('Approve', style: TextStyle(fontSize: 13)),
                 ),
               ),
               const SizedBox(width: 6),
               Expanded(
                 child: OutlinedButton(
                   style: OutlinedButton.styleFrom(
-                    padding:
-                        const EdgeInsets.symmetric(vertical: 10),
+                    padding: const EdgeInsets.symmetric(vertical: 10),
                   ),
                   onPressed: () {},
-                  child: const Text('Reject',
-                      style: TextStyle(fontSize: 13)),
+                  child: const Text('Reject', style: TextStyle(fontSize: 13)),
                 ),
               ),
               IconButton(

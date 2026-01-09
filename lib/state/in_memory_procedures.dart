@@ -28,6 +28,38 @@ class ProcedureDraft {
     required this.approvalLevels,
     required this.visibility,
   });
+
+  factory ProcedureDraft.fromJson(Map<String, dynamic> json) {
+    // Safely parse visibility set
+    Set<ProcedureVisibility> visibilitySet = {ProcedureVisibility.all};
+    if (json['visibility'] != null && json['visibility'] is List) {
+      visibilitySet = (json['visibility'] as List).map((e) {
+        return ProcedureVisibility.values.firstWhere(
+          (v) => v.name == e,
+          orElse: () => ProcedureVisibility.all,
+        );
+      }).toSet();
+    }
+
+    return ProcedureDraft(
+      title: json['title']?.toString() ?? 'Untitled',
+      description:
+          json['description']?.toString() ?? json['desc']?.toString() ?? '',
+      formSchema:
+          (json['formBuilder'] as List?)
+              ?.map((e) => FormFieldDraft.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          [],
+      approvalLevels:
+          (json['approvalLevels'] as List?)
+              ?.map(
+                (e) => ApprovalLevelDraft.fromJson(e as Map<String, dynamic>),
+              )
+              .toList() ??
+          [],
+      visibility: visibilitySet,
+    );
+  }
 }
 
 /// Represents ONE workflow step (one level)
@@ -46,6 +78,23 @@ class FormFieldDraft {
     required this.required,
     this.options,
   });
+
+  factory FormFieldDraft.fromJson(Map<String, dynamic> json) {
+    return FormFieldDraft(
+      fieldId: json['fieldId']?.toString() ?? 'unknown_id',
+      label: json['label']?.toString() ?? 'Untitled Field',
+      type: FormFieldType.values.firstWhere(
+        (e) => e.name == json['type'],
+        orElse: () => FormFieldType.text,
+      ),
+      required: json['required'] == true,
+      options: json['options'] != null
+          ? List<String>.from(
+              (json['options'] as List).map((e) => e.toString()),
+            )
+          : null,
+    );
+  }
 }
 
 enum FormFieldType { text, file, singleChoice, multipleChoice, date }
@@ -60,6 +109,22 @@ class ApprovalLevelDraft {
     required this.minApprovals,
     required this.allMustApprove,
   });
+
+  factory ApprovalLevelDraft.fromJson(Map<String, dynamic> json) {
+    // Determine roles based on roleIds if available
+    List<Map<String, String>> rolesList = [];
+    if (json['roleIds'] != null && json['roleIds'] is List) {
+      rolesList = (json['roleIds'] as List).map((id) {
+        return {'id': id.toString(), 'name': 'Role $id'};
+      }).toList();
+    }
+
+    return ApprovalLevelDraft(
+      roles: rolesList,
+      minApprovals: int.tryParse(json['minApprovals'].toString()) ?? 1,
+      allMustApprove: json['allMustApprove'] == true,
+    );
+  }
 }
 
 // visibility button
