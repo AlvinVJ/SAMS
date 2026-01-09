@@ -30,31 +30,34 @@ class ProcedureDraft {
   });
 
   factory ProcedureDraft.fromJson(Map<String, dynamic> json) {
+    // Safely parse visibility set
+    Set<ProcedureVisibility> visibilitySet = {ProcedureVisibility.all};
+    if (json['visibility'] != null && json['visibility'] is List) {
+      visibilitySet = (json['visibility'] as List).map((e) {
+        return ProcedureVisibility.values.firstWhere(
+          (v) => v.name == e,
+          orElse: () => ProcedureVisibility.all,
+        );
+      }).toSet();
+    }
+
     return ProcedureDraft(
-      title: json['title'] as String? ?? 'Untitled',
-      description: json['desc'] as String? ?? '',
+      title: json['title']?.toString() ?? 'Untitled',
+      description:
+          json['description']?.toString() ?? json['desc']?.toString() ?? '',
       formSchema:
-          (json['formBuilder'] as List<dynamic>?)
+          (json['formBuilder'] as List?)
               ?.map((e) => FormFieldDraft.fromJson(e as Map<String, dynamic>))
               .toList() ??
           [],
       approvalLevels:
-          (json['approvalLevels'] as List<dynamic>?)
+          (json['approvalLevels'] as List?)
               ?.map(
                 (e) => ApprovalLevelDraft.fromJson(e as Map<String, dynamic>),
               )
               .toList() ??
           [],
-      visibility:
-          (json['visibility'] as List<dynamic>?)
-              ?.map(
-                (e) => ProcedureVisibility.values.firstWhere(
-                  (v) => v.name == e,
-                  orElse: () => ProcedureVisibility.all,
-                ),
-              )
-              .toSet() ??
-          {ProcedureVisibility.all},
+      visibility: visibilitySet,
     );
   }
 }
@@ -78,12 +81,17 @@ class FormFieldDraft {
 
   factory FormFieldDraft.fromJson(Map<String, dynamic> json) {
     return FormFieldDraft(
-      fieldId: json['fieldId'] as String,
-      label: json['label'] as String,
-      type: FormFieldType.values.firstWhere((e) => e.name == json['type']),
-      required: json['required'] as bool,
+      fieldId: json['fieldId']?.toString() ?? 'unknown_id',
+      label: json['label']?.toString() ?? 'Untitled Field',
+      type: FormFieldType.values.firstWhere(
+        (e) => e.name == json['type'],
+        orElse: () => FormFieldType.text,
+      ),
+      required: json['required'] == true,
       options: json['options'] != null
-          ? List<String>.from(json['options'] as List)
+          ? List<String>.from(
+              (json['options'] as List).map((e) => e.toString()),
+            )
           : null,
     );
   }
@@ -104,10 +112,8 @@ class ApprovalLevelDraft {
 
   factory ApprovalLevelDraft.fromJson(Map<String, dynamic> json) {
     // Determine roles based on roleIds if available
-    // NOTE: This is a simplified reconstruction. In a real app,
-    // you might need to fetch role names or store them in the JSON.
     List<Map<String, String>> rolesList = [];
-    if (json['roleIds'] != null) {
+    if (json['roleIds'] != null && json['roleIds'] is List) {
       rolesList = (json['roleIds'] as List).map((id) {
         return {'id': id.toString(), 'name': 'Role $id'};
       }).toList();
@@ -115,8 +121,8 @@ class ApprovalLevelDraft {
 
     return ApprovalLevelDraft(
       roles: rolesList,
-      minApprovals: json['minApprovals'] as int? ?? 1,
-      allMustApprove: json['allMustApprove'] as bool? ?? false,
+      minApprovals: int.tryParse(json['minApprovals'].toString()) ?? 1,
+      allMustApprove: json['allMustApprove'] == true,
     );
   }
 }
