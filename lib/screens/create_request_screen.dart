@@ -64,7 +64,9 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
           MaterialPageRoute(
             builder: (context) => RequestFormScreen(
               procedureId: procedureId,
-              procedure: procedureDraft,
+              title: procedureDraft.title,
+              description: procedureDraft.description,
+              fields: procedureDraft.formSchema,
             ),
           ),
         );

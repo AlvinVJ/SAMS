@@ -6,13 +6,17 @@ import '../data/firebase_procedure_repository.dart';
 import '../state/in_memory_procedures.dart';
 
 class RequestFormScreen extends StatefulWidget {
-  final ProcedureDraft procedure;
+  final String title;
+  final String description;
+  final List<FormFieldDraft> fields;
   final String procedureId;
 
   const RequestFormScreen({
     super.key,
     required this.procedureId,
-    required this.procedure,
+    required this.title,
+    required this.description,
+    required this.fields,
   });
 
   @override
@@ -43,15 +47,12 @@ class _RequestFormScreenState extends State<RequestFormScreen> {
 
           const SizedBox(height: 12),
 
-          Text(
-            widget.procedure.title,
-            style: Theme.of(context).textTheme.headlineLarge,
-          ),
+          Text(widget.title, style: Theme.of(context).textTheme.headlineLarge),
 
           const SizedBox(height: 6),
 
           Text(
-            widget.procedure.description,
+            widget.description,
             style: Theme.of(
               context,
             ).textTheme.bodyLarge?.copyWith(color: AppTheme.textLight),
@@ -63,7 +64,7 @@ class _RequestFormScreenState extends State<RequestFormScreen> {
             key: _formKey,
             child: Column(
               children: [
-                ...widget.procedure.formSchema.map(_buildField),
+                ...widget.fields.map(_buildField),
 
                 const SizedBox(height: 32),
 
