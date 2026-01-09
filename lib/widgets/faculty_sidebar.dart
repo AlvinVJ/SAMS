@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
+import '../services/auth_service.dart';
 import '../styles/app_theme.dart';
 
 class FacultySidebar extends StatelessWidget {
   final String activeRoute;
 
-  const FacultySidebar({
-    super.key,
-    required this.activeRoute,
-  });
+  const FacultySidebar({super.key, required this.activeRoute});
 
   @override
   Widget build(BuildContext context) {
@@ -120,7 +118,9 @@ class FacultySidebar extends StatelessWidget {
                   color: Color(0xFF64748B),
                 ),
               ),
-              onTap: () {},
+              onTap: () async {
+                await AuthService().signOut();
+              },
             ),
           ),
         ],
@@ -161,13 +161,11 @@ class FacultySidebar extends StatelessWidget {
           ),
         ),
         contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 6),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         onTap: () {
-           if (!active) {
-    Navigator.pushReplacementNamed(context, route);
-  }
+          if (!active) {
+            Navigator.pushReplacementNamed(context, route);
+          }
         },
       ),
     );

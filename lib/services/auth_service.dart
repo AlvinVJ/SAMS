@@ -42,7 +42,10 @@ class AuthService {
       }
 
       // all are mgits emails
-      final profileDoc = await _db.collection('profiles').doc(emailPrefix).get();
+      final profileDoc = await _db
+          .collection('profiles')
+          .doc(emailPrefix)
+          .get();
       //print("ResolveUser: Profile Exists? ${profileDoc.exists}");
 
       if (!profileDoc.exists) {
@@ -58,11 +61,13 @@ class AuthService {
         //final String? email = backendData['email'];
         //final String uid = backendData['uid'];
 
-        final snapshot = await _db.collection('profiles').doc(emailPrefix).get();
+        final snapshot = await _db
+            .collection('profiles')
+            .doc(emailPrefix)
+            .get();
         print(snapshot.data());
         print(user);
-      
-        
+
         _userProfile = UserProfile.fromMap(
           data: snapshot.data(),
           authUid: user.uid,
@@ -181,7 +186,6 @@ class AuthService {
         final data = profileDoc.data();
         if (data == null) return AuthResolution.unauthenticated;
 
-
         print("ResolveUser: Loading Existing Profile...");
         _userProfile = UserProfile.fromMap(
           data: data,
@@ -279,6 +283,8 @@ class AuthService {
 
   Future<void> signOut() async {
     await _auth.signOut();
+    _userProfile = null;
+    print("AuthService: Signed out and profile cleared");
   }
 }
 
