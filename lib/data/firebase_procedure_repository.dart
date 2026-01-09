@@ -16,8 +16,6 @@ import 'package:http/http.dart' as http;
 //   }
 // }
 
-
-
 class ApiProcedureRepository {
   final String baseUrl;
 
@@ -61,6 +59,28 @@ class ApiProcedureRepository {
 
     if (response.statusCode != 201) {
       throw Exception('Failed to save procedure');
+    }
+  }
+
+  Future<void> createRequest({
+    required String procedureId,
+    required Map<String, dynamic> values,
+    required String? authToken,
+  }) async {
+    if (authToken == null) {
+      throw Exception('Auth token is missing');
+    }
+    final response = await http.post(
+      Uri.parse('$baseUrl/api/requests/create'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $authToken',
+      },
+      body: jsonEncode({"procedureId": procedureId, "formData": values}),
+    );
+
+    if (response.statusCode != 201 && response.statusCode != 200) {
+      throw Exception('Failed to create request');
     }
   }
 }
