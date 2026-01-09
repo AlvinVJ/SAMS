@@ -42,7 +42,9 @@ class ApiProcedureRepository {
         "procedure": {
           "title": procedure.title,
           "desc": procedure.description,
-          "visibility": procedure.visibility,
+          "visibility": procedure.visibility.contains(ProcedureVisibility.all)
+              ? ["all"]
+              : procedure.visibility.map((v) => v.name).toList(),
           "priority": "NORMAL",
           "isActive": true,
 
