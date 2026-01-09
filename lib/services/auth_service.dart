@@ -261,7 +261,7 @@ class AuthService {
 
   Future<void> signInWithGoogle() async {
     try {
-      await _auth.signOut();
+      // await _auth.signOut();
       final provider = GoogleAuthProvider();
       provider.setCustomParameters({
         'prompt': 'select_account',
