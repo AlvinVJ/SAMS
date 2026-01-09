@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:sams_final/state/in_memory_procedures.dart';
 import '../styles/app_theme.dart';
 import '../widgets/dashboard_layout.dart';
 import '../services/procedure_service.dart';
+// TODO: Import RequestFormScreen once created
+import '../widgets/request_form.dart';
 
 class CreateRequestScreen extends StatefulWidget {
   const CreateRequestScreen({super.key});
@@ -18,6 +22,68 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
   void initState() {
     super.initState();
     _proceduresFuture = _procedureService.fetchProcedures();
+  }
+
+  /// Handles procedure selection by fetching details from Firebase
+  /// and navigating to the Forms page
+  Future<void> _handleProcedureSelection(String procedureId) async {
+    try {
+      // Show loading indicator
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(child: CircularProgressIndicator()),
+      );
+
+      // Fetch procedure details from Firebase Firestore
+      final firestore = FirebaseFirestore.instance;
+      final docSnapshot = await firestore
+          .collection('procedures')
+          .doc(procedureId)
+          .get();
+
+      if (!docSnapshot.exists) {
+        throw Exception('Procedure not found');
+      }
+
+      // Get the procedure data
+      final procedureData = docSnapshot.data()!;
+
+      // Convert to ProcedureDraft using the factory method
+      final procedureDraft = ProcedureDraft.fromJson(procedureData);
+
+      // Close loading dialog
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
+
+      // Navigate to Request Form Screen
+      if (mounted) {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => RequestFormScreen(
+              procedureId: procedureId,
+              procedure: procedureDraft,
+            ),
+          ),
+        );
+      }
+    } catch (error) {
+      // Close loading dialog if open
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
+
+      // Show error message
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error loading procedure: $error'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   @override
@@ -81,10 +147,7 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
                     icon: Icons.description, // Default icon
                     title: procedure.title,
                     description: procedure.description,
-                    onTap: () {
-                      // Handlers for navigation will go here
-                      print('Selected Procedure ID: ${procedure.id}');
-                    },
+                    onTap: () => _handleProcedureSelection(procedure.id),
                   );
                 },
               );

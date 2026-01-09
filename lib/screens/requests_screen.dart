@@ -31,48 +31,19 @@ class _RequestsScreenState extends State<RequestsScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // page header
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              crossAxisAlignment: CrossAxisAlignment.end,
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'My Requests',
-                      style: Theme.of(context).textTheme.headlineLarge,
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Track and manage your submitted applications and approvals.',
-                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        color: AppTheme.textLight,
-                      ),
-                    ),
-                  ],
+                Text(
+                  'My Requests',
+                  style: Theme.of(context).textTheme.headlineLarge,
                 ),
-                ElevatedButton.icon(
-                  onPressed: () {
-                    // Navigate to create request
-                    Navigator.pushNamed(context, '/create-request');
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.primary,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 16,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    elevation: 2,
-                  ),
-                  icon: const Icon(Icons.add, size: 20),
-                  label: const Text(
-                    'New Request',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
+                const SizedBox(height: 4),
+                Text(
+                  'Track and manage your submitted applications and approvals.',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyLarge?.copyWith(color: AppTheme.textLight),
                 ),
               ],
             ),
