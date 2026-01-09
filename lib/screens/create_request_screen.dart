@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:sams_final/state/in_memory_procedures.dart';
 import '../styles/app_theme.dart';
 import '../widgets/dashboard_layout.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../services/procedure_service.dart';
 // TODO: Import RequestFormScreen once created
 import '../widgets/request_form.dart';

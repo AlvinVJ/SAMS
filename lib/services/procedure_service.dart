@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:http/http.dart' as http;
 
 class ProcedureSummary {
@@ -27,9 +28,15 @@ class ProcedureService {
   final String baseUrl = 'http://localhost:3000';
 
   Future<List<ProcedureSummary>> fetchProcedures() async {
+    final authToken = await FirebaseAuth.instance.currentUser!.getIdToken();
     try {
       final response = await http.get(
         Uri.parse('$baseUrl/api/common/fetch_procedures'),
+        headers: {
+          'Content-Type': 'application/json', 
+          'Authorization': 'Bearer $authToken'
+        }
+
       );
 
       if (response.statusCode == 200) {
