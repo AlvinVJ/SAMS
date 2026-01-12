@@ -6,13 +6,6 @@ import '../state/in_memory_procedures.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../data/firebase_procedure_repository.dart';
 
-const List<Map<String, String>> _dummyRoles = [
-  {'id': 'CLASS_ADVISOR_ROLE', 'name': 'Class Advisor'},
-  {'id': 'HOD_ROLE', 'name': 'Head of Department'},
-  {'id': 'PRINCIPAL_ROLE', 'name': 'Principal'},
-  {'id': 'FINANCE_ROLE', 'name': 'Finance Officer'},
-];
-
 class AdminCreateProcedureScreen extends StatefulWidget {
   const AdminCreateProcedureScreen({super.key});
 
@@ -107,6 +100,9 @@ class _AdminCreateProcedureScreenState
 
   void _openAddRoleDialog(int levelIndex) {
     String searchQuery = '';
+    List<Map<String, String>> searchResults = [];
+    bool isLoading = false;
+    String? errorMessage;
 
     showDialog(
       context: context,
@@ -115,55 +111,106 @@ class _AdminCreateProcedureScreenState
           title: Text('Add Role to Level ${levelIndex + 1}'),
           content: StatefulBuilder(
             builder: (context, setDialogState) {
-              final filteredRoles = _dummyRoles.where((role) {
-                return role['name']!.toLowerCase().contains(
-                  searchQuery.toLowerCase(),
-                );
-              }).toList();
+              Future<void> performSearch() async {
+                if (searchQuery.trim().isEmpty) return;
+
+                setDialogState(() {
+                  isLoading = true;
+                  errorMessage = null;
+                  searchResults = [];
+                });
+
+                try {
+                  final results = await _procedureRepo.fetchRoles(searchQuery);
+                  setDialogState(() {
+                    searchResults = results;
+                    isLoading = false;
+                    if (results.isEmpty) {
+                      errorMessage = 'No roles found.';
+                    }
+                  });
+                } catch (e) {
+                  setDialogState(() {
+                    isLoading = false;
+                    errorMessage = 'Failed to fetch roles. Please try again.';
+                  });
+                }
+              }
 
               return SizedBox(
-                width: 400, //  important: fixes intrinsic size issue
+                width: 400,
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     TextField(
-                      decoration: const InputDecoration(
-                        hintText: 'Search role',
+                      decoration: InputDecoration(
+                        hintText: 'Search role (e.g. HOD, Principal)',
+                        prefixIcon: const Icon(Icons.search),
+                        suffixIcon: IconButton(
+                          icon: const Icon(Icons.arrow_forward),
+                          onPressed: performSearch,
+                          tooltip: 'Search',
+                        ),
                       ),
                       onChanged: (value) {
-                        setDialogState(() {
-                          searchQuery = value;
-                        });
+                        searchQuery = value;
                       },
+                      onSubmitted: (_) => performSearch(),
+                      textInputAction: TextInputAction.search,
                     ),
                     const SizedBox(height: 12),
-                    SizedBox(
-                      height: 200, // fixed height for ListView
-                      child: ListView.builder(
-                        itemCount: filteredRoles.length,
-                        itemBuilder: (context, index) {
-                          final role = filteredRoles[index];
+                    if (isLoading)
+                      const Padding(
+                        padding: EdgeInsets.all(20.0),
+                        child: CircularProgressIndicator(),
+                      )
+                    else if (errorMessage != null)
+                      Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: Text(
+                          errorMessage!,
+                          style: const TextStyle(color: Colors.red),
+                        ),
+                      )
+                    else
+                      SizedBox(
+                        height: 200,
+                        child: ListView.builder(
+                          itemCount: searchResults.length,
+                          itemBuilder: (context, index) {
+                            final role = searchResults[index];
+                            return ListTile(
+                              title: Text(role['name'] ?? 'Unknown Role'),
+                              subtitle: Text(role['id'] ?? ''),
+                              trailing: TextButton(
+                                child: const Text('Add'),
+                                onPressed: () {
+                                  setState(() {
+                                    final level = _approvalLevels[levelIndex];
 
-                          return ListTile(
-                            title: Text(role['name']!),
-                            trailing: TextButton(
-                              child: const Text('Add'),
-                              onPressed: () {
-                                setState(() {
-                                  final level = _approvalLevels[levelIndex];
-                                  level.roles.add(role);
+                                    // Check if role already exists to avoid duplicates
+                                    final exists = level.roles.any(
+                                      (r) => r['id'] == role['id'],
+                                    );
+                                    if (!exists) {
+                                      level.roles.add(role);
 
-                                  if (!level.allMustApprove) {
-                                    level.minApprovals = level.roles.length;
-                                  }
-                                });
-                                Navigator.pop(context);
-                              },
-                            ),
-                          );
-                        },
+                                      // Auto-adjust min approvals if not "All Must Approve"
+                                      if (!level.allMustApprove) {
+                                        // Default behavior: if adding a role, maybe increase min approvals?
+                                        // Or just leave it user configurable.
+                                        // The previous logic was: level.minApprovals = level.roles.length;
+                                        level.minApprovals = level.roles.length;
+                                      }
+                                    }
+                                  });
+                                  Navigator.pop(context);
+                                },
+                              ),
+                            );
+                          },
+                        ),
                       ),
-                    ),
                   ],
                 ),
               );
