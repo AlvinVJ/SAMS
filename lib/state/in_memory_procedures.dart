@@ -129,7 +129,7 @@ class ApprovalLevelDraft {
 
 // visibility button
 
-enum ProcedureVisibility { user, faculty, guest, all }
+enum ProcedureVisibility { student, faculty, guest, all }
 
 extension FormFieldDraftJson on FormFieldDraft {
   Map<String, dynamic> toJson() {

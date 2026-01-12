@@ -3,7 +3,7 @@ import '../services/auth_service.dart';
 import '../styles/app_theme.dart';
 
 class FacultySidebar extends StatelessWidget {
-  final String activeRoute;
+  final String? activeRoute;
 
   const FacultySidebar({super.key, required this.activeRoute});
 
@@ -120,6 +120,12 @@ class FacultySidebar extends StatelessWidget {
               ),
               onTap: () async {
                 await AuthService().signOut();
+                if (!context.mounted) return;
+                Navigator.pushNamedAndRemoveUntil(
+                  context,
+                  '/',
+                  (route) => false,
+                );
               },
             ),
           ),
