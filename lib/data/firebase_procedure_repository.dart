@@ -85,4 +85,33 @@ class ApiProcedureRepository {
       throw Exception('Failed to create request');
     }
   }
+
+  Future<List<Map<String, String>>> fetchRoles(String query) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/api/helper/roles?search=$query'),
+      );
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> jsonResponse = jsonDecode(response.body);
+
+        if (jsonResponse['data'] != null && jsonResponse['data'] is List) {
+          final List<dynamic> data = jsonResponse['data'];
+          return data.map<Map<String, String>>((item) {
+            return {
+              'id': item['id'].toString(),
+              'name': item['name'].toString(),
+            };
+          }).toList();
+        } else {
+          return [];
+        }
+      } else {
+        throw Exception('Failed to load roles: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Error fetching roles: $e');
+      return []; // Return empty list on error to prevent crashing
+    }
+  }
 }
