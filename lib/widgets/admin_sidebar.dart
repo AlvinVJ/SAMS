@@ -108,6 +108,12 @@ class AdminSidebar extends StatelessWidget {
               label: 'Logout',
               onTap: () async {
                 await AuthService().signOut();
+                if (!context.mounted) return;
+                Navigator.pushNamedAndRemoveUntil(
+                  context,
+                  '/',
+                  (route) => false,
+                );
               },
             ),
           ),
