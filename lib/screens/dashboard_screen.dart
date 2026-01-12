@@ -21,26 +21,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   void _loadUserProfile() {
     final profile = AuthService().userProfile;
-    final fbUser = AuthService().currentUser; // Keep fbUser for fallback
-
-    if (profile == null) return;
-
-    setState(() {
-      // Logic for display name
-      final rawName =
-          profile.displayName ??
-          fbUser?.displayName ??
-          profile.email.split('@').first;
-
-      // Capitalize each word (e.g., ASHMITHA -> Ashmitha)
-      _userName = rawName
-          .split(' ')
-          .map((word) {
-            if (word.isEmpty) return word;
-            return word[0].toUpperCase() + word.substring(1).toLowerCase();
-          })
-          .join(' ');
-    });
+    if (profile != null && profile.displayName != null) {
+      setState(() {
+        // Convert "ASHMITHA PR" -> "Ashmitha Pr"
+        _userName = profile.displayName!
+            .split(' ')
+            .map((word) {
+              if (word.isEmpty) return word;
+              return word[0].toUpperCase() + word.substring(1).toLowerCase();
+            })
+            .join(' ');
+      });
+    }
   }
 
   @override

@@ -12,7 +12,7 @@ import 'firebase_options.dart';
 import 'faculty_screens/faculty_acted_requests_screen.dart';
 import 'faculty_screens/faculty_profile_screen.dart';
 import 'screens/dashboard_screen.dart';
-import 'screens/requests_screen.dart';
+import 'screens/unified_requests_screen.dart'; // Unified
 import 'screens/unified_create_request_screen.dart';
 import 'screens/notifications_screen.dart';
 import 'screens/settings_screen.dart';
@@ -27,8 +27,7 @@ import 'admin_screens/admin_procedures_screen.dart';
 // Faculty screens
 import 'faculty_screens/faculty_dashboard_screen.dart';
 import 'faculty_screens/faculty_requests_screen.dart';
-import 'faculty_screens/faculty_request_history_screen.dart';
-//import 'admin_screens/admin_workflow_canvas_screen.dart';
+// import 'faculty_screens/faculty_request_history_screen.dart'; // Removed
 
 import 'widgets/role_guard.dart';
 import 'state/auth_resolution.dart';
@@ -60,7 +59,7 @@ class MyApp extends StatelessWidget {
         //'/': (context) => const DashboardScreen(),
         '/requests': (context) => const RoleGuard(
           allowedRoles: [AuthResolution.student], // Only Students
-          child: RequestsScreen(),
+          child: UnifiedRequestsScreen(userRole: 'student'),
         ),
         '/create-request': (context) => const RoleGuard(
           allowedRoles: [AuthResolution.student],
@@ -113,7 +112,7 @@ class MyApp extends StatelessWidget {
 
         '/faculty/history': (context) => const RoleGuard(
           allowedRoles: [AuthResolution.faculty],
-          child: FacultyRequestHistoryScreen(),
+          child: UnifiedRequestsScreen(userRole: 'faculty'),
         ),
 
         '/faculty/request-status': (context) => const RoleGuard(
