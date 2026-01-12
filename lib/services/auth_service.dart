@@ -72,8 +72,8 @@ class AuthService {
           data: snapshot.data(),
           authUid: user.uid,
           email: email!,
-          // displayName: user.displayName,
-          // photoUrl: user.photoURL,
+          displayName: user.displayName,
+          photoUrl: user.photoURL,
         );
 
         // if (isStudentEmail(email)) {
