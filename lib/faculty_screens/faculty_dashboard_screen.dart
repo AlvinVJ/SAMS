@@ -1,13 +1,35 @@
 import 'package:flutter/material.dart';
 import '../styles/app_theme.dart';
 import '../widgets/faculty_dashboard_layout.dart';
+import '../services/auth_service.dart';
 
-class FacultyDashboardScreen extends StatelessWidget {
-  FacultyDashboardScreen({super.key});
+class FacultyDashboardScreen extends StatefulWidget {
+  const FacultyDashboardScreen({super.key});
+
+  @override
+  State<FacultyDashboardScreen> createState() => _FacultyDashboardScreenState();
+}
+
+class _FacultyDashboardScreenState extends State<FacultyDashboardScreen> {
+  String _facultyName = "Faculty"; // Default
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfile();
+  }
+
+  void _loadProfile() {
+    final profile = AuthService().userProfile;
+    if (profile != null && profile.displayName != null) {
+      setState(() {
+        _facultyName = profile.displayName!;
+        // Optional: Capitalize logic if needed, but profile usually has it
+      });
+    }
+  }
 
   // ===== Dummy Data (API placeholder) =====
-  final String facultyName = "Dr. Sarah Johnson";
-
   final int pending = 3;
   final int approved = 12;
   final int rejected = 1;
@@ -61,15 +83,16 @@ class FacultyDashboardScreen extends StatelessWidget {
         children: [
           // Welcome
           Text(
-            "Welcome back, $facultyName!",
+            "Welcome back, $_facultyName!",
             style: Theme.of(context).textTheme.headlineLarge,
           ),
+          const SizedBox(height: 4),
           const Text(
             "Here's an overview of your faculty requests and approvals for today.",
             style: TextStyle(color: AppTheme.textLight),
           ),
 
-          const SizedBox(height: 28),
+          const SizedBox(height: 20),
 
           // ===== STATS CARDS =====
           Row(
@@ -84,21 +107,21 @@ class FacultyDashboardScreen extends StatelessWidget {
             ],
           ),
 
-          const SizedBox(height: 28),
+          const SizedBox(height: 20),
 
-          // ===== QUICK ACTIONS + LATEST UPDATES =====
+          // ===== ANALYTICS + LATEST UPDATES =====
+          // Replaced Quick Actions with Analytics Breakdown
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(flex: 2, child: _quickActions(context)),
+              Expanded(flex: 2, child: _requestBreakdown()),
               const SizedBox(width: 28),
               Expanded(flex: 1, child: _latestUpdatesBox()),
             ],
           ),
 
-          // const SizedBox(height: 4),
-
           // ===== PENDING APPROVALS TABLE =====
+          const SizedBox(height: 20),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -138,72 +161,77 @@ class FacultyDashboardScreen extends StatelessWidget {
     ),
   );
 
-  Widget _quickActions(BuildContext context) => Container(
+  // Replaces Quick Actions with Analytics Breakdown
+  Widget _requestBreakdown() => Container(
     padding: const EdgeInsets.all(24),
     decoration: _cardBox,
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          "Quick Actions",
+          "Request Breakdown",
           style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
         ),
-        const SizedBox(height: 20),
+        const SizedBox(height: 8),
+        const Text(
+          "Overview of request types submitted this semester.",
+          style: TextStyle(color: AppTheme.textLight, fontSize: 13),
+        ),
+        const SizedBox(height: 24),
         Row(
           children: [
-            _action(
-              "Create Request",
-              Icons.add,
-              context,
-              "/faculty/create-request",
-              primary: true,
-            ),
+            _breakdownItem("Medical Leave", 5, Colors.purple),
             const SizedBox(width: 16),
-            _action(
-              "Review Approvals",
-              Icons.fact_check,
-              context,
-              "/faculty/requests",
-            ),
+            _breakdownItem("On Duty", 3, Colors.blue),
             const SizedBox(width: 16),
-            _action("View History", Icons.history, context, "/faculty/history"),
+            _breakdownItem("Events", 8, Colors.teal),
+            const SizedBox(width: 16),
+            _breakdownItem("Other", 0, Colors.grey),
           ],
         ),
       ],
     ),
   );
 
-  Widget _action(
-    String label,
-    IconData icon,
-    BuildContext ctx,
-    String route, {
-    bool primary = false,
-  }) => Expanded(
-    child: InkWell(
-      onTap: () => Navigator.pushNamed(ctx, route),
+  Widget _breakdownItem(String label, int count, Color color) {
+    return Expanded(
       child: Container(
-        padding: const EdgeInsets.all(18),
+        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: primary ? AppTheme.primary : Colors.grey.shade50,
+          color: color.withOpacity(0.05),
           borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: color.withOpacity(0.1)),
         ),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(icon, color: primary ? Colors.white : AppTheme.primary),
-            const SizedBox(height: 10),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  count.toString(),
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: color,
+                  ),
+                ),
+                Icon(Icons.bar_chart, color: color, size: 20),
+              ],
+            ),
+            const SizedBox(height: 8),
             Text(
               label,
               style: TextStyle(
-                color: primary ? Colors.white : AppTheme.textDark,
-                fontWeight: FontWeight.bold,
+                fontWeight: FontWeight.w600,
+                color: AppTheme.textDark.withOpacity(0.8),
               ),
             ),
           ],
         ),
       ),
-    ),
-  );
+    );
+  }
 
   Widget _latestUpdatesBox() => Container(
     padding: const EdgeInsets.all(24),
@@ -251,25 +279,31 @@ class FacultyDashboardScreen extends StatelessWidget {
   Widget _pendingTable() => Container(
     padding: const EdgeInsets.all(24),
     decoration: _cardBox,
-    child: DataTable(
-      columns: const [
-        DataColumn(label: Text("Request ID")),
-        DataColumn(label: Text("Subject")),
-        DataColumn(label: Text("Date")),
-        DataColumn(label: Text("Status")),
-      ],
-      rows: pendingApprovals.map((p) {
-        return DataRow(
-          cells: [
-            DataCell(Text(p["id"]!)),
-            DataCell(Text(p["subject"]!)),
-            DataCell(Text(p["date"]!)),
-            DataCell(
-              Text(p["status"]!, style: const TextStyle(color: Colors.orange)),
-            ),
-          ],
-        );
-      }).toList(),
+    child: SizedBox(
+      width: double.infinity,
+      child: DataTable(
+        columns: const [
+          DataColumn(label: Text("Request ID")),
+          DataColumn(label: Text("Subject")),
+          DataColumn(label: Text("Date")),
+          DataColumn(label: Text("Status")),
+        ],
+        rows: pendingApprovals.map((p) {
+          return DataRow(
+            cells: [
+              DataCell(Text(p["id"]!)),
+              DataCell(Text(p["subject"]!)),
+              DataCell(Text(p["date"]!)),
+              DataCell(
+                Text(
+                  p["status"]!,
+                  style: const TextStyle(color: Colors.orange),
+                ),
+              ),
+            ],
+          );
+        }).toList(),
+      ),
     ),
   );
 
