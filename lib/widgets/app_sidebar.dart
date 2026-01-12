@@ -4,7 +4,7 @@ import '../styles/app_theme.dart';
 
 class AppSidebar extends StatelessWidget {
   final String? activeRoute;
-  const AppSidebar({super.key, this.activeRoute});
+  const AppSidebar({super.key, required this.activeRoute});
 
   @override
   Widget build(BuildContext context) {
@@ -100,6 +100,12 @@ class AppSidebar extends StatelessWidget {
               label: 'Logout',
               onTap: () async {
                 await AuthService().signOut();
+                if (!context.mounted) return;
+                Navigator.pushNamedAndRemoveUntil(
+                  context,
+                  '/',
+                  (route) => false,
+                );
               },
             ),
           ),

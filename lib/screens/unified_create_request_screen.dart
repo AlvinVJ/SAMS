@@ -60,7 +60,6 @@ class _UnifiedCreateRequestScreenState
       if (mounted) {
         Navigator.of(context).pop();
       }
-
       // Navigate to Request Form Screen
       if (mounted) {
         Navigator.of(context).push(
@@ -70,6 +69,9 @@ class _UnifiedCreateRequestScreenState
               title: procedureDraft.title,
               description: procedureDraft.description,
               fields: procedureDraft.formSchema,
+              activeRoute: widget.userRole == 'student'
+                  ? '/create-request'
+                  : '/faculty/create-request',
             ),
           ),
         );
