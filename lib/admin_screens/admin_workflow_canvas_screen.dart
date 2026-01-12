@@ -328,7 +328,7 @@ class _AdminCreateProcedureScreenState
 
                 ToggleButtons(
                   isSelected: [
-                    _visibility.contains(ProcedureVisibility.user),
+                    _visibility.contains(ProcedureVisibility.student),
                     _visibility.contains(ProcedureVisibility.faculty),
                     _visibility.contains(ProcedureVisibility.guest),
                     _visibility.contains(ProcedureVisibility.all),
@@ -364,7 +364,7 @@ class _AdminCreateProcedureScreenState
                   children: const [
                     Padding(
                       padding: EdgeInsets.symmetric(horizontal: 16),
-                      child: Text('User'),
+                      child: Text('Student'),
                     ),
                     Padding(
                       padding: EdgeInsets.symmetric(horizontal: 16),
@@ -738,9 +738,7 @@ class FormBuilderSection extends StatelessWidget {
 
                             TextButton.icon(
                               onPressed: () {
-                                field.options!.add(
-                                  'Option ${field.options!.length + 1}',
-                                );
+                                field.options!.add('');
                                 onChanged();
                               },
                               icon: const Icon(Icons.add, size: 18),

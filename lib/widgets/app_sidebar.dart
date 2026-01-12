@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:sams_final/services/auth_service.dart';
 import '../styles/app_theme.dart';
 
 class AppSidebar extends StatelessWidget {
   final String? activeRoute;
-  const AppSidebar({super.key, this.activeRoute});
+  const AppSidebar({super.key, required this.activeRoute});
 
   @override
   Widget build(BuildContext context) {
@@ -94,7 +95,19 @@ class AppSidebar extends StatelessWidget {
           // Bottom Actions
           Padding(
             padding: const EdgeInsets.all(16.0),
-            child: const _NavItem(icon: Icons.logout, label: 'Logout'),
+            child: _NavItem(
+              icon: Icons.logout,
+              label: 'Logout',
+              onTap: () async {
+                await AuthService().signOut();
+                if (!context.mounted) return;
+                Navigator.pushNamedAndRemoveUntil(
+                  context,
+                  '/',
+                  (route) => false,
+                );
+              },
+            ),
           ),
         ],
       ),

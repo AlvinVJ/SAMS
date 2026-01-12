@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../services/auth_service.dart';
 import '../styles/app_theme.dart';
 
 class AdminSidebar extends StatelessWidget {
@@ -25,10 +26,7 @@ class AdminSidebar extends StatelessWidget {
                     color: AppTheme.primary,
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(
-                    Icons.verified_user,
-                    color: Colors.white,
-                  ),
+                  child: const Icon(Icons.verified_user, color: Colors.white),
                 ),
                 const SizedBox(width: 16),
                 Column(
@@ -36,10 +34,9 @@ class AdminSidebar extends StatelessWidget {
                   children: [
                     Text(
                       'SAMS',
-                      style: Theme.of(context)
-                          .textTheme
-                          .titleLarge
-                          ?.copyWith(fontWeight: FontWeight.bold),
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     Text(
                       'Admin Panel',
@@ -60,22 +57,28 @@ class AdminSidebar extends StatelessWidget {
                   icon: Icons.dashboard,
                   label: 'Dashboard',
                   isActive: activeRoute == '/admin/dashboard',
-                  onTap: () =>
-                      Navigator.pushReplacementNamed(context, '/admin/dashboard'),
+                  onTap: () => Navigator.pushReplacementNamed(
+                    context,
+                    '/admin/dashboard',
+                  ),
                 ),
                 _NavItem(
                   icon: Icons.description,
                   label: 'Procedures',
                   isActive: activeRoute == '/admin/procedures',
                   onTap: () => Navigator.pushReplacementNamed(
-                      context, '/admin/procedures'),
+                    context,
+                    '/admin/procedures',
+                  ),
                 ),
                 _NavItem(
                   icon: Icons.inbox,
                   label: 'Requests',
                   isActive: activeRoute == '/admin/requests',
                   onTap: () => Navigator.pushReplacementNamed(
-                      context, '/admin/requests'),
+                    context,
+                    '/admin/requests',
+                  ),
                 ),
                 _NavItem(
                   icon: Icons.group,
@@ -88,8 +91,10 @@ class AdminSidebar extends StatelessWidget {
                   icon: Icons.settings,
                   label: 'Settings',
                   isActive: activeRoute == '/admin/settings',
-                  onTap: () =>
-                      Navigator.pushReplacementNamed(context, '/admin/settings'),
+                  onTap: () => Navigator.pushReplacementNamed(
+                    context,
+                    '/admin/settings',
+                  ),
                 ),
               ],
             ),
@@ -98,9 +103,18 @@ class AdminSidebar extends StatelessWidget {
           // Logout
           Padding(
             padding: const EdgeInsets.all(16),
-            child: const _NavItem(
+            child: _NavItem(
               icon: Icons.logout,
               label: 'Logout',
+              onTap: () async {
+                await AuthService().signOut();
+                if (!context.mounted) return;
+                Navigator.pushNamedAndRemoveUntil(
+                  context,
+                  '/',
+                  (route) => false,
+                );
+              },
             ),
           ),
         ],

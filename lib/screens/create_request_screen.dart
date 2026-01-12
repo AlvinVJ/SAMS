@@ -67,6 +67,7 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
               title: procedureDraft.title,
               description: procedureDraft.description,
               fields: procedureDraft.formSchema,
+              activeRoute: '/create-request',
             ),
           ),
         );

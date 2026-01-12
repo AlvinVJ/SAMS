@@ -22,8 +22,9 @@ class _AppHeaderState extends State<AppHeader> {
     _loadUserData();
   }
 
-  void _loadUserData() {
+  Future<void> _loadUserData() async {
     final profile = AuthService().userProfile;
+    //final fname = AuthService().currentUser;
     if (profile != null) {
       setState(() {
         final rawName = profile.displayName ?? 'User';

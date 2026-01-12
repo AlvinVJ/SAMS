@@ -6,6 +6,7 @@ import '../state/auth_resolution.dart';
 import '../models/user_profile.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import '../screens/login_screen.dart';
 
 class AuthService {
   static final AuthService _instance = AuthService._internal();
@@ -42,7 +43,10 @@ class AuthService {
       }
 
       // all are mgits emails
-      final profileDoc = await _db.collection('profiles').doc(emailPrefix).get();
+      final profileDoc = await _db
+          .collection('profiles')
+          .doc(emailPrefix)
+          .get();
       //print("ResolveUser: Profile Exists? ${profileDoc.exists}");
 
       if (!profileDoc.exists) {
@@ -58,114 +62,20 @@ class AuthService {
         //final String? email = backendData['email'];
         //final String uid = backendData['uid'];
 
-        final snapshot = await _db.collection('profiles').doc(emailPrefix).get();
+        final snapshot = await _db
+            .collection('profiles')
+            .doc(emailPrefix)
+            .get();
         print(snapshot.data());
         print(user);
-      
-        
+
         _userProfile = UserProfile.fromMap(
           data: snapshot.data(),
           authUid: user.uid,
           email: email!,
-          // displayName: user.displayName,
-          // photoUrl: user.photoURL,
+          displayName: user.displayName,
+          photoUrl: user.photoURL,
         );
-
-        // if (isStudentEmail(email)) {
-        //   //  print("ResolveUser: Detected Student Email");
-        //   onboarding = true;
-
-        //   // final newStudentData = {
-        //   //   'banned': false,
-        //   //   'createdAt': DateTime.timestamp(),
-        //   //   'email': email,
-        //   //   'isActive': true,
-        //   //   'role': 'student',
-        //   //   'uid': emailPrefix.toUpperCase(),
-        //   // };
-
-        //   //await _db.collection('profiles').doc(emailPrefix).set(newStudentData);
-        //   // print("ResolveUser: Created Student Profile");
-
-        //   //api call
-        //   final backendBaseUrl = 'http://localhost:3000';
-        //   String? error;
-
-        //   try {
-        //     await sendUserProfileToBackend(
-        //       baseUrl: backendBaseUrl,
-        //       // profileData: newStudentData,
-        //     );
-
-        //     // Only runs if API succeeded
-        //     final snapshot = await _db
-        //         .collection('profiles')
-        //         .doc(emailPrefix)
-        //         .get();
-
-        //     _userProfile = UserProfile.fromMap(
-        //       data: snapshot.data(),
-        //       authUid: user.uid,
-        //       email: email!,
-        //       displayName: user.displayName,
-        //       photoUrl: user.photoURL,
-        //     );
-        //   } catch (e) {
-        //     // Handle API failure gracefully
-        //     // e.g. show snackbar, dialog, log out user, retry
-        //     // ScaffoldMessenger.of(
-        //     //   context,
-        //     // ).showSnackBar(SnackBar(content: Text(e.toString())));
-        //     error = e.toString();
-        //   }
-
-        //   //_printProfileDetails();
-        //   onboarding = false;
-        //   return AuthResolution.student;
-        // }
-
-        // // --- STAFF FLOW ---
-        // //  print("ResolveUser: Checking userDetails whitelist...");
-        // final userDoc = await _db
-        //     .collection('userDetails')
-        //     .doc(emailPrefix)
-        //     .get();
-        // if (!userDoc.exists) {
-        //   //  print("ResolveUser: Not in userDetails whitelist");
-        //   return AuthResolution.notAdded;
-        // }
-
-        // onboarding = true;
-        // final data = userDoc.data();
-        // if (data == null || !data.containsKey('role')) {
-        //   throw StateError(
-        //     'userDetails/$emailPrefix exists but has no role field',
-        //   );
-        // }
-
-        // final String role = data['role'] as String;
-        // final newStaffData = {
-        //   'banned': false,
-        //   'createdAt': DateTime.timestamp(),
-        //   'email': email,
-        //   'isActive': true,
-        //   'role': role,
-        //   'uid': emailPrefix.toUpperCase(),
-        // };
-
-        // await _db.collection('profiles').doc(emailPrefix).set(newStaffData);
-        // // print("ResolveUser: Created Staff Profile");
-
-        // _userProfile = UserProfile.fromMap(
-        //   data: newStaffData,
-        //   authUid: user.uid,
-        //   email: email!,
-        //   displayName: user.displayName,
-        //   photoUrl: user.photoURL,
-        // );
-
-        // //_printProfileDetails();
-        // onboarding = false;
 
         switch (role) {
           case 'admin':
@@ -180,7 +90,6 @@ class AuthService {
       } else {
         final data = profileDoc.data();
         if (data == null) return AuthResolution.unauthenticated;
-
 
         print("ResolveUser: Loading Existing Profile...");
         _userProfile = UserProfile.fromMap(
@@ -257,7 +166,7 @@ class AuthService {
 
   Future<void> signInWithGoogle() async {
     try {
-      await _auth.signOut();
+      // await _auth.signOut();
       final provider = GoogleAuthProvider();
       provider.setCustomParameters({
         'prompt': 'select_account',
@@ -277,8 +186,11 @@ class AuthService {
     }
   }
 
-  Future<void> signOut() async {
+  Future<AuthResolution> signOut() async {
     await _auth.signOut();
+    _userProfile = null;
+    print("AuthService: Signed out and profile cleared");
+    return AuthResolution.unauthenticated;
   }
 }
 
