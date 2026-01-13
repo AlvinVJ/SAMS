@@ -2,78 +2,7 @@ import 'package:flutter/material.dart';
 import '../styles/app_theme.dart';
 import '../widgets/app_header.dart';
 import '../widgets/faculty_sidebar.dart';
-
-/// =====================
-/// MODEL
-/// =====================
-class RequestData {
-  final String id;
-  final String type;
-  final Color color;
-  final String name;
-  final String studentId;
-  final String department;
-  final String date;
-  final String description;
-  final List<String> attachments;
-
-  RequestData({
-    required this.id,
-    required this.type,
-    required this.color,
-    required this.name,
-    required this.studentId,
-    required this.department,
-    required this.date,
-    required this.description,
-    required this.attachments,
-  });
-}
-
-/// =====================
-/// DUMMY DATA (API READY)
-/// =====================
-Map<String, List<RequestData>> roleRequests = {
-  "Faculty Advisor": [
-    RequestData(
-      id: 'REQ-001',
-      type: 'Leave Application',
-      color: Colors.blue,
-      name: 'Michael Foster',
-      studentId: '2021045',
-      department: 'CSE',
-      date: 'Oct 24, 2023',
-      description: '3 day medical leave request.',
-      attachments: ['medical_cert.pdf'],
-    ),
-  ],
-  "HOD": [
-    RequestData(
-      id: 'REQ-005',
-      type: 'Funding Request',
-      color: Colors.green,
-      name: 'Sarah Paul',
-      studentId: '2020143',
-      department: 'CSE',
-      date: 'Oct 21, 2023',
-      description: 'Requesting ₹20,000 for tech fest workshop.',
-      attachments: [],
-    ),
-  ],
-  "Principal": [
-    RequestData(
-      id: 'REQ-009',
-      type: 'Event Permission',
-      color: Colors.orange,
-      name: 'Manu Joseph',
-      studentId: '2020011',
-      department: 'ECE',
-      date: 'Oct 20, 2023',
-      description: 'Annual Coding Hackathon proposal.',
-      attachments: ['proposal.pdf'],
-    ),
-  ],
-};
+import '../services/user_request_service.dart';
 
 /// =====================
 /// SCREEN
@@ -89,11 +18,25 @@ class FacultyRequestsForApprovalScreen extends StatefulWidget {
 class _FacultyRequestsForApprovalScreenState
     extends State<FacultyRequestsForApprovalScreen> {
   String activeRole = "Faculty Advisor";
+  final UserRequestService _requestService = UserRequestService();
+  late Future<List<PendingApproval>> _pendingRequestsFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadRequests();
+  }
+
+  void _loadRequests() {
+    setState(() {
+      _pendingRequestsFuture = _requestService.fetchPendingApprovals(
+        activeRole,
+      );
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
-    final displayRequests = roleRequests[activeRole] ?? [];
-
     return Scaffold(
       backgroundColor: AppTheme.backgroundLight,
       body: Row(
@@ -155,6 +98,7 @@ class _FacultyRequestsForApprovalScreenState
                                       .toList(),
                                   onChanged: (role) {
                                     setState(() => activeRole = role!);
+                                    _loadRequests();
                                   },
                                 ),
                               ),
@@ -164,21 +108,56 @@ class _FacultyRequestsForApprovalScreenState
 
                         const SizedBox(height: 28),
 
-                        /// GRID OF REQUESTS (FIXED HEIGHT ISSUE)
-                        GridView.builder(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          itemCount: displayRequests.length,
-                          gridDelegate:
-                              const SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: 2,
-                                crossAxisSpacing: 24,
-                                mainAxisSpacing: 24,
-                                childAspectRatio: 1.55, // 🔥 KEY FIX
-                              ),
-                          itemBuilder: (context, index) {
-                            return _RequestCard(
-                              request: displayRequests[index],
+                        /// GRID OF REQUESTS (DYNAMIC)
+                        FutureBuilder<List<PendingApproval>>(
+                          future: _pendingRequestsFuture,
+                          builder: (context, snapshot) {
+                            if (snapshot.connectionState ==
+                                ConnectionState.waiting) {
+                              return const Center(
+                                child: Padding(
+                                  padding: EdgeInsets.all(40),
+                                  child: CircularProgressIndicator(),
+                                ),
+                              );
+                            }
+
+                            if (snapshot.hasError) {
+                              return Center(
+                                child: Text('Error: ${snapshot.error}'),
+                              );
+                            }
+
+                            final requests = snapshot.data ?? [];
+
+                            if (requests.isEmpty) {
+                              return const Center(
+                                child: Padding(
+                                  padding: EdgeInsets.all(40),
+                                  child: Text(
+                                    'No pending requests for this role.',
+                                  ),
+                                ),
+                              );
+                            }
+
+                            return GridView.builder(
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              itemCount: requests.length,
+                              gridDelegate:
+                                  const SliverGridDelegateWithFixedCrossAxisCount(
+                                    crossAxisCount: 2,
+                                    crossAxisSpacing: 24,
+                                    mainAxisSpacing: 24,
+                                    childAspectRatio: 1.55,
+                                  ),
+                              itemBuilder: (context, index) {
+                                return _RequestCard(
+                                  request: requests[index],
+                                  onAction: _loadRequests,
+                                );
+                              },
                             );
                           },
                         ),
@@ -199,9 +178,10 @@ class _FacultyRequestsForApprovalScreenState
 /// REQUEST CARD
 /// =====================
 class _RequestCard extends StatefulWidget {
-  final RequestData request;
+  final PendingApproval request;
+  final VoidCallback onAction;
 
-  const _RequestCard({required this.request});
+  const _RequestCard({required this.request, required this.onAction});
 
   @override
   State<_RequestCard> createState() => _RequestCardState();
@@ -214,6 +194,27 @@ class _RequestCardState extends State<_RequestCard> {
   void dispose() {
     _commentController.dispose();
     super.dispose();
+  }
+
+  Future<void> _handleAction(String action) async {
+    final success = await UserRequestService().updateRequestStatus(
+      requestId: widget.request.id,
+      action: action,
+      comment: _commentController.text,
+    );
+
+    if (mounted) {
+      if (success) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Request $action successfully')));
+        widget.onAction();
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to perform action')),
+        );
+      }
+    }
   }
 
   @override
@@ -303,8 +304,10 @@ class _RequestCardState extends State<_RequestCard> {
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 10),
+                    backgroundColor: Colors.blue,
+                    foregroundColor: Colors.white,
                   ),
-                  onPressed: () {},
+                  onPressed: () => _handleAction('approve'),
                   child: const Text('Approve', style: TextStyle(fontSize: 13)),
                 ),
               ),
@@ -313,8 +316,10 @@ class _RequestCardState extends State<_RequestCard> {
                 child: OutlinedButton(
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 10),
+                    side: const BorderSide(color: Colors.red),
+                    foregroundColor: Colors.red,
                   ),
-                  onPressed: () {},
+                  onPressed: () => _handleAction('reject'),
                   child: const Text('Reject', style: TextStyle(fontSize: 13)),
                 ),
               ),
