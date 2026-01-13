@@ -151,7 +151,7 @@ class _RequestFormScreenState extends State<RequestFormScreen> {
 
         if (picked != null) {
           setState(() {
-            _values[field.fieldId] = picked;
+            _values[field.fieldId] = picked.toIso8601String();
             _controllers[field.fieldId]!.text = picked
                 .toIso8601String()
                 .split('T')
