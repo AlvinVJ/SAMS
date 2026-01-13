@@ -180,8 +180,22 @@ class _AdminCreateProcedureScreenState
                           itemBuilder: (context, index) {
                             final role = searchResults[index];
                             return ListTile(
-                              title: Text(role['name'] ?? 'Unknown Role'),
-                              subtitle: Text(role['id'] ?? ''),
+                              title: Text(
+                                role['role_tag'] ?? '',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              subtitle: Row(
+                                children: [
+                                  Text(role['name'] ?? ''),
+                                  const SizedBox(width: 12),
+                                  Text(
+                                    role['mits_uid'] ?? '',
+                                    style: const TextStyle(color: Colors.grey),
+                                  ),
+                                ],
+                              ),
                               trailing: TextButton(
                                 child: const Text('Add'),
                                 onPressed: () {
@@ -190,11 +204,12 @@ class _AdminCreateProcedureScreenState
 
                                     // Check if role already exists to avoid duplicates
                                     final exists = level.roles.any(
-                                      (r) => r['id'] == role['id'],
+                                      (r) => r['role_tag'] == role['role_tag'],
                                     );
                                     if (!exists) {
-                                      level.roles.add(role);
-
+                                      level.roles.add({
+                                        'role_tag': role['role_tag'] ?? '',
+                                      });
                                       // Auto-adjust min approvals if not "All Must Approve"
                                       if (!level.allMustApprove) {
                                         // Default behavior: if adding a role, maybe increase min approvals?
@@ -488,7 +503,9 @@ class _AdminCreateProcedureScreenState
                   onRemoveRole: (role) {
                     setState(() {
                       final level = _approvalLevels[index];
-                      level.roles.remove(role);
+                      level.roles.removeWhere(
+                        (r) => r['role_tag'] == role['role_tag'],
+                      );
 
                       if (!level.allMustApprove) {
                         level.minApprovals = level.roles.length;
@@ -882,7 +899,7 @@ class _ApprovalLevelCard extends StatelessWidget {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(role['name']!),
+                      Text(role['role_tag']!),
                       IconButton(
                         icon: const Icon(Icons.close, size: 18),
                         onPressed: () => onRemoveRole(role),

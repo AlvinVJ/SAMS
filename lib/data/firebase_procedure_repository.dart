@@ -99,8 +99,9 @@ class ApiProcedureRepository {
           final List<dynamic> data = jsonResponse['data'];
           return data.map<Map<String, String>>((item) {
             return {
-              'id': item['id'].toString(),
+              'role_tag': item['role_tag'].toString(),
               'name': item['name'].toString(),
+              'mits_uid': item['mits_uid'].toString(),
             };
           }).toList();
         } else {
