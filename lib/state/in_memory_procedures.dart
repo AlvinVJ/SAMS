@@ -154,7 +154,7 @@ extension ApprovalLevelDraftJson on ApprovalLevelDraft {
     return {
       "level": level,
       "approvalType": "ROLE",
-      "roleIds": roles.map((r) => r['id']).toList(),
+      "roleIds": roles.map((r) => r['role_tag']).toList(),
       "userIds": [],
       "minApprovals": minApprovals,
       "allMustApprove": allMustApprove,
