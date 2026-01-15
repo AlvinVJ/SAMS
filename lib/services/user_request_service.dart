@@ -86,6 +86,7 @@ class PendingApproval {
   final String department;
   final String date;
   final String description;
+  final String descriptionCode; // Store current_level as code if needed
   final List<String> attachments;
   final Color color;
 
@@ -97,21 +98,25 @@ class PendingApproval {
     required this.department,
     required this.date,
     required this.description,
+    this.descriptionCode = '',
     required this.attachments,
     this.color = Colors.blue,
   });
 
   factory PendingApproval.fromJson(Map<String, dynamic> json) {
     return PendingApproval(
-      id: json['id'] ?? '',
-      type: json['type'] ?? 'General Request',
-      name: json['studentName'] ?? 'Unknown Student',
-      studentId: json['studentId'] ?? '',
-      department: json['department'] ?? '',
-      date: json['date'] ?? '',
-      description: json['description'] ?? '',
+      id: json['request_id'] ?? json['id'] ?? '',
+      type: json['procedure_title'] ?? json['type'] ?? 'General Request',
+      name: json['studentName'] ?? json['created_by'] ?? 'Unknown Student',
+      studentId: json['created_by'] ?? json['studentId'] ?? '',
+      department: json['department'] ?? 'Department N/A',
+      date: json['date'] ?? 'Just now',
+      descriptionCode: json['current_level']?.toString() ?? '1',
+      description:
+          json['description'] ??
+          'Pending approval at Level ${json['current_level'] ?? 1}',
       attachments: List<String>.from(json['attachments'] ?? []),
-      color: _getColorForType(json['type'] ?? ''),
+      color: _getColorForType(json['procedure_title'] ?? json['type'] ?? ''),
     );
   }
 
@@ -119,8 +124,14 @@ class PendingApproval {
     if (type.contains('Leave')) return Colors.blue;
     if (type.contains('Funding')) return Colors.green;
     if (type.contains('Event')) return Colors.orange;
+    if (type.contains('role tag')) return Colors.indigo;
     return Colors.purple;
   }
+}
+
+// Add a helper field for raw current_level if needed, but let's keep it clean
+extension PendingApprovalExtension on PendingApproval {
+  // If we need to access descriptionCode later
 }
 
 class UserRequestService {
@@ -160,14 +171,22 @@ class UserRequestService {
       final response = await http.get(
         Uri.parse('$baseUrl/api/faculty/request_for_approval'),
         headers: {
-          'Content-Type': 'application/json', 
-          'Authorization': 'Bearer $idToken'
-        }
-      );1
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $idToken',
+        },
+      );
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> jsonResponse = json.decode(response.body);
-        final List<dynamic> requests = jsonResponse['data'] ?? [];
+        final dynamic data = jsonResponse['data'];
+
+        List<dynamic> requests = [];
+        if (data is Map && data.containsKey('requests')) {
+          requests = data['requests'];
+        } else if (data is List) {
+          requests = data;
+        }
+
         return requests.map((item) => PendingApproval.fromJson(item)).toList();
       } else {
         throw Exception('Failed to load pending approvals');
