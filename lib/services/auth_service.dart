@@ -72,7 +72,7 @@ class AuthService {
 
         // checking for faculty role and then calling the api end point.
         //List<String> roleTags = [];
-        if (snapshot.data()?['roles'] == 'faculty') {
+        if (snapshot.data()?['role'] == 'faculty') {
           try {
             roleTags = await fetchRoleTags();
           } catch (e) {
@@ -103,7 +103,7 @@ class AuthService {
         if (data == null) {
           return AuthResolution.unauthenticated;
         } else {
-          if (data['roles'] == 'faculty') {
+          if (data['role'] == 'faculty') {
             //await call roletag api /common/get_role_tags
             try {
               roleTags = await fetchRoleTags();
@@ -265,11 +265,19 @@ Future<Map<String, dynamic>> sendUserProfileToBackend({
 
 // api call to fetch the  role tag from backend and then extract the array.
 Future<List<String>> fetchRoleTags() async {
-  final url = Uri.parse('https://your-backend-url.com/common/get_role_tags');
+  final user = FirebaseAuth.instance.currentUser;
+  if (user == null) {
+    throw Exception('User not authenticated');
+  }
+  final authToken = await user.getIdToken();
+  final url = Uri.parse('http://localhost:3000/api/common/get_role_tags');
 
   final response = await http.get(
     url,
-    headers: {'Content-Type': 'application/json'},
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer $authToken',
+    },
   );
 
   if (response.statusCode == 200) {
