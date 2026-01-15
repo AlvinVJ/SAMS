@@ -15,6 +15,7 @@ class AuthService {
 
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _db = FirebaseFirestore.instance;
+  List<String> roleTags = [];
 
   Stream<User?> get authStateChanges => _auth.authStateChanges();
 
@@ -69,12 +70,22 @@ class AuthService {
         print(snapshot.data());
         print(user);
 
+        // checking for faculty role and then calling the api end point.
+        //List<String> roleTags = [];
+        if (snapshot.data()?['roles'] == 'faculty') {
+          try {
+            roleTags = await fetchRoleTags();
+          } catch (e) {
+            print('Error : $e');
+          }
+        }
         _userProfile = UserProfile.fromMap(
           data: snapshot.data(),
           authUid: user.uid,
           email: email!,
           displayName: user.displayName,
           photoUrl: user.photoURL,
+          roleTags: roleTags,
         );
 
         switch (role) {
@@ -89,7 +100,18 @@ class AuthService {
         }
       } else {
         final data = profileDoc.data();
-        if (data == null) return AuthResolution.unauthenticated;
+        if (data == null) {
+          return AuthResolution.unauthenticated;
+        } else {
+          if (data['roles'] == 'faculty') {
+            //await call roletag api /common/get_role_tags
+            try {
+              roleTags = await fetchRoleTags();
+            } catch (e) {
+              print('Error : $e');
+            }
+          }
+        }
 
         print("ResolveUser: Loading Existing Profile...");
         _userProfile = UserProfile.fromMap(
@@ -98,6 +120,7 @@ class AuthService {
           email: email!,
           displayName: user.displayName,
           photoUrl: user.photoURL,
+          roleTags: roleTags,
         );
         // print("ResolveUser: Memory Profile Set");
         print(_userProfile);
@@ -238,4 +261,25 @@ Future<Map<String, dynamic>> sendUserProfileToBackend({
   }
 
   return decoded['data'] as Map<String, dynamic>;
+}
+
+// api call to fetch the  role tag from backend and then extract the array.
+Future<List<String>> fetchRoleTags() async {
+  final url = Uri.parse('https://your-backend-url.com/common/get_role_tags');
+
+  final response = await http.get(
+    url,
+    headers: {'Content-Type': 'application/json'},
+  );
+
+  if (response.statusCode == 200) {
+    final Map<String, dynamic> decoded =
+        jsonDecode(response.body) as Map<String, dynamic>;
+
+    final List<dynamic> roleTags = decoded['role_tags'];
+
+    return roleTags.map((e) => e.toString()).toList();
+  } else {
+    throw Exception('Failed to fetch role tags');
+  }
 }
