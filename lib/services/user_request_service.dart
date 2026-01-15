@@ -158,9 +158,12 @@ class UserRequestService {
 
       final idToken = await user.getIdToken();
       final response = await http.get(
-        Uri.parse('$baseUrl/api/faculty/fetch_pending_requests?role=$role'),
-        headers: {'Authorization': 'Bearer $idToken'},
-      );
+        Uri.parse('$baseUrl/api/faculty/request_for_approval'),
+        headers: {
+          'Content-Type': 'application/json', 
+          'Authorization': 'Bearer $idToken'
+        }
+      );1
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> jsonResponse = json.decode(response.body);
