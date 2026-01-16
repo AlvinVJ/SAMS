@@ -284,7 +284,7 @@ Future<List<String>> fetchRoleTags() async {
     final Map<String, dynamic> decoded =
         jsonDecode(response.body) as Map<String, dynamic>;
 
-    final List<dynamic> roleTags = decoded['role_tags'];
+    final List<dynamic> roleTags = decoded['data']['role_tags'];
 
     return roleTags.map((e) => e.toString()).toList();
   } else {
