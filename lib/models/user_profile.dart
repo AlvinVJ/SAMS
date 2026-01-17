@@ -73,7 +73,6 @@ class UserProfile {
       Banned       : ${banned ?? 'N/A'}
       Student ID   : ${studentId ?? 'N/A'}
       Created At   : ${createdAt?.toIso8601String() ?? 'N/A'}
-      Role tags    : ${roleTags}
       =================================
 ''');
   }
