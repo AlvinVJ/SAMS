@@ -78,4 +78,90 @@ class UserRequestService {
       rethrow;
     }
   }
+
+  Future<List<PendingApproval>> fetchPendingApprovals(String role) async {
+    try {
+      final user = AuthService().currentUser;
+      if (user == null) {
+        throw Exception('User not authenticated');
+      }
+
+      final idToken = await user.getIdToken();
+      // Using query parameter for role, assuming backend supports it
+      final response = await http.get(
+        Uri.parse('$baseUrl/api/user/fetch_pending_approvals?role=$role'),
+        headers: {'Authorization': 'Bearer $idToken'},
+      );
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = json.decode(response.body);
+        return data.map((item) => PendingApproval.fromJson(item)).toList();
+      } else {
+        throw Exception('Failed to load pending approvals');
+      }
+    } catch (e) {
+      print('Error fetching pending approvals: $e');
+      rethrow;
+    }
+  }
+}
+
+class PendingApproval {
+  final String id;
+  final String type;
+  final String studentName;
+  final String studentId;
+  final String department;
+  final String date;
+  final String description;
+  final List<String> attachments;
+  final String roleTag;
+  final Color color;
+
+  PendingApproval({
+    required this.id,
+    required this.type,
+    required this.studentName,
+    required this.studentId,
+    required this.department,
+    required this.date,
+    required this.description,
+    required this.attachments,
+    required this.roleTag,
+    required this.color,
+  });
+
+  factory PendingApproval.fromJson(Map<String, dynamic> json) {
+    // Helper to parse color from string or return default
+    Color parseColor(String? colorStr) {
+      if (colorStr == null) return Colors.blue;
+      switch (colorStr.toLowerCase()) {
+        case 'blue':
+          return Colors.blue;
+        case 'green':
+          return Colors.green;
+        case 'orange':
+          return Colors.orange;
+        case 'red':
+          return Colors.red;
+        case 'purple':
+          return Colors.purple;
+        default:
+          return Colors.blue;
+      }
+    }
+
+    return PendingApproval(
+      id: json['id'] ?? '',
+      type: json['type'] ?? 'Request',
+      studentName: json['studentName'] ?? 'Unknown',
+      studentId: json['studentId'] ?? '',
+      department: json['department'] ?? '',
+      date: json['date'] ?? '',
+      description: json['description'] ?? '',
+      attachments: List<String>.from(json['attachments'] ?? []),
+      roleTag: json['roleTag'] ?? '',
+      color: parseColor(json['color']),
+    );
+  }
 }

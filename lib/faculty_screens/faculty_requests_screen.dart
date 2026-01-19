@@ -3,78 +3,12 @@ import '../styles/app_theme.dart';
 import '../widgets/app_header.dart';
 import '../widgets/faculty_sidebar.dart';
 import '../services/auth_service.dart';
+import '../services/user_request_service.dart';
 
 /// =====================
 /// MODEL
 /// =====================
-class RequestData {
-  final String id;
-  final String type;
-  final Color color;
-  final String name;
-  final String studentId;
-  final String department;
-  final String date;
-  final String description;
-  final List<String> attachments;
-  final String roleTag; // ✅ ADDED
-
-  RequestData({
-    required this.id,
-    required this.type,
-    required this.color,
-    required this.name,
-    required this.studentId,
-    required this.department,
-    required this.date,
-    required this.description,
-    required this.attachments,
-    required this.roleTag, // ✅ ADDED
-  });
-}
-
-/// =====================
-/// DUMMY DATA (API READY)
-/// =====================
-// ✅ CHANGED: Merged into single list with roleTag
-List<RequestData> allRequests = [
-  RequestData(
-    id: 'REQ-001',
-    type: 'Leave Application',
-    color: Colors.blue,
-    name: 'Michael Foster',
-    studentId: '2021045',
-    department: 'CSE',
-    date: 'Oct 24, 2023',
-    description: '3 day medical leave request.',
-    attachments: ['medical_cert.pdf'],
-    roleTag: 'Faculty Advisor', // ✅ ADDED
-  ),
-  RequestData(
-    id: 'REQ-005',
-    type: 'Funding Request',
-    color: Colors.green,
-    name: 'Sarah Paul',
-    studentId: '2020143',
-    department: 'CSE',
-    date: 'Oct 21, 2023',
-    description: 'Requesting ₹20,000 for tech fest workshop.',
-    attachments: [],
-    roleTag: 'HOD', // ✅ ADDED
-  ),
-  RequestData(
-    id: 'REQ-009',
-    type: 'Event Permission',
-    color: Colors.orange,
-    name: 'Manu Joseph',
-    studentId: '2020011',
-    department: 'ECE',
-    date: 'Oct 20, 2023',
-    description: 'Annual Coding Hackathon proposal.',
-    attachments: ['proposal.pdf'],
-    roleTag: 'Principal', // ✅ ADDED
-  ),
-];
+// Dummy data removed. Fetching from backend via UserRequestService.
 
 /// =====================
 /// SCREEN
@@ -89,40 +23,71 @@ class FacultyRequestsForApprovalScreen extends StatefulWidget {
 
 class _FacultyRequestsForApprovalScreenState
     extends State<FacultyRequestsForApprovalScreen> {
-  List<String> roleTags = []; // ✅ ADDED
-  String? activeRole; // ✅ CHANGED from String to String?
+  List<String> roleTags = [];
+  String? activeRole;
+  List<PendingApproval> _requests = [];
+  bool _isLoading = false;
+  String? _errorMessage;
 
-  // ✅ ADDED initState
   @override
   void initState() {
     super.initState();
-
     final profile = AuthService().userProfile;
-
     roleTags = profile?.roleTags ?? [];
 
     if (roleTags.isNotEmpty) {
       activeRole = roleTags.first;
+      _fetchRequests();
+    }
+  }
+
+  Future<void> _fetchRequests() async {
+    if (activeRole == null) return;
+
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final requests = await UserRequestService().fetchPendingApprovals(
+        activeRole!,
+      );
+      setState(() {
+        _requests = requests;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Failed to load requests';
+        _isLoading = false;
+      });
+    }
+  }
+
+  void _onRoleChanged(String? newRole) {
+    if (newRole != null && newRole != activeRole) {
+      setState(() {
+        activeRole = newRole;
+      });
+      _fetchRequests();
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    // ✅ CHANGED: Filter by roleTag instead of using map
-    final displayRequests = allRequests
-        .where((r) => r.roleTag == activeRole)
-        .toList();
-
     return Scaffold(
       backgroundColor: AppTheme.backgroundLight,
       body: Row(
         children: [
           const FacultySidebar(activeRoute: '/faculty/requests'),
-
           Expanded(
             child: Column(
               children: [
-                const AppHeader(),
+                /// HEADER
+                AppHeader(
+                  key: ValueKey(activeRole), // Force rebuild if needed
+                ),
 
                 Expanded(
                   child: SingleChildScrollView(
@@ -151,7 +116,6 @@ class _FacultyRequestsForApprovalScreenState
                                 ),
                               ],
                             ),
-
                             Container(
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 12,
@@ -164,7 +128,6 @@ class _FacultyRequestsForApprovalScreenState
                               child: DropdownButtonHideUnderline(
                                 child: DropdownButton<String>(
                                   value: activeRole,
-                                  // ✅ CHANGED: Use roleTags from userProfile
                                   items: roleTags
                                       .map(
                                         (role) => DropdownMenuItem(
@@ -173,35 +136,58 @@ class _FacultyRequestsForApprovalScreenState
                                         ),
                                       )
                                       .toList(),
-                                  onChanged: (role) {
-                                    setState(() => activeRole = role);
-                                  },
+                                  onChanged: _onRoleChanged,
                                 ),
                               ),
                             ),
                           ],
                         ),
-
                         const SizedBox(height: 28),
 
-                        /// GRID OF REQUESTS (FIXED HEIGHT ISSUE)
-                        GridView.builder(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          itemCount: displayRequests.length,
-                          gridDelegate:
-                              const SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: 2,
-                                crossAxisSpacing: 24,
-                                mainAxisSpacing: 24,
-                                childAspectRatio: 1.55,
+                        /// CONTENT AREA
+                        if (_isLoading)
+                          const Center(
+                            child: Padding(
+                              padding: EdgeInsets.all(50.0),
+                              child: CircularProgressIndicator(),
+                            ),
+                          )
+                        else if (_errorMessage != null)
+                          Center(
+                            child: Padding(
+                              padding: const EdgeInsets.all(50.0),
+                              child: Text(
+                                _errorMessage!,
+                                style: const TextStyle(color: Colors.red),
                               ),
-                          itemBuilder: (context, index) {
-                            return _RequestCard(
-                              request: displayRequests[index],
-                            );
-                          },
-                        ),
+                            ),
+                          )
+                        else if (_requests.isEmpty)
+                          const Center(
+                            child: Padding(
+                              padding: EdgeInsets.all(50.0),
+                              child: Text(
+                                'No pending requests found for this role.',
+                                style: TextStyle(color: Colors.grey),
+                              ),
+                            ),
+                          )
+                        else
+                          GridView.builder(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            itemCount: _requests.length,
+                            gridDelegate:
+                                const SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: 2,
+                                  crossAxisSpacing: 24,
+                                  mainAxisSpacing: 24,
+                                  childAspectRatio: 1.55,
+                                ),
+                            itemBuilder: (context, index) {
+                              return _RequestCard(request: _requests[index]);
+                            },
+                          ),
                       ],
                     ),
                   ),
@@ -219,7 +205,7 @@ class _FacultyRequestsForApprovalScreenState
 /// REQUEST CARD
 /// =====================
 class _RequestCard extends StatefulWidget {
-  final RequestData request;
+  final PendingApproval request;
 
   const _RequestCard({required this.request});
 
@@ -276,7 +262,7 @@ class _RequestCardState extends State<_RequestCard> {
 
           /// NAME + META
           Text(
-            request.name,
+            request.studentName,
             style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
           ),
           Text(
@@ -361,5 +347,3 @@ class _RequestCardState extends State<_RequestCard> {
     );
   }
 }
-
-
