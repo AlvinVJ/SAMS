@@ -15,6 +15,9 @@ class UserProfile {
   final String? studentId;
   final DateTime? createdAt;
 
+  // 3. To take role tag for faculty
+  final List<String>? roleTags;
+
   UserProfile({
     required this.authUid,
     required this.email,
@@ -25,6 +28,7 @@ class UserProfile {
     this.banned,
     this.studentId,
     this.createdAt,
+    this.roleTags,
   });
 
   factory UserProfile.fromMap({
@@ -33,6 +37,8 @@ class UserProfile {
     required String email,
     String? displayName,
     String? photoUrl,
+    List<String>? roleTags,
+
   }) {
     DateTime? getDoB(dynamic val) {
       if (val is Timestamp) return val.toDate();
@@ -45,11 +51,12 @@ class UserProfile {
       email: email,
       displayName: displayName,
       photoUrl: photoUrl,
-      role: data?['role'],
+      role: data?['role'] ?? 'unknown',
       isActive: data?['isActive'],
       banned: data?['banned'],
       studentId: data?['uid'],
       createdAt: getDoB(data?['createdAt']),
+      roleTags: roleTags,
     );
   }
 
