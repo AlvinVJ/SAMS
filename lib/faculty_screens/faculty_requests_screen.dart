@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../styles/app_theme.dart';
 import '../widgets/app_header.dart';
 import '../widgets/faculty_sidebar.dart';
+import '../services/auth_service.dart';
 
 /// =====================
 /// MODEL
@@ -16,6 +17,7 @@ class RequestData {
   final String date;
   final String description;
   final List<String> attachments;
+  final String roleTag; // ✅ ADDED
 
   RequestData({
     required this.id,
@@ -27,53 +29,52 @@ class RequestData {
     required this.date,
     required this.description,
     required this.attachments,
+    required this.roleTag, // ✅ ADDED
   });
 }
 
 /// =====================
 /// DUMMY DATA (API READY)
 /// =====================
-Map<String, List<RequestData>> roleRequests = {
-  "Faculty Advisor": [
-    RequestData(
-      id: 'REQ-001',
-      type: 'Leave Application',
-      color: Colors.blue,
-      name: 'Michael Foster',
-      studentId: '2021045',
-      department: 'CSE',
-      date: 'Oct 24, 2023',
-      description: '3 day medical leave request.',
-      attachments: ['medical_cert.pdf'],
-    ),
-  ],
-  "HOD": [
-    RequestData(
-      id: 'REQ-005',
-      type: 'Funding Request',
-      color: Colors.green,
-      name: 'Sarah Paul',
-      studentId: '2020143',
-      department: 'CSE',
-      date: 'Oct 21, 2023',
-      description: 'Requesting ₹20,000 for tech fest workshop.',
-      attachments: [],
-    ),
-  ],
-  "Principal": [
-    RequestData(
-      id: 'REQ-009',
-      type: 'Event Permission',
-      color: Colors.orange,
-      name: 'Manu Joseph',
-      studentId: '2020011',
-      department: 'ECE',
-      date: 'Oct 20, 2023',
-      description: 'Annual Coding Hackathon proposal.',
-      attachments: ['proposal.pdf'],
-    ),
-  ],
-};
+// ✅ CHANGED: Merged into single list with roleTag
+List<RequestData> allRequests = [
+  RequestData(
+    id: 'REQ-001',
+    type: 'Leave Application',
+    color: Colors.blue,
+    name: 'Michael Foster',
+    studentId: '2021045',
+    department: 'CSE',
+    date: 'Oct 24, 2023',
+    description: '3 day medical leave request.',
+    attachments: ['medical_cert.pdf'],
+    roleTag: 'Faculty Advisor', // ✅ ADDED
+  ),
+  RequestData(
+    id: 'REQ-005',
+    type: 'Funding Request',
+    color: Colors.green,
+    name: 'Sarah Paul',
+    studentId: '2020143',
+    department: 'CSE',
+    date: 'Oct 21, 2023',
+    description: 'Requesting ₹20,000 for tech fest workshop.',
+    attachments: [],
+    roleTag: 'HOD', // ✅ ADDED
+  ),
+  RequestData(
+    id: 'REQ-009',
+    type: 'Event Permission',
+    color: Colors.orange,
+    name: 'Manu Joseph',
+    studentId: '2020011',
+    department: 'ECE',
+    date: 'Oct 20, 2023',
+    description: 'Annual Coding Hackathon proposal.',
+    attachments: ['proposal.pdf'],
+    roleTag: 'Principal', // ✅ ADDED
+  ),
+];
 
 /// =====================
 /// SCREEN
@@ -88,11 +89,29 @@ class FacultyRequestsForApprovalScreen extends StatefulWidget {
 
 class _FacultyRequestsForApprovalScreenState
     extends State<FacultyRequestsForApprovalScreen> {
-  String activeRole = "Faculty Advisor";
+  List<String> roleTags = []; // ✅ ADDED
+  String? activeRole; // ✅ CHANGED from String to String?
+
+  // ✅ ADDED initState
+  @override
+  void initState() {
+    super.initState();
+
+    final profile = AuthService().userProfile;
+
+    roleTags = profile?.roleTags ?? [];
+
+    if (roleTags.isNotEmpty) {
+      activeRole = roleTags.first;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final displayRequests = roleRequests[activeRole] ?? [];
+    // ✅ CHANGED: Filter by roleTag instead of using map
+    final displayRequests = allRequests
+        .where((r) => r.roleTag == activeRole)
+        .toList();
 
     return Scaffold(
       backgroundColor: AppTheme.backgroundLight,
@@ -145,7 +164,8 @@ class _FacultyRequestsForApprovalScreenState
                               child: DropdownButtonHideUnderline(
                                 child: DropdownButton<String>(
                                   value: activeRole,
-                                  items: ["Faculty Advisor", "HOD", "Principal"]
+                                  // ✅ CHANGED: Use roleTags from userProfile
+                                  items: roleTags
                                       .map(
                                         (role) => DropdownMenuItem(
                                           value: role,
@@ -154,7 +174,7 @@ class _FacultyRequestsForApprovalScreenState
                                       )
                                       .toList(),
                                   onChanged: (role) {
-                                    setState(() => activeRole = role!);
+                                    setState(() => activeRole = role);
                                   },
                                 ),
                               ),
@@ -174,7 +194,7 @@ class _FacultyRequestsForApprovalScreenState
                                 crossAxisCount: 2,
                                 crossAxisSpacing: 24,
                                 mainAxisSpacing: 24,
-                                childAspectRatio: 1.55, // 🔥 KEY FIX
+                                childAspectRatio: 1.55,
                               ),
                           itemBuilder: (context, index) {
                             return _RequestCard(
@@ -228,7 +248,7 @@ class _RequestCardState extends State<_RequestCard> {
         border: Border(left: BorderSide(color: request.color, width: 3)),
       ),
       child: Column(
-        mainAxisSize: MainAxisSize.min, // 🔥 IMPORTANT
+        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           /// TYPE + DATE
@@ -279,7 +299,7 @@ class _RequestCardState extends State<_RequestCard> {
           /// COMMENT (COMPACT)
           TextField(
             controller: _commentController,
-            maxLines: 1, // 🔥 REDUCED HEIGHT
+            maxLines: 1,
             style: const TextStyle(fontSize: 12),
             decoration: InputDecoration(
               hintText: 'Add comment (optional)',
@@ -341,3 +361,5 @@ class _RequestCardState extends State<_RequestCard> {
     );
   }
 }
+
+
