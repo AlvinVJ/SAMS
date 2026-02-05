@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import '../styles/app_theme.dart';
 import '../widgets/app_header.dart';
 import '../widgets/faculty_sidebar.dart';
-import '../services/auth_service.dart';
 import '../services/user_request_service.dart';
+import '../services/request_approval_service.dart';
 
 /// =====================
 /// MODEL
@@ -32,12 +32,29 @@ class _FacultyRequestsForApprovalScreenState
   @override
   void initState() {
     super.initState();
-    final profile = AuthService().userProfile;
-    roleTags = profile?.roleTags ?? [];
+    _loadInitialData();
+  }
 
-    if (roleTags.isNotEmpty) {
-      activeRole = roleTags.first;
-      _fetchRequests();
+  Future<void> _loadInitialData() async {
+    setState(() => _isLoading = true);
+    try {
+      final tags = await UserRequestService().fetchRoleTags();
+      setState(() {
+        roleTags = tags;
+        if (roleTags.isNotEmpty) {
+          activeRole = roleTags.first;
+        }
+      });
+      if (activeRole != null) {
+        _fetchRequests();
+      } else {
+        setState(() => _isLoading = false);
+      }
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Failed to load roles';
+        _isLoading = false;
+      });
     }
   }
 
@@ -50,6 +67,8 @@ class _FacultyRequestsForApprovalScreenState
     });
 
     try {
+      // OLD: final requests = await MockUserRequestService().fetchPendingApprovals(activeRole!);
+      // NEW: Using real backend service
       final requests = await UserRequestService().fetchPendingApprovals(
         activeRole!,
       );
@@ -216,11 +235,172 @@ class _RequestCard extends StatefulWidget {
 class _RequestCardState extends State<_RequestCard> {
   final TextEditingController _commentController = TextEditingController();
 
+  // NEW: Track loading state for approval actions
+  bool _isProcessing = false;
+
   @override
   void dispose() {
     _commentController.dispose();
     super.dispose();
   }
+
+  // NEW: Handle approve action
+  Future<void> _handleApprove() async {
+    if (_isProcessing) return;
+
+    setState(() => _isProcessing = true);
+
+    try {
+      // Get active role from parent widget
+      final parentState = context
+          .findAncestorStateOfType<_FacultyRequestsForApprovalScreenState>();
+      final activeRole = parentState?.activeRole;
+
+      if (activeRole == null) {
+        throw Exception('No active role selected');
+      }
+
+      // Call real approval service
+      final service = RequestApprovalService();
+      final success = await service.approveRequest(
+        requestId: widget.request.id,
+        role: activeRole,
+        comments: _commentController.text.isNotEmpty
+            ? _commentController.text
+            : null,
+      );
+
+      if (success && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✓ Request approved successfully'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 2),
+          ),
+        );
+
+        // Refresh the list
+        parentState?._fetchRequests();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('✗ Error: $e'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isProcessing = false);
+      }
+    }
+  }
+
+  // NEW: Handle reject action
+  Future<void> _handleReject() async {
+    if (_isProcessing) return;
+
+    // Show dialog to get rejection reason
+    final reason = await showDialog<String>(
+      context: context,
+      builder: (context) {
+        final reasonController = TextEditingController();
+        return AlertDialog(
+          title: const Text('Reject Request'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('Please provide a reason for rejection:'),
+              const SizedBox(height: 10),
+              TextField(
+                controller: reasonController,
+                maxLines: 3,
+                decoration: const InputDecoration(
+                  hintText: 'Rejection reason...',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                if (reasonController.text.trim().isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Rejection reason is required'),
+                      backgroundColor: Colors.orange,
+                    ),
+                  );
+                  return;
+                }
+                Navigator.pop(context, reasonController.text);
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+              child: const Text('Reject'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (reason == null || reason.trim().isEmpty) return;
+
+    setState(() => _isProcessing = true);
+
+    try {
+      final parentState = context
+          .findAncestorStateOfType<_FacultyRequestsForApprovalScreenState>();
+      final activeRole = parentState?.activeRole;
+
+      if (activeRole == null) {
+        throw Exception('No active role selected');
+      }
+
+      final service = RequestApprovalService();
+      final success = await service.rejectRequest(
+        requestId: widget.request.id,
+        role: activeRole,
+        reason: reason,
+      );
+
+      if (success && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✓ Request rejected'),
+            backgroundColor: Colors.orange,
+            duration: Duration(seconds: 2),
+          ),
+        );
+
+        parentState?._fetchRequests();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('✗ Error: $e'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isProcessing = false);
+      }
+    }
+  }
+
+  // OLD: _handleForward method removed
+  // Forward functionality not needed - system automatically routes to next approval level
 
   @override
   Widget build(BuildContext context) {
@@ -303,40 +483,68 @@ class _RequestCardState extends State<_RequestCard> {
           const SizedBox(height: 8),
 
           /// ACTIONS
+          // NEW: Wired up approval action buttons with mock service
           Row(
             children: [
+              // Approve Button
               Expanded(
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 10),
                   ),
-                  onPressed: () {},
-                  child: const Text('Approve', style: TextStyle(fontSize: 13)),
+                  // OLD (commented out): onPressed: () {},
+                  // NEW: Call approve handler
+                  onPressed: _isProcessing ? null : _handleApprove,
+                  child: _isProcessing
+                      ? const SizedBox(
+                          height: 16,
+                          width: 16,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Colors.white,
+                            ),
+                          ),
+                        )
+                      : const Text('Approve', style: TextStyle(fontSize: 13)),
                 ),
               ),
               const SizedBox(width: 6),
+              // Reject Button
               Expanded(
                 child: OutlinedButton(
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 10),
                   ),
-                  onPressed: () {},
+                  // OLD (commented out): onPressed: () {},
+                  // NEW: Call reject handler
+                  onPressed: _isProcessing ? null : _handleReject,
                   child: const Text('Reject', style: TextStyle(fontSize: 13)),
                 ),
               ),
-              IconButton(
-                tooltip: 'Forward',
-                icon: const Icon(Icons.forward),
-                onPressed: () {},
-              ),
+              // OLD: Forward Button (removed - automatic routing)
+              // System automatically routes to next approval level
+              // View Form Button (temporarily disabled until screen is created)
+              // TODO: Uncomment when RequestDetailsScreen is implemented
               IconButton(
                 tooltip: 'View Form',
                 icon: const Icon(Icons.visibility),
+                // OLD: Navigation to form view (route not created yet)
+                // onPressed: () {
+                //   Navigator.pushNamed(
+                //     context,
+                //     "/faculty/form-view",
+                //     arguments: request.id,
+                //   );
+                // },
+                // NEW: Disabled for now - show info message
                 onPressed: () {
-                  Navigator.pushNamed(
-                    context,
-                    "/faculty/form-view",
-                    arguments: request.id,
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('ℹ️ Form view screen coming soon!'),
+                      backgroundColor: Colors.blueGrey,
+                      duration: Duration(seconds: 2),
+                    ),
                   );
                 },
               ),

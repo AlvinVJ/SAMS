@@ -89,18 +89,46 @@ class UserRequestService {
       final idToken = await user.getIdToken();
       // Using query parameter for role, assuming backend supports it
       final response = await http.get(
-        Uri.parse('$baseUrl/api/user/fetch_pending_approvals?role=$role'),
+        Uri.parse('$baseUrl/api/faculty/request_for_approval?role=$role'),
         headers: {'Authorization': 'Bearer $idToken'},
       );
 
       if (response.statusCode == 200) {
-        final List<dynamic> data = json.decode(response.body);
-        return data.map((item) => PendingApproval.fromJson(item)).toList();
+        final data = json.decode(response.body);
+        // Backend returns { success: true, message: "...", data: { requests: [...] } }
+        final List<dynamic> requestsData = data['data']['requests'];
+        return requestsData
+            .map((item) => PendingApproval.fromJson(item))
+            .toList();
       } else {
         throw Exception('Failed to load pending approvals');
       }
     } catch (e) {
       print('Error fetching pending approvals: $e');
+      rethrow;
+    }
+  }
+
+  Future<List<String>> fetchRoleTags() async {
+    try {
+      final user = AuthService().currentUser;
+      if (user == null) throw Exception('User not authenticated');
+
+      final idToken = await user.getIdToken();
+      final response = await http.get(
+        Uri.parse('$baseUrl/api/common/get_role_tags'),
+        headers: {'Authorization': 'Bearer $idToken'},
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final List<dynamic> tags = data['data']['role_tags'];
+        return tags.map((t) => t.toString()).toList();
+      } else {
+        throw Exception('Failed to load role tags');
+      }
+    } catch (e) {
+      print('Error fetching role tags: $e');
       rethrow;
     }
   }
