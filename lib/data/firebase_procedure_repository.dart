@@ -49,6 +49,7 @@ class ApiProcedureRepository {
           "isActive": true,
 
           "formBuilder": procedure.formSchema.map((f) => f.toJson()).toList(),
+          "formFields": procedure.formSchema.map((f) => f.toJson()).toList(),
 
           "approvalLevels": procedure.approvalLevels
               .asMap()
@@ -82,7 +83,8 @@ class ApiProcedureRepository {
     );
 
     if (response.statusCode != 201 && response.statusCode != 200) {
-      throw Exception('Failed to create request');
+      print('DEBUG: createRequest Error: ${response.body}');
+      throw Exception('Failed to create request: ${response.body}');
     }
   }
 

@@ -115,7 +115,11 @@ class ApprovalLevelDraft {
     List<Map<String, String>> rolesList = [];
     if (json['roleIds'] != null && json['roleIds'] is List) {
       rolesList = (json['roleIds'] as List).map((id) {
-        return {'id': id.toString(), 'name': 'Role $id'};
+        return {
+          'id': id.toString(),
+          'name': 'Role $id',
+          'role_tag': id.toString(),
+        };
       }).toList();
     }
 

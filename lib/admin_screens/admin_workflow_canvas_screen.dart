@@ -332,14 +332,51 @@ class _AdminCreateProcedureScreenState
       visibility: _visibility,
     );
 
-    // need try catch here later.
-    await _procedureRepo.saveProcedure(
-      procedure: procedure,
-      adminUid: adminUid,
-      authToken: authToken,
-    );
+    try {
+      // Show loading indicator
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(child: CircularProgressIndicator()),
+      );
 
-    Navigator.pop(context); // only allowed exit
+      await _procedureRepo.saveProcedure(
+        procedure: procedure,
+        adminUid: adminUid,
+        authToken: authToken,
+      );
+
+      // Close loading dialog
+      if (mounted) Navigator.pop(context);
+
+      // Show success message
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✓ Procedure created successfully'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+
+      // Navigate back to procedures list with success flag
+      if (mounted) Navigator.pop(context, true);
+    } catch (e) {
+      // Close loading dialog
+      if (mounted) Navigator.pop(context);
+
+      // Show error message
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('✗ Error: $e'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    }
   }
 
   @override
@@ -493,7 +530,7 @@ class _AdminCreateProcedureScreenState
             Column(
               children: List.generate(
                 _approvalLevels.length,
-                (index) => _ApprovalLevelCard(
+                (index) => ApprovalLevelCard(
                   level: index + 1,
                   roles: _approvalLevels[index].roles,
                   minApprovals: _approvalLevels[index].minApprovals,
@@ -553,14 +590,14 @@ class _AdminCreateProcedureScreenState
             spacing: 16,
             runSpacing: 16,
             children: [
-              _AddStepButton(
+              AddStepButton(
                 icon: Icons.description,
                 color: Colors.blue,
                 title: 'Form Builder',
                 subtitle: 'Collect request data',
                 onTap: _onFormBuilderClick,
               ),
-              _AddStepButton(
+              AddStepButton(
                 icon: Icons.how_to_reg,
                 color: Colors.green,
                 title: 'Add Approval Level',
@@ -829,7 +866,7 @@ class FormBuilderSection extends StatelessWidget {
   }
 }
 
-class _ApprovalLevelCard extends StatelessWidget {
+class ApprovalLevelCard extends StatelessWidget {
   final int level;
   final List<Map<String, String>> roles;
   final VoidCallback onRemove;
@@ -840,7 +877,7 @@ class _ApprovalLevelCard extends StatelessWidget {
   final ValueChanged<bool?> onToggleAllMustApprove;
   final ValueChanged<int> onMinApprovalsChanged;
 
-  const _ApprovalLevelCard({
+  const ApprovalLevelCard({
     required this.level,
     required this.roles,
     required this.minApprovals,
@@ -967,14 +1004,14 @@ class _ApprovalLevelCard extends StatelessWidget {
 }
 
 /// ───────────────── Add Step Button ─────────────────
-class _AddStepButton extends StatelessWidget {
+class AddStepButton extends StatelessWidget {
   final IconData icon;
   final Color color;
   final String title;
   final String subtitle;
   final VoidCallback onTap;
 
-  const _AddStepButton({
+  const AddStepButton({
     required this.icon,
     required this.color,
     required this.title,

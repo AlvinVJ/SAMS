@@ -2,9 +2,112 @@ import 'package:flutter/material.dart';
 import 'package:sams_final/admin_screens/admin_workflow_canvas_screen.dart';
 import '../styles/app_theme.dart';
 import '../widgets/admin_dashboard_layout.dart';
+import '../services/admin_procedure_service.dart';
+import 'admin_edit_procedure_screen.dart';
 
-class AdminProceduresScreen extends StatelessWidget {
+class AdminProceduresScreen extends StatefulWidget {
   const AdminProceduresScreen({super.key});
+
+  @override
+  State<AdminProceduresScreen> createState() => _AdminProceduresScreenState();
+}
+
+class _AdminProceduresScreenState extends State<AdminProceduresScreen> {
+  final AdminProcedureService _service = AdminProcedureService();
+  List<ProcedureSummary> _procedures = [];
+  List<ProcedureSummary> _filteredProcedures = [];
+  bool _isLoading = true;
+  String? _errorMessage;
+  String _searchQuery = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchProcedures();
+  }
+
+  Future<void> _fetchProcedures() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final procedures = await _service.fetchProcedures();
+      setState(() {
+        _procedures = procedures;
+        _filteredProcedures = procedures;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _errorMessage = e.toString();
+        _isLoading = false;
+      });
+    }
+  }
+
+  void _filterProcedures(String query) {
+    setState(() {
+      _searchQuery = query;
+      if (query.isEmpty) {
+        _filteredProcedures = _procedures;
+      } else {
+        _filteredProcedures = _procedures
+            .where(
+              (p) =>
+                  p.title.toLowerCase().contains(query.toLowerCase()) ||
+                  p.description.toLowerCase().contains(query.toLowerCase()),
+            )
+            .toList();
+      }
+    });
+  }
+
+  Future<void> _deleteProcedure(String procedureId, String title) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Procedure'),
+        content: Text('Are you sure you want to delete "$title"?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      try {
+        await _service.deleteProcedure(procedureId);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('✓ Procedure deleted successfully'),
+              backgroundColor: Colors.green,
+            ),
+          );
+          _fetchProcedures(); // Refresh list
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('✗ Error: $e'), backgroundColor: Colors.red),
+          );
+        }
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -34,13 +137,17 @@ class AdminProceduresScreen extends StatelessWidget {
                 ],
               ),
               ElevatedButton.icon(
-                onPressed: () {
-                  Navigator.push(
+                onPressed: () async {
+                  final result = await Navigator.push(
                     context,
                     MaterialPageRoute(
                       builder: (_) => const AdminCreateProcedureScreen(),
                     ),
                   );
+                  // Refresh list if procedure was created
+                  if (result == true) {
+                    _fetchProcedures();
+                  }
                 },
                 icon: const Icon(Icons.add),
                 label: const Text('Create Procedure'),
@@ -58,7 +165,7 @@ class AdminProceduresScreen extends StatelessWidget {
 
           const SizedBox(height: 20),
 
-          // ───────────────── Filters ─────────────────
+          // ───────────────── Search Bar ─────────────────
           Container(
             padding: const EdgeInsets.all(16),
             decoration: _cardBox(),
@@ -66,6 +173,7 @@ class AdminProceduresScreen extends StatelessWidget {
               children: [
                 Expanded(
                   child: TextField(
+                    onChanged: _filterProcedures,
                     decoration: _inputDecoration(
                       'Search procedures...',
                       Icons.search,
@@ -73,22 +181,10 @@ class AdminProceduresScreen extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 16),
-                SizedBox(
-                  width: 180,
-                  child: DropdownButtonFormField<String>(
-                    initialValue: 'all',
-                    items: const [
-                      DropdownMenuItem(
-                        value: 'all',
-                        child: Text('All Formats'),
-                      ),
-                      DropdownMenuItem(value: 'form', child: Text('Form')),
-                      DropdownMenuItem(value: 'letter', child: Text('Letter')),
-                      DropdownMenuItem(value: 'sheet', child: Text('Sheet')),
-                    ],
-                    onChanged: (_) {},
-                    decoration: _dropdownDecoration(),
-                  ),
+                IconButton(
+                  icon: const Icon(Icons.refresh),
+                  onPressed: _fetchProcedures,
+                  tooltip: 'Refresh',
                 ),
               ],
             ),
@@ -96,21 +192,97 @@ class AdminProceduresScreen extends StatelessWidget {
 
           const SizedBox(height: 24),
 
-          // ───────────────── Grid ─────────────────
-          GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: _procedures.length, // 🔑 dummy data
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 3,
-              mainAxisSpacing: 20,
-              crossAxisSpacing: 20,
-              childAspectRatio: 1.25,
+          // ───────────────── Content ─────────────────
+          if (_isLoading)
+            const Center(
+              child: Padding(
+                padding: EdgeInsets.all(40.0),
+                child: CircularProgressIndicator(),
+              ),
+            )
+          else if (_errorMessage != null)
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.all(40.0),
+                child: Column(
+                  children: [
+                    const Icon(
+                      Icons.error_outline,
+                      size: 48,
+                      color: Colors.red,
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Error loading procedures',
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      _errorMessage!,
+                      style: const TextStyle(color: AppTheme.textLight),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 16),
+                    ElevatedButton.icon(
+                      onPressed: _fetchProcedures,
+                      icon: const Icon(Icons.refresh),
+                      label: const Text('Retry'),
+                    ),
+                  ],
+                ),
+              ),
+            )
+          else if (_filteredProcedures.isEmpty)
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.all(40.0),
+                child: Column(
+                  children: [
+                    const Icon(
+                      Icons.inbox,
+                      size: 48,
+                      color: AppTheme.textLight,
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      _searchQuery.isEmpty
+                          ? 'No procedures yet'
+                          : 'No procedures found',
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      _searchQuery.isEmpty
+                          ? 'Create your first procedure to get started'
+                          : 'Try a different search term',
+                      style: const TextStyle(color: AppTheme.textLight),
+                    ),
+                  ],
+                ),
+              ),
+            )
+          else
+            GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: _filteredProcedures.length,
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 3,
+                mainAxisSpacing: 20,
+                crossAxisSpacing: 20,
+                childAspectRatio: 1.25,
+              ),
+              itemBuilder: (context, index) {
+                return _ProcedureCard(
+                  procedure: _filteredProcedures[index],
+                  onDelete: () => _deleteProcedure(
+                    _filteredProcedures[index].procId,
+                    _filteredProcedures[index].title,
+                  ),
+                  onRefresh: _fetchProcedures,
+                );
+              },
             ),
-            itemBuilder: (context, index) {
-              return _ProcedureCard(_procedures[index]);
-            },
-          ),
         ],
       ),
     );
@@ -119,9 +291,15 @@ class AdminProceduresScreen extends StatelessWidget {
 
 /// ───────────────── Card Widget ─────────────────
 class _ProcedureCard extends StatelessWidget {
-  final _Procedure data;
+  final ProcedureSummary procedure;
+  final VoidCallback onDelete;
+  final VoidCallback onRefresh;
 
-  const _ProcedureCard(this.data);
+  const _ProcedureCard({
+    required this.procedure,
+    required this.onDelete,
+    required this.onRefresh,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -135,7 +313,7 @@ class _ProcedureCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Icon(data.icon, color: data.color, size: 28),
+              const Icon(Icons.description, color: Colors.blue, size: 28),
               Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 10,
@@ -160,14 +338,16 @@ class _ProcedureCard extends StatelessWidget {
           const SizedBox(height: 12),
 
           Text(
-            data.title,
+            procedure.title,
             style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
 
           const SizedBox(height: 6),
 
           Text(
-            data.description,
+            procedure.description,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: const TextStyle(color: AppTheme.textLight, fontSize: 13),
@@ -180,9 +360,8 @@ class _ProcedureCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              _meta('Format', data.format),
-              _meta('Levels', '${data.levels}'),
-              _meta('Requests', '${data.requests}'),
+              _meta('Levels', '${procedure.approvalLevelsCount}'),
+              _meta('Status', 'Active'),
             ],
           ),
 
@@ -191,17 +370,31 @@ class _ProcedureCard extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: OutlinedButton(
-                  onPressed: () {},
-                  child: const Text('View'),
+                child: OutlinedButton.icon(
+                  onPressed: () async {
+                    final result = await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => AdminEditProcedureScreen(
+                          procedureId: procedure.procId,
+                        ),
+                      ),
+                    );
+
+                    // Refresh if updated
+                    if (result == true) {
+                      onRefresh();
+                    }
+                  },
+                  icon: const Icon(Icons.edit, size: 16),
+                  label: const Text('Edit'),
                 ),
               ),
               const SizedBox(width: 8),
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: () {},
-                  child: const Text('Edit'),
-                ),
+              OutlinedButton(
+                onPressed: onDelete,
+                style: OutlinedButton.styleFrom(foregroundColor: Colors.red),
+                child: const Icon(Icons.delete, size: 16),
               ),
             ],
           ),
@@ -229,66 +422,6 @@ class _ProcedureCard extends StatelessWidget {
   }
 }
 
-/// ───────────────── Dummy Data (Replace with API) ─────────────────
-final List<_Procedure> _procedures = [
-  _Procedure(
-    'Leave Application',
-    'Standard procedure for requesting leave.',
-    'Form',
-    3,
-    342,
-    Icons.description,
-    Colors.blue,
-  ),
-  _Procedure(
-    'Purchase Request',
-    'Office procurement approvals.',
-    'Form',
-    4,
-    128,
-    Icons.shopping_cart,
-    Colors.purple,
-  ),
-  _Procedure(
-    'Travel Authorization',
-    'Official travel approval workflow.',
-    'Letter',
-    3,
-    89,
-    Icons.flight,
-    Colors.orange,
-  ),
-  _Procedure(
-    'Equipment Request',
-    'Hardware and equipment provisioning.',
-    'Form',
-    2,
-    56,
-    Icons.devices,
-    Colors.teal,
-  ),
-];
-
-class _Procedure {
-  final String title;
-  final String description;
-  final String format;
-  final int levels;
-  final int requests;
-  final IconData icon;
-  final Color color;
-
-  _Procedure(
-    this.title,
-    this.description,
-    this.format,
-    this.levels,
-    this.requests,
-    this.icon,
-    this.color,
-  );
-}
-
 /// ───────────────── Styling Helpers ─────────────────
 BoxDecoration _cardBox() => BoxDecoration(
   color: Colors.white,
@@ -299,15 +432,6 @@ BoxDecoration _cardBox() => BoxDecoration(
 InputDecoration _inputDecoration(String hint, IconData icon) => InputDecoration(
   hintText: hint,
   prefixIcon: Icon(icon, color: AppTheme.textLight),
-  filled: true,
-  fillColor: AppTheme.backgroundLight,
-  border: OutlineInputBorder(
-    borderRadius: BorderRadius.circular(8),
-    borderSide: BorderSide.none,
-  ),
-);
-
-InputDecoration _dropdownDecoration() => InputDecoration(
   filled: true,
   fillColor: AppTheme.backgroundLight,
   border: OutlineInputBorder(

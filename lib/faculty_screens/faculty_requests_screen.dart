@@ -4,6 +4,7 @@ import '../widgets/app_header.dart';
 import '../widgets/faculty_sidebar.dart';
 import '../services/user_request_service.dart';
 import '../services/request_approval_service.dart';
+import 'request_pdf_view_screen.dart';
 
 /// =====================
 /// MODEL
@@ -522,28 +523,18 @@ class _RequestCardState extends State<_RequestCard> {
                   child: const Text('Reject', style: TextStyle(fontSize: 13)),
                 ),
               ),
-              // OLD: Forward Button (removed - automatic routing)
-              // System automatically routes to next approval level
-              // View Form Button (temporarily disabled until screen is created)
-              // TODO: Uncomment when RequestDetailsScreen is implemented
+              // View Form Button
               IconButton(
                 tooltip: 'View Form',
                 icon: const Icon(Icons.visibility),
-                // OLD: Navigation to form view (route not created yet)
-                // onPressed: () {
-                //   Navigator.pushNamed(
-                //     context,
-                //     "/faculty/form-view",
-                //     arguments: request.id,
-                //   );
-                // },
-                // NEW: Disabled for now - show info message
                 onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('ℹ️ Form view screen coming soon!'),
-                      backgroundColor: Colors.blueGrey,
-                      duration: Duration(seconds: 2),
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => RequestPdfViewScreen(
+                        requestId: request.id,
+                        request: request,
+                      ),
                     ),
                   );
                 },

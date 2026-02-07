@@ -82,14 +82,25 @@ class _RequestFormScreenState extends State<RequestFormScreen> {
                   Align(
                     alignment: Alignment.centerRight,
                     child: ElevatedButton(
-                      onPressed: _submit,
+                      onPressed: _isSubmitting ? null : _submit,
                       style: ElevatedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 28,
                           vertical: 14,
                         ),
                       ),
-                      child: const Text('Submit Request'),
+                      child: _isSubmitting
+                          ? const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  Colors.white,
+                                ),
+                              ),
+                            )
+                          : const Text('Submit Request'),
                     ),
                   ),
                 ],
@@ -150,12 +161,11 @@ class _RequestFormScreenState extends State<RequestFormScreen> {
         );
 
         if (picked != null) {
+          final dateString = picked.toIso8601String().split('T').first;
           setState(() {
-            _values[field.fieldId] = picked;
-            _controllers[field.fieldId]!.text = picked
-                .toIso8601String()
-                .split('T')
-                .first;
+            // Store as ISO string, not DateTime object
+            _values[field.fieldId] = dateString;
+            _controllers[field.fieldId]!.text = dateString;
           });
         }
       },
@@ -246,7 +256,11 @@ class _RequestFormScreenState extends State<RequestFormScreen> {
 
   // ───────────────── Submit ─────────────────
 
+  bool _isSubmitting = false;
+
   Future<void> _submit() async {
+    if (_isSubmitting) return;
+
     _multiChoiceErrors.clear();
 
     for (final field in widget.fields) {
@@ -262,17 +276,52 @@ class _RequestFormScreenState extends State<RequestFormScreen> {
       return;
     }
 
-    if (!_formKey.currentState!.validate()) return;
+    if (!_formKey.currentState!.validate()) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please fill all required fields'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
 
-    final token = await FirebaseAuth.instance.currentUser!.getIdToken();
+    setState(() => _isSubmitting = true);
 
-    await _requestRepo.createRequest(
-      procedureId: widget.procedureId,
-      values: _values,
-      authToken: token,
-    );
+    try {
+      // Submit to backend using ProcedureService
+      await _requestRepo.createRequest(
+        procedureId: widget.procedureId,
+        values: _values,
+        authToken: await FirebaseAuth.instance.currentUser!.getIdToken(),
+      );
 
-    if (!mounted) return;
-    Navigator.pop(context);
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('✓ Request submitted successfully'),
+          backgroundColor: Colors.green,
+          duration: Duration(seconds: 2),
+        ),
+      );
+
+      // Navigate back to requests screen
+      Navigator.pop(context);
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('✗ Error: $e'),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+      }
+    }
   }
 }

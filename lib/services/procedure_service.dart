@@ -33,10 +33,9 @@ class ProcedureService {
       final response = await http.get(
         Uri.parse('$baseUrl/api/common/fetch_procedures'),
         headers: {
-          'Content-Type': 'application/json', 
-          'Authorization': 'Bearer $authToken'
-        }
-
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $authToken',
+        },
       );
 
       if (response.statusCode == 200) {
@@ -54,6 +53,45 @@ class ProcedureService {
       }
     } catch (e) {
       throw Exception('Error fetching procedures: $e');
+    }
+  }
+
+  /// Submit a request to the backend
+  ///
+  /// [procedureId] - The ID of the procedure being requested
+  /// [formData] - Map of field IDs to their values
+  ///
+  /// Returns a map with success status, request ID, and message
+  Future<Map<String, dynamic>> submitRequest({
+    required String procedureId,
+    required Map<String, dynamic> formData,
+  }) async {
+    try {
+      final authToken = await FirebaseAuth.instance.currentUser!.getIdToken();
+
+      final response = await http.post(
+        Uri.parse('$baseUrl/api/common/create_request'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $authToken',
+        },
+        body: jsonEncode({'procedureId': procedureId, 'formData': formData}),
+      );
+
+      if (response.statusCode == 201) {
+        final data = jsonDecode(response.body);
+        return {
+          'success': true,
+          'requestId': data['data']['request_id'],
+          'message': data['message'],
+        };
+      } else {
+        final error = jsonDecode(response.body);
+        throw Exception(error['message'] ?? 'Failed to submit request');
+      }
+    } catch (e) {
+      print('Error submitting request: $e');
+      rethrow;
     }
   }
 }
