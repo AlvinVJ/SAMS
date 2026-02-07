@@ -3,6 +3,7 @@ import '../styles/app_theme.dart';
 import '../widgets/dashboard_layout.dart';
 import '../widgets/faculty_dashboard_layout.dart';
 import '../services/user_request_service.dart';
+import '../faculty_screens/request_pdf_view_screen.dart';
 
 class UnifiedRequestsScreen extends StatefulWidget {
   final String userRole; // 'student' or 'faculty'
@@ -247,18 +248,7 @@ class _UnifiedRequestsScreenState extends State<UnifiedRequestsScreen> {
                         ),
                       ),
                     ],
-                    rows: requests
-                        .map(
-                          (req) => _buildRow(
-                            req.id,
-                            req.title,
-                            req.date,
-                            req.level,
-                            req.status,
-                            req.statusColor,
-                          ),
-                        )
-                        .toList(),
+                    rows: requests.map((req) => _buildRow(req)).toList(),
                   ),
                 ),
               );
@@ -269,25 +259,20 @@ class _UnifiedRequestsScreenState extends State<UnifiedRequestsScreen> {
     );
   }
 
-  DataRow _buildRow(
-    String id,
-    String title,
-    String date,
-    String level,
-    String status,
-    Color color,
-  ) {
+  DataRow _buildRow(UserRequest req) {
     return DataRow(
       cells: [
-        DataCell(Text(id, style: const TextStyle(fontWeight: FontWeight.w500))),
-        DataCell(Text(title)),
-        DataCell(Text(date)),
-        DataCell(Text(level)),
+        DataCell(
+          Text(req.id, style: const TextStyle(fontWeight: FontWeight.w500)),
+        ),
+        DataCell(Text(req.title)),
+        DataCell(Text(req.date)),
+        DataCell(Text(req.level)),
         DataCell(
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
+              color: req.statusColor.withOpacity(0.1),
               borderRadius: BorderRadius.circular(20),
             ),
             child: Row(
@@ -297,15 +282,15 @@ class _UnifiedRequestsScreenState extends State<UnifiedRequestsScreen> {
                   width: 6,
                   height: 6,
                   decoration: BoxDecoration(
-                    color: color,
+                    color: req.statusColor,
                     shape: BoxShape.circle,
                   ),
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  status,
+                  req.status,
                   style: TextStyle(
-                    color: color,
+                    color: req.statusColor,
                     fontWeight: FontWeight.bold,
                     fontSize: 12,
                   ),
@@ -315,7 +300,276 @@ class _UnifiedRequestsScreenState extends State<UnifiedRequestsScreen> {
           ),
         ),
         DataCell(
-          TextButton(onPressed: () {}, child: const Text('View Details')),
+          TextButton(
+            onPressed: () => _showRequestDetails(req),
+            child: Text('View Details (${req.approvalHistory.length})'),
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _showRequestDetails(UserRequest req) {
+    debugPrint('[UI-FINAL-VERIFY] Details Dialog opened for ID: ${req.id}');
+    debugPrint(
+      '[UI-FINAL-VERIFY] History Count in Object: ${req.approvalHistory.length}',
+    );
+    for (var i = 0; i < req.approvalHistory.length; i++) {
+      debugPrint(
+        '[UI-FINAL-VERIFY]   Level ${req.approvalHistory[i].level}: ${req.approvalHistory[i].status} | Comments: ${req.approvalHistory[i].comments}',
+      );
+    }
+
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (context) => Dialog(
+        insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 800),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(32),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            req.title,
+                            style: const TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'ID: ${req.id} • Submitted on ${req.date}',
+                            style: const TextStyle(color: AppTheme.textLight),
+                          ),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ],
+                ),
+                const Divider(height: 40),
+
+                // Feedback section
+                if (req.approvalHistory.any(
+                  (h) => h.comments != null && h.comments!.trim().isNotEmpty,
+                )) ...[
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      color: req.statusColor.withOpacity(0.05),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: req.statusColor.withOpacity(0.1),
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.feedback_outlined,
+                              size: 16,
+                              color: req.statusColor,
+                            ),
+                            const SizedBox(width: 8),
+                            const Text(
+                              'APPROVAL FEEDBACK',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 1.1,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        ...req.approvalHistory
+                            .where(
+                              (h) =>
+                                  h.comments != null &&
+                                  h.comments!.trim().isNotEmpty,
+                            )
+                            .map(
+                              (h) => Padding(
+                                padding: const EdgeInsets.only(bottom: 8),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      '${h.approverName} (${h.role}):',
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.grey.shade700,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      '\"${h.comments}\"',
+                                      style: const TextStyle(
+                                        fontSize: 13,
+                                        fontStyle: FontStyle.italic,
+                                        height: 1.4,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                ],
+
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'APPROVAL TIMELINE',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: AppTheme.textLight,
+                      ),
+                    ),
+                    TextButton.icon(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => RequestPdfViewScreen(
+                              requestId: req.id,
+                              request: req.toPendingApproval(),
+                            ),
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.picture_as_pdf, size: 18),
+                      label: const Text('View Request PDF'),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+
+                Flexible(
+                  child: req.approvalHistory.isEmpty
+                      ? const Center(child: Text('No approval actions yet.'))
+                      : ListView.builder(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: req.approvalHistory.length,
+                          itemBuilder: (context, index) {
+                            final history = req.approvalHistory[index];
+                            return _buildTimelineItem(
+                              level: history.level,
+                              status: history.status,
+                              approver:
+                                  '${history.approverName} (${history.role})',
+                              comment: history.comments,
+                              timestamp: history.timestamp,
+                              isLast: index == req.approvalHistory.length - 1,
+                              color: req.statusColor,
+                            );
+                          },
+                        ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTimelineItem({
+    required int level,
+    required String status,
+    required String approver,
+    String? comment,
+    required String timestamp,
+    bool isLast = false,
+    required Color color,
+  }) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Column(
+          children: [
+            Container(
+              width: 12,
+              height: 12,
+              decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+            ),
+            if (!isLast)
+              Container(width: 2, height: 80, color: Colors.grey.shade200),
+          ],
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Level $level: $status',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  Text(
+                    timestamp,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: AppTheme.textLight,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              Text(
+                approver,
+                style: const TextStyle(fontSize: 13, color: AppTheme.textLight),
+              ),
+              if (comment != null && comment.trim().isNotEmpty) ...[
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade50,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.grey.shade100),
+                  ),
+                  child: Text(
+                    '"$comment"',
+                    style: const TextStyle(
+                      fontStyle: FontStyle.italic,
+                      fontSize: 13,
+                    ),
+                  ),
+                ),
+              ],
+              const SizedBox(height: 24),
+            ],
+          ),
         ),
       ],
     );

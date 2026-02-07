@@ -11,6 +11,14 @@ class UserRequest {
   final String level;
   final String status;
   final Color statusColor;
+  final int currentLevel;
+  final int totalLevels;
+  final List<ApprovalAction> approvalHistory;
+  final Map<String, dynamic> formData;
+  final String studentName;
+  final String studentId;
+  final String department;
+  final String roleTag;
 
   UserRequest({
     required this.id,
@@ -19,25 +27,82 @@ class UserRequest {
     required this.level,
     required this.status,
     required this.statusColor,
+    required this.currentLevel,
+    required this.totalLevels,
+    required this.approvalHistory,
+    this.formData = const {},
+    this.studentName = '',
+    this.studentId = '',
+    this.department = '',
+    this.roleTag = 'Approver',
   });
+
+  PendingApproval toPendingApproval() {
+    return PendingApproval(
+      id: id,
+      type: title,
+      studentName: studentName,
+      studentId: studentId,
+      department: department,
+      date: date,
+      description: '', // PDF uses formData if available
+      attachments: [],
+      roleTag: roleTag,
+      color: statusColor, // Map status color
+      approvalHistory: approvalHistory,
+      formData: formData,
+    );
+  }
+
+  factory UserRequest.fromJson(Map<String, dynamic> json) {
+    Color parseStatusColor(String? colorType) {
+      switch (colorType?.toLowerCase()) {
+        case 'success':
+        case 'approved':
+          return AppTheme.success;
+        case 'error':
+        case 'rejected':
+          return AppTheme.error;
+        case 'warning':
+        case 'pending':
+        default:
+          return AppTheme.warning;
+      }
+    }
+
+    final historyJson = json['approvalHistory'] as List? ?? [];
+    debugPrint(
+      '[MODEL-DEBUG] Parsing request ${json['req_id']} | History items in JSON: ${historyJson.length}',
+    );
+
+    return UserRequest(
+      id: json['req_id'] ?? '',
+      title: json['procedure_title'] ?? 'Unknown Request',
+      date: json['created_at']?.toString().split('T')[0] ?? '',
+      level: 'Level ${json['current_level'] ?? 1}',
+      status: json['status_text'] ?? 'Pending',
+      statusColor: parseStatusColor(json['color']),
+      currentLevel: json['current_level'] ?? 1,
+      totalLevels: json['total_levels'] ?? 1,
+      approvalHistory: historyJson
+          .map((h) => ApprovalAction.fromJson(Map<String, dynamic>.from(h)))
+          .toList(),
+      formData: Map<String, dynamic>.from(json['formData'] ?? {}),
+      studentName: json['studentName'] ?? '',
+      studentId: json['studentId'] ?? '',
+      department: json['department'] ?? '',
+      roleTag: json['roleTag'] ?? 'Approver',
+    );
+  }
 
   factory UserRequest.fromList(List<dynamic> list) {
     // Assuming format: [id, title, date, level, status, colorType]
-    // colorType could be 'success', 'warning', 'error', etc.
-    final colorType = list[5] as String? ?? 'warning';
-    Color color;
-    switch (colorType) {
-      case 'success':
-        color = AppTheme.success;
-        break;
-      case 'error':
-        color = AppTheme.error;
-        break;
-      case 'warning':
-      default:
-        color = AppTheme.warning;
-        break;
-    }
+    final colorType = list.length > 5
+        ? list[5] as String? ?? 'warning'
+        : 'warning';
+    Color color = colorType == 'success'
+        ? AppTheme.success
+        : (colorType == 'error' ? AppTheme.error : AppTheme.warning);
 
     return UserRequest(
       id: list[0] as String,
@@ -46,6 +111,9 @@ class UserRequest {
       level: list[3] as String,
       status: list[4] as String,
       statusColor: color,
+      currentLevel: 1,
+      totalLevels: 1,
+      approvalHistory: [],
     );
   }
 }
@@ -62,19 +130,43 @@ class UserRequestService {
 
       final idToken = await user.getIdToken();
       final response = await http.get(
-        Uri.parse('$baseUrl/api/user/fetch_user_requests'),
+        Uri.parse('$baseUrl/api/requests/my_requests'),
         headers: {'Authorization': 'Bearer $idToken'},
       );
 
       if (response.statusCode == 200) {
-        final List<dynamic> data = json.decode(response.body);
-        return data.map((item) => UserRequest.fromList(item)).toList();
+        final data = json.decode(response.body);
+        final List<dynamic> list = data is Map ? data['data'] : data;
+        return list.map((item) => UserRequest.fromJson(item)).toList();
       } else {
         throw Exception('Failed to load user requests');
       }
     } catch (e) {
       print('Error fetching user requests: $e');
-      // For now, return empty or throw
+      rethrow;
+    }
+  }
+
+  Future<List<UserRequest>> fetchActedRequests() async {
+    try {
+      final user = AuthService().currentUser;
+      if (user == null) throw Exception('User not authenticated');
+
+      final idToken = await user.getIdToken();
+      final response = await http.get(
+        Uri.parse('$baseUrl/api/faculty/acted_requests'),
+        headers: {'Authorization': 'Bearer $idToken'},
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final List<dynamic> list = data['data'];
+        return list.map((item) => UserRequest.fromJson(item)).toList();
+      } else {
+        throw Exception('Failed to load acted requests');
+      }
+    } catch (e) {
+      print('Error fetching acted requests: $e');
       rethrow;
     }
   }
@@ -153,12 +245,15 @@ class ApprovalAction {
 
   factory ApprovalAction.fromJson(Map<String, dynamic> json) {
     return ApprovalAction(
-      level: json['level'] ?? 0,
-      approverName: json['approverName'] ?? 'Unknown',
-      role: json['role'] ?? '',
-      status: json['status'] ?? 'APPROVED',
-      comments: json['comments'],
-      timestamp: json['timestamp'] ?? '',
+      level: json['level'] is int
+          ? json['level']
+          : int.tryParse(json['level']?.toString() ?? '0') ?? 0,
+      approverName: json['approverName']?.toString() ?? 'Unknown',
+      role: json['role']?.toString().replaceAll('_', ' ').toUpperCase() ?? '',
+      status: json['status']?.toString() ?? 'APPROVED',
+      comments: json['comments']
+          ?.toString(), // Explicitly stringify if not null
+      timestamp: json['timestamp']?.toString() ?? '',
     );
   }
 }

@@ -151,139 +151,144 @@ class _RequestPdfViewScreenState extends State<RequestPdfViewScreen> {
       );
     }
 
+    // Final data verification log before generation
+    debugPrint('[PDF-GEN-VERIFY] Generating PDF for ${widget.requestId}');
+    debugPrint(
+      '[PDF-GEN-VERIFY]   Total History Items: ${request.approvalHistory.length}',
+    );
+    for (var i = 0; i < request.approvalHistory.length; i++) {
+      final h = request.approvalHistory[i];
+      debugPrint(
+        '[PDF-GEN-VERIFY]   Item $i: Level ${h.level} | ${h.approverName} | ${h.role} | ${h.status}',
+      );
+    }
+
     pdf.addPage(
-      pw.Page(
+      pw.MultiPage(
         pageFormat: PdfPageFormat.a4,
         margin: const pw.EdgeInsets.all(50),
         build: (pw.Context context) {
-          return pw.Column(
-            crossAxisAlignment: pw.CrossAxisAlignment.start,
-            children: [
-              // Header - Institutional Branding
-              pw.Center(
-                child: pw.Column(
-                  children: [
-                    pw.Text(
-                      'MUTHOOT INSTITUTE OF TECHNOLOGY & SCIENCE',
-                      style: pw.TextStyle(
-                        fontSize: 16,
-                        fontWeight: pw.FontWeight.bold,
-                      ),
+          return [
+            // Header - Institutional Branding
+            pw.Center(
+              child: pw.Column(
+                children: [
+                  pw.Text(
+                    'MUTHOOT INSTITUTE OF TECHNOLOGY & SCIENCE',
+                    style: pw.TextStyle(
+                      fontSize: 16,
+                      fontWeight: pw.FontWeight.bold,
                     ),
-                    pw.Text(
-                      '(AUTONOMOUS INSTITUTION)',
-                      style: const pw.TextStyle(fontSize: 10),
-                    ),
-                    pw.Text(
-                      'DEPARTMENT OF ${request.department.toUpperCase()}',
-                      style: pw.TextStyle(
-                        fontSize: 14,
-                        fontWeight: pw.FontWeight.bold,
-                        color: PdfColors.blue900,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              pw.SizedBox(height: 10),
-              pw.Divider(thickness: 1.5),
-              pw.SizedBox(height: 20),
-
-              // Date & Location
-              pw.Align(
-                alignment: pw.Alignment.centerRight,
-                child: pw.Text(
-                  'Date: ${request.date}\nLocation: Ernakulam',
-                  textAlign: pw.TextAlign.right,
-                  style: const pw.TextStyle(fontSize: 11),
-                ),
-              ),
-
-              pw.SizedBox(height: 20),
-
-              // Recipient Details
-              pw.Text('To,', style: const pw.TextStyle(fontSize: 11)),
-              pw.Text(
-                'The ${request.roleTag.replaceAll('_', ' ').toUpperCase()},',
-                style: pw.TextStyle(
-                  fontSize: 11,
-                  fontWeight: pw.FontWeight.bold,
-                ),
-              ),
-              pw.Text(
-                'MITS, Ernakulam.',
-                style: const pw.TextStyle(fontSize: 11),
-              ),
-
-              pw.SizedBox(height: 30),
-
-              // Sender Details (From)
-              pw.Text('From,', style: const pw.TextStyle(fontSize: 11)),
-              pw.Text(
-                '${request.studentName},',
-                style: pw.TextStyle(
-                  fontSize: 11,
-                  fontWeight: pw.FontWeight.bold,
-                ),
-              ),
-              pw.Text(
-                'ID: ${request.studentId} | Dept: ${request.department}',
-                style: const pw.TextStyle(fontSize: 11),
-              ),
-
-              pw.SizedBox(height: 30),
-
-              // Subject
-              pw.Center(
-                child: pw.Text(
-                  'SUB: APPLICATION FOR ${request.type.toUpperCase()}',
-                  style: pw.TextStyle(
-                    fontSize: 12,
-                    fontWeight: pw.FontWeight.bold,
-                    decoration: pw.TextDecoration.underline,
                   ),
-                ),
-              ),
-
-              pw.SizedBox(height: 25),
-
-              // Body
-              pw.Text(
-                'Respected Sir/Madam,',
-                style: const pw.TextStyle(fontSize: 11),
-              ),
-              pw.SizedBox(height: 10),
-              pw.Text(
-                'I am writing this letter to formally request approval for ${request.type}. Below are the relevant details submitted for your review:',
-                style: const pw.TextStyle(fontSize: 11),
-              ),
-              pw.SizedBox(height: 15),
-
-              // Structured Data
-              pw.Container(
-                padding: const pw.EdgeInsets.all(10),
-                decoration: pw.BoxDecoration(
-                  border: pw.Border.all(color: PdfColors.grey200),
-                  borderRadius: pw.BorderRadius.circular(4),
-                  color: PdfColors.grey50,
-                ),
-                child: pw.Column(children: formFields),
-              ),
-
-              pw.SizedBox(height: 30),
-
-              // NEW: Approval History Section
-              if (request.approvalHistory.isNotEmpty) ...[
-                pw.Text(
-                  'APPROVAL TRACKING',
-                  style: pw.TextStyle(
-                    fontSize: 12,
-                    fontWeight: pw.FontWeight.bold,
-                    color: PdfColors.blueGrey700,
+                  pw.Text(
+                    '(AUTONOMOUS INSTITUTION)',
+                    style: const pw.TextStyle(fontSize: 10),
                   ),
+                  pw.Text(
+                    'DEPARTMENT OF ${request.department.toUpperCase()}',
+                    style: pw.TextStyle(
+                      fontSize: 14,
+                      fontWeight: pw.FontWeight.bold,
+                      color: PdfColors.blue900,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            pw.SizedBox(height: 10),
+            pw.Divider(thickness: 1.5),
+            pw.SizedBox(height: 20),
+
+            // Date & Location
+            pw.Align(
+              alignment: pw.Alignment.centerRight,
+              child: pw.Text(
+                'Date: ${request.date}\nLocation: Ernakulam',
+                textAlign: pw.TextAlign.right,
+                style: const pw.TextStyle(fontSize: 11),
+              ),
+            ),
+
+            pw.SizedBox(height: 20),
+
+            // Recipient Details
+            pw.Text('To,', style: const pw.TextStyle(fontSize: 11)),
+            pw.Text(
+              'The ${request.roleTag.replaceAll('_', ' ').toUpperCase()},',
+              style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold),
+            ),
+            pw.Text(
+              'MITS, Ernakulam.',
+              style: const pw.TextStyle(fontSize: 11),
+            ),
+
+            pw.SizedBox(height: 30),
+
+            // Sender Details (From)
+            pw.Text('From,', style: const pw.TextStyle(fontSize: 11)),
+            pw.Text(
+              '${request.studentName},',
+              style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold),
+            ),
+            pw.Text(
+              'ID: ${request.studentId} | Dept: ${request.department}',
+              style: const pw.TextStyle(fontSize: 11),
+            ),
+
+            pw.SizedBox(height: 30),
+
+            // Subject
+            pw.Center(
+              child: pw.Text(
+                'SUB: APPLICATION FOR ${request.type.toUpperCase()}',
+                style: pw.TextStyle(
+                  fontSize: 12,
+                  fontWeight: pw.FontWeight.bold,
+                  decoration: pw.TextDecoration.underline,
                 ),
-                pw.SizedBox(height: 8),
-                ...request.approvalHistory.map((history) {
+              ),
+            ),
+
+            pw.SizedBox(height: 25),
+
+            // Body
+            pw.Text(
+              'Respected Sir/Madam,',
+              style: const pw.TextStyle(fontSize: 11),
+            ),
+            pw.SizedBox(height: 10),
+            pw.Text(
+              'I am writing this letter to formally request approval for ${request.type}. Below are the relevant details submitted for your review:',
+              style: const pw.TextStyle(fontSize: 11),
+            ),
+            pw.SizedBox(height: 15),
+
+            // Structured Data
+            pw.Container(
+              padding: const pw.EdgeInsets.all(10),
+              decoration: pw.BoxDecoration(
+                border: pw.Border.all(color: PdfColors.grey200),
+                borderRadius: pw.BorderRadius.circular(4),
+                color: PdfColors.grey50,
+              ),
+              child: pw.Column(children: formFields),
+            ),
+
+            pw.SizedBox(height: 30),
+
+            // NEW: Approval History Section
+            if (request.approvalHistory.isNotEmpty) ...[
+              pw.Text(
+                'APPROVAL TRACKING',
+                style: pw.TextStyle(
+                  fontSize: 12,
+                  fontWeight: pw.FontWeight.bold,
+                  color: PdfColors.blueGrey700,
+                ),
+              ),
+              pw.SizedBox(height: 8),
+              pw.Column(
+                children: request.approvalHistory.map((history) {
                   return pw.Padding(
                     padding: const pw.EdgeInsets.only(bottom: 12),
                     child: pw.Row(
@@ -310,13 +315,22 @@ class _RequestPdfViewScreenState extends State<RequestPdfViewScreen> {
                                 ),
                               ),
                               if (history.comments != null &&
-                                  history.comments!.isNotEmpty)
+                                  history.comments!.trim().isNotEmpty)
                                 pw.Text(
-                                  'Comments: "${history.comments}"',
+                                  'Feedback: "${history.comments!.trim()}"',
                                   style: pw.TextStyle(
                                     fontSize: 10,
                                     fontStyle: pw.FontStyle.italic,
                                     color: PdfColors.grey700,
+                                  ),
+                                )
+                              else
+                                pw.Text(
+                                  'Feedback: "No specific feedback provided."',
+                                  style: pw.TextStyle(
+                                    fontSize: 10,
+                                    fontStyle: pw.FontStyle.italic,
+                                    color: PdfColors.grey400,
                                   ),
                                 ),
                               pw.Text(
@@ -332,84 +346,76 @@ class _RequestPdfViewScreenState extends State<RequestPdfViewScreen> {
                       ],
                     ),
                   );
-                }),
-                pw.SizedBox(height: 10),
-              ],
-
-              pw.SizedBox(height: 40),
-
-              // Closing
-              pw.Text('Thanking You,', style: const pw.TextStyle(fontSize: 11)),
-              pw.SizedBox(height: 40),
-
-              // Signature Area
-              pw.Row(
-                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                children: [
-                  pw.Column(
-                    crossAxisAlignment: pw.CrossAxisAlignment.start,
-                    children: [
-                      pw.Container(
-                        width: 120,
-                        height: 1,
-                        color: PdfColors.black,
-                      ),
-                      pw.SizedBox(height: 4),
-                      pw.Text(
-                        'Student Signature',
-                        style: const pw.TextStyle(fontSize: 10),
-                      ),
-                    ],
-                  ),
-                  pw.Column(
-                    crossAxisAlignment: pw.CrossAxisAlignment.end,
-                    children: [
-                      pw.Container(
-                        width: 120,
-                        height: 1,
-                        color: PdfColors.black,
-                      ),
-                      pw.SizedBox(height: 4),
-                      pw.Text(
-                        'Authorized Signature',
-                        style: const pw.TextStyle(fontSize: 10),
-                      ),
-                      pw.Text(
-                        '(${request.roleTag.toUpperCase()})',
-                        style: const pw.TextStyle(
-                          fontSize: 9,
-                          color: PdfColors.grey700,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
+                }).toList(),
               ),
-
-              // Footer Metadata
-              pw.Spacer(),
-              pw.Divider(),
-              pw.Row(
-                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                children: [
-                  pw.Text(
-                    'SAMS - Student Approval Management System',
-                    style: const pw.TextStyle(
-                      fontSize: 8,
-                      color: PdfColors.grey600,
-                    ),
-                  ),
-                  pw.Text(
-                    'Reference ID: ${widget.requestId}',
-                    style: const pw.TextStyle(
-                      fontSize: 8,
-                      color: PdfColors.grey600,
-                    ),
-                  ),
-                ],
-              ),
+              pw.SizedBox(height: 10),
             ],
-          );
+
+            pw.SizedBox(height: 40),
+
+            // Closing
+            pw.Text('Thanking You,', style: const pw.TextStyle(fontSize: 11)),
+            pw.SizedBox(height: 40),
+
+            // Signature Area
+            pw.Row(
+              mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+              children: [
+                pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    pw.Container(width: 120, height: 1, color: PdfColors.black),
+                    pw.SizedBox(height: 4),
+                    pw.Text(
+                      'Student Signature',
+                      style: const pw.TextStyle(fontSize: 10),
+                    ),
+                  ],
+                ),
+                pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.end,
+                  children: [
+                    pw.Container(width: 120, height: 1, color: PdfColors.black),
+                    pw.SizedBox(height: 4),
+                    pw.Text(
+                      'Authorized Signature',
+                      style: const pw.TextStyle(fontSize: 10),
+                    ),
+                    pw.Text(
+                      '(${request.roleTag.toUpperCase()})',
+                      style: const pw.TextStyle(
+                        fontSize: 9,
+                        color: PdfColors.grey700,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+
+            // Footer Metadata
+            pw.SizedBox(height: 50),
+            pw.Divider(),
+            pw.Row(
+              mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+              children: [
+                pw.Text(
+                  'SAMS - Student Approval Management System',
+                  style: const pw.TextStyle(
+                    fontSize: 8,
+                    color: PdfColors.grey600,
+                  ),
+                ),
+                pw.Text(
+                  'Reference ID: ${widget.requestId}',
+                  style: const pw.TextStyle(
+                    fontSize: 8,
+                    color: PdfColors.grey600,
+                  ),
+                ),
+              ],
+            ),
+          ];
         },
       ),
     );
