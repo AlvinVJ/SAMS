@@ -68,8 +68,7 @@ class _FacultyRequestsForApprovalScreenState
     });
 
     try {
-      // OLD: final requests = await MockUserRequestService().fetchPendingApprovals(activeRole!);
-      // NEW: Using real backend service
+      // Using real backend service
       final requests = await UserRequestService().fetchPendingApprovals(
         activeRole!,
       );
@@ -234,25 +233,26 @@ class _RequestCard extends StatefulWidget {
 }
 
 class _RequestCardState extends State<_RequestCard> {
-  final TextEditingController _commentController = TextEditingController();
-
   // NEW: Track loading state for approval actions
   bool _isProcessing = false;
 
-  @override
-  void dispose() {
-    _commentController.dispose();
-    super.dispose();
-  }
-
-  // NEW: Handle approve action
+  // NEW: Handle approve action with dialog
   Future<void> _handleApprove() async {
     if (_isProcessing) return;
+
+    final comment = await _showActionDialog(
+      title: 'Approve Request',
+      message: 'Are you sure you want to approve this request?',
+      confirmText: 'Approve',
+      confirmColor: Colors.blue,
+      isCommentRequired: false,
+    );
+
+    if (comment == null) return; // User cancelled
 
     setState(() => _isProcessing = true);
 
     try {
-      // Get active role from parent widget
       final parentState = context
           .findAncestorStateOfType<_FacultyRequestsForApprovalScreenState>();
       final activeRole = parentState?.activeRole;
@@ -261,14 +261,11 @@ class _RequestCardState extends State<_RequestCard> {
         throw Exception('No active role selected');
       }
 
-      // Call real approval service
       final service = RequestApprovalService();
       final success = await service.approveRequest(
         requestId: widget.request.id,
         role: activeRole,
-        comments: _commentController.text.isNotEmpty
-            ? _commentController.text
-            : null,
+        comments: comment.trim().isNotEmpty ? comment.trim() : null,
       );
 
       if (success && mounted) {
@@ -279,8 +276,6 @@ class _RequestCardState extends State<_RequestCard> {
             duration: Duration(seconds: 2),
           ),
         );
-
-        // Refresh the list
         parentState?._fetchRequests();
       }
     } catch (e) {
@@ -300,56 +295,16 @@ class _RequestCardState extends State<_RequestCard> {
     }
   }
 
-  // NEW: Handle reject action
+  // NEW: Handle reject action with dialog
   Future<void> _handleReject() async {
     if (_isProcessing) return;
 
-    // Show dialog to get rejection reason
-    final reason = await showDialog<String>(
-      context: context,
-      builder: (context) {
-        final reasonController = TextEditingController();
-        return AlertDialog(
-          title: const Text('Reject Request'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text('Please provide a reason for rejection:'),
-              const SizedBox(height: 10),
-              TextField(
-                controller: reasonController,
-                maxLines: 3,
-                decoration: const InputDecoration(
-                  hintText: 'Rejection reason...',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                if (reasonController.text.trim().isEmpty) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Rejection reason is required'),
-                      backgroundColor: Colors.orange,
-                    ),
-                  );
-                  return;
-                }
-                Navigator.pop(context, reasonController.text);
-              },
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-              child: const Text('Reject'),
-            ),
-          ],
-        );
-      },
+    final reason = await _showActionDialog(
+      title: 'Reject Request',
+      message: 'Please provide a reason for rejection:',
+      confirmText: 'Reject',
+      confirmColor: Colors.red,
+      isCommentRequired: true,
     );
 
     if (reason == null || reason.trim().isEmpty) return;
@@ -369,7 +324,7 @@ class _RequestCardState extends State<_RequestCard> {
       final success = await service.rejectRequest(
         requestId: widget.request.id,
         role: activeRole,
-        reason: reason,
+        reason: reason.trim(),
       );
 
       if (success && mounted) {
@@ -380,7 +335,6 @@ class _RequestCardState extends State<_RequestCard> {
             duration: Duration(seconds: 2),
           ),
         );
-
         parentState?._fetchRequests();
       }
     } catch (e) {
@@ -400,8 +354,71 @@ class _RequestCardState extends State<_RequestCard> {
     }
   }
 
-  // OLD: _handleForward method removed
-  // Forward functionality not needed - system automatically routes to next approval level
+  // Helper to show approval/rejection dialog
+  Future<String?> _showActionDialog({
+    required String title,
+    required String message,
+    required String confirmText,
+    required Color confirmColor,
+    required bool isCommentRequired,
+  }) async {
+    final controller = TextEditingController();
+    return showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+        title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(message),
+            const SizedBox(height: 16),
+            TextField(
+              controller: controller,
+              maxLines: 3,
+              decoration: InputDecoration(
+                hintText: isCommentRequired
+                    ? 'Enter reason...'
+                    : 'Add a comment (optional)...',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                filled: true,
+                fillColor: Colors.grey.shade50,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: confirmColor,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            onPressed: () {
+              if (isCommentRequired && controller.text.trim().isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Description/Reason is required'),
+                  ),
+                );
+                return;
+              }
+              Navigator.pop(context, controller.text);
+            },
+            child: Text(confirmText),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -413,6 +430,13 @@ class _RequestCardState extends State<_RequestCard> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(10),
         border: Border(left: BorderSide(color: request.color, width: 3)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -439,105 +463,95 @@ class _RequestCardState extends State<_RequestCard> {
             ],
           ),
 
-          const SizedBox(height: 6),
+          const SizedBox(height: 10),
 
           /// NAME + META
           Text(
             request.studentName,
-            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
           ),
+          const SizedBox(height: 2),
           Text(
             'ID: ${request.studentId} • ${request.department}',
-            style: const TextStyle(fontSize: 11, color: AppTheme.textLight),
+            style: const TextStyle(fontSize: 12, color: AppTheme.textLight),
           ),
 
-          const SizedBox(height: 6),
+          const SizedBox(height: 10),
 
           /// DESCRIPTION
-          Text(
-            request.description,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(fontSize: 12),
-          ),
-
-          const SizedBox(height: 8),
-
-          /// COMMENT (COMPACT)
-          TextField(
-            controller: _commentController,
-            maxLines: 1,
-            style: const TextStyle(fontSize: 12),
-            decoration: InputDecoration(
-              hintText: 'Add comment (optional)',
-              isDense: true,
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 10,
-                vertical: 8,
-              ),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
+          Expanded(
+            child: Text(
+              request.description,
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontSize: 13, color: AppTheme.textDark),
             ),
           ),
 
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
 
           /// ACTIONS
-          // NEW: Wired up approval action buttons with mock service
           Row(
             children: [
               // Approve Button
               Expanded(
-                child: ElevatedButton(
+                child: ElevatedButton.icon(
+                  icon: const Icon(Icons.check_circle_outline, size: 16),
+                  label: const Text('Approve', style: TextStyle(fontSize: 13)),
                   style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    backgroundColor: Colors.blue,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                   ),
-                  // OLD (commented out): onPressed: () {},
-                  // NEW: Call approve handler
                   onPressed: _isProcessing ? null : _handleApprove,
-                  child: _isProcessing
-                      ? const SizedBox(
-                          height: 16,
-                          width: 16,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              Colors.white,
-                            ),
-                          ),
-                        )
-                      : const Text('Approve', style: TextStyle(fontSize: 13)),
                 ),
               ),
-              const SizedBox(width: 6),
+              const SizedBox(width: 8),
               // Reject Button
               Expanded(
-                child: OutlinedButton(
+                child: OutlinedButton.icon(
+                  icon: const Icon(Icons.cancel_outlined, size: 16),
+                  label: const Text('Reject', style: TextStyle(fontSize: 13)),
                   style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    foregroundColor: Colors.red,
+                    side: const BorderSide(color: Colors.red),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                   ),
-                  // OLD (commented out): onPressed: () {},
-                  // NEW: Call reject handler
                   onPressed: _isProcessing ? null : _handleReject,
-                  child: const Text('Reject', style: TextStyle(fontSize: 13)),
                 ),
               ),
+              const SizedBox(width: 8),
               // View Form Button
-              IconButton(
-                tooltip: 'View Form',
-                icon: const Icon(Icons.visibility),
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => RequestPdfViewScreen(
-                        requestId: request.id,
-                        request: request,
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade100,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: IconButton(
+                  tooltip: 'View Form',
+                  icon: const Icon(
+                    Icons.visibility,
+                    color: Colors.blueGrey,
+                    size: 20,
+                  ),
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => RequestPdfViewScreen(
+                          requestId: request.id,
+                          request: request,
+                        ),
                       ),
-                    ),
-                  );
-                },
+                    );
+                  },
+                ),
               ),
             ],
           ),

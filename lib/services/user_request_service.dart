@@ -134,6 +134,35 @@ class UserRequestService {
   }
 }
 
+class ApprovalAction {
+  final int level;
+  final String approverName;
+  final String role;
+  final String status;
+  final String? comments;
+  final String timestamp;
+
+  ApprovalAction({
+    required this.level,
+    required this.approverName,
+    required this.role,
+    required this.status,
+    this.comments,
+    required this.timestamp,
+  });
+
+  factory ApprovalAction.fromJson(Map<String, dynamic> json) {
+    return ApprovalAction(
+      level: json['level'] ?? 0,
+      approverName: json['approverName'] ?? 'Unknown',
+      role: json['role'] ?? '',
+      status: json['status'] ?? 'APPROVED',
+      comments: json['comments'],
+      timestamp: json['timestamp'] ?? '',
+    );
+  }
+}
+
 class PendingApproval {
   final String id;
   final String type;
@@ -145,6 +174,8 @@ class PendingApproval {
   final List<String> attachments;
   final String roleTag;
   final Color color;
+  final Map<String, dynamic> formData;
+  final List<ApprovalAction> approvalHistory;
 
   PendingApproval({
     required this.id,
@@ -157,6 +188,8 @@ class PendingApproval {
     required this.attachments,
     required this.roleTag,
     required this.color,
+    required this.formData,
+    required this.approvalHistory,
   });
 
   factory PendingApproval.fromJson(Map<String, dynamic> json) {
@@ -190,6 +223,10 @@ class PendingApproval {
       attachments: List<String>.from(json['attachments'] ?? []),
       roleTag: json['roleTag'] ?? '',
       color: parseColor(json['color']),
+      formData: Map<String, dynamic>.from(json['formData'] ?? {}),
+      approvalHistory: (json['approvalHistory'] as List? ?? [])
+          .map((h) => ApprovalAction.fromJson(Map<String, dynamic>.from(h)))
+          .toList(),
     );
   }
 }
