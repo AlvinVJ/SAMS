@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../styles/app_theme.dart';
 import '../widgets/dashboard_layout.dart';
 import '../services/auth_service.dart';
+import '../services/user_request_service.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -12,18 +13,24 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> {
   String _userName = 'User';
+  DashboardData? _dashboardData;
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _loadUserProfile(); // Renamed method to reflect broader loading
+    _loadInitialData();
+  }
+
+  Future<void> _loadInitialData() async {
+    _loadUserProfile();
+    await _fetchDashboardData();
   }
 
   void _loadUserProfile() {
     final profile = AuthService().userProfile;
     if (profile != null && profile.displayName != null) {
       setState(() {
-        // Convert "ASHMITHA PR" -> "Ashmitha Pr"
         _userName = profile.displayName!
             .split(' ')
             .map((word) {
@@ -35,8 +42,34 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
+  Future<void> _fetchDashboardData() async {
+    try {
+      final data = await UserRequestService().fetchDashboardData();
+      if (mounted) {
+        setState(() {
+          _dashboardData = data;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading dashboard data: $e');
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const DashboardLayout(
+        activeRoute: '/',
+        child: Center(child: CircularProgressIndicator()),
+      );
+    }
+
     return DashboardLayout(
       activeRoute: '/',
       child: Column(
@@ -102,13 +135,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 'Active Applications',
                 style: Theme.of(context).textTheme.titleLarge,
               ),
-              TextButton(
-                onPressed: () {
-                  // Navigate to Requests tab
-                  // This relies on your Sidebar navigation mainly
-                },
-                child: const Text('View All'),
-              ),
             ],
           ),
           const SizedBox(height: 16),
@@ -116,34 +142,36 @@ class _DashboardScreenState extends State<DashboardScreen> {
           // Horizontal List of Cards
           SizedBox(
             height: 160,
-            child: ListView(
-              scrollDirection: Axis.horizontal,
-              children: [
-                _buildActiveRequestCard(
-                  title: 'Medical Leave',
-                  date: 'Oct 24, 2023',
-                  status: 'Pending',
-                  statusColor: AppTheme.warning,
-                  icon: Icons.medical_services,
-                ),
-                const SizedBox(width: 16),
-                _buildActiveRequestCard(
-                  title: 'Lab Access',
-                  date: 'Oct 22, 2023',
-                  status: 'Approved',
-                  statusColor: AppTheme.success,
-                  icon: Icons.science,
-                ),
-                const SizedBox(width: 16),
-                _buildActiveRequestCard(
-                  title: 'Event Permission',
-                  date: 'Oct 20, 2023',
-                  status: 'In Review',
-                  statusColor: Colors.blue,
-                  icon: Icons.event,
-                ),
-              ],
-            ),
+            child:
+                (_dashboardData == null ||
+                    _dashboardData!.activeRequests.isEmpty)
+                ? Center(
+                    child: Text(
+                      'No active applications',
+                      style: TextStyle(color: Colors.grey.shade500),
+                    ),
+                  )
+                : ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: _dashboardData!.activeRequests.length,
+                    itemBuilder: (context, index) {
+                      final req = _dashboardData!.activeRequests[index];
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 16),
+                        child: _buildActiveRequestCard(
+                          title: req.title,
+                          date: req.date,
+                          status: req.status,
+                          statusColor: req.status.toLowerCase() == 'approved'
+                              ? AppTheme.success
+                              : (req.status.toLowerCase() == 'rejected'
+                                    ? AppTheme.error
+                                    : AppTheme.warning),
+                          icon: _getIconForType(req.title),
+                        ),
+                      );
+                    },
+                  ),
           ),
 
           const SizedBox(height: 32),
@@ -153,38 +181,34 @@ class _DashboardScreenState extends State<DashboardScreen> {
           const SizedBox(height: 16),
 
           ListView(
-            shrinkWrap:
-                true, // Key fix: Allows it to exist inside SingleChildScrollView
-            physics:
-                const NeverScrollableScrollPhysics(), // Disables internal scrolling
-            children: [
-              _buildNotificationItem(
-                title: 'Request Approved',
-                description:
-                    'Your request for "Lab Access" has been approved by the HOD.',
-                time: '2 hours ago',
-                icon: Icons.check_circle,
-                color: AppTheme.success,
-              ),
-              const SizedBox(height: 12),
-              _buildNotificationItem(
-                title: 'Action Required',
-                description:
-                    'Please upload the medical certificate for your "Medical Leave" request.',
-                time: 'Yesterday',
-                icon: Icons.warning,
-                color: AppTheme.warning,
-              ),
-              const SizedBox(height: 12),
-              _buildNotificationItem(
-                title: 'System Update',
-                description:
-                    'SAMS will be down for maintenance this Sunday from 2 AM to 4 AM.',
-                time: '2 days ago',
-                icon: Icons.info,
-                color: Colors.blue,
-              ),
-            ],
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            children:
+                (_dashboardData == null ||
+                    _dashboardData!.notifications.isEmpty)
+                ? [
+                    Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(20.0),
+                        child: Text(
+                          'No new notifications',
+                          style: TextStyle(color: Colors.grey.shade500),
+                        ),
+                      ),
+                    ),
+                  ]
+                : _dashboardData!.notifications.map((notif) {
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: _buildNotificationItem(
+                        title: notif['title'] ?? '',
+                        description: notif['description'] ?? '',
+                        time: notif['time'] ?? '',
+                        icon: _getIconForNotification(notif['type']),
+                        color: _getColorForNotification(notif['type']),
+                      ),
+                    );
+                  }).toList(),
           ),
         ],
       ),
@@ -345,5 +369,42 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ],
       ),
     );
+  }
+
+  IconData _getIconForType(String type) {
+    type = type.toLowerCase();
+    if (type.contains('medical')) return Icons.medical_services;
+    if (type.contains('lab')) return Icons.science;
+    if (type.contains('event')) return Icons.event;
+    if (type.contains('permission')) return Icons.assignment_turned_in;
+    return Icons.description;
+  }
+
+  IconData _getIconForNotification(String? type) {
+    switch (type) {
+      case 'success':
+        return Icons.check_circle;
+      case 'warning':
+        return Icons.warning;
+      case 'error':
+        return Icons.error;
+      case 'info':
+      default:
+        return Icons.info;
+    }
+  }
+
+  Color _getColorForNotification(String? type) {
+    switch (type) {
+      case 'success':
+        return AppTheme.success;
+      case 'warning':
+        return AppTheme.warning;
+      case 'error':
+        return AppTheme.error;
+      case 'info':
+      default:
+        return Colors.blue;
+    }
   }
 }

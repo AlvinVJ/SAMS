@@ -16,13 +16,68 @@ class UnifiedRequestsScreen extends StatefulWidget {
 
 class _UnifiedRequestsScreenState extends State<UnifiedRequestsScreen> {
   final UserRequestService _requestService = UserRequestService();
-  late Future<List<UserRequest>> _requestsFuture;
+  List<UserRequest> _allRequests = [];
+  List<UserRequest> _filteredRequests = [];
+  bool _isLoading = true;
+  String _errorMessage = '';
+
+  final TextEditingController _searchController = TextEditingController();
+  String _statusFilter = 'all';
 
   @override
   void initState() {
     super.initState();
-    // This fetches requests for the currently logged-in user
-    _requestsFuture = _requestService.fetchUserRequests();
+    _fetchRequests();
+  }
+
+  Future<void> _fetchRequests() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = '';
+    });
+    try {
+      final reqs = await _requestService.fetchUserRequests();
+      if (mounted) {
+        setState(() {
+          _allRequests = reqs;
+          _isLoading = false;
+          _updateFilteredList();
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _errorMessage = e.toString();
+        });
+      }
+    }
+  }
+
+  void _updateFilteredList() {
+    final query = _searchController.text.trim().toLowerCase();
+    final status = _statusFilter.toLowerCase();
+
+    setState(() {
+      _filteredRequests = _allRequests.where((req) {
+        // Title Filter
+        final matchesTitle = req.title.toLowerCase().contains(query);
+
+        // Status Filter
+        bool matchesStatus = true;
+        if (status != 'all') {
+          matchesStatus = req.status.toLowerCase().contains(status);
+        }
+
+        return matchesTitle && matchesStatus;
+      }).toList();
+    });
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   @override
@@ -113,8 +168,10 @@ class _UnifiedRequestsScreenState extends State<UnifiedRequestsScreen> {
           Expanded(
             flex: 2,
             child: TextField(
+              controller: _searchController,
+              onChanged: (_) => _updateFilteredList(),
               decoration: InputDecoration(
-                hintText: 'Search by Request ID or Title',
+                hintText: 'Search by Title',
                 prefixIcon: const Icon(Icons.search, color: AppTheme.textLight),
                 filled: true,
                 fillColor: AppTheme.backgroundLight,
@@ -129,7 +186,7 @@ class _UnifiedRequestsScreenState extends State<UnifiedRequestsScreen> {
           const SizedBox(width: 16),
           Expanded(
             child: DropdownButtonFormField<String>(
-              value: 'all',
+              value: _statusFilter,
               decoration: InputDecoration(
                 filled: true,
                 fillColor: AppTheme.backgroundLight,
@@ -145,7 +202,14 @@ class _UnifiedRequestsScreenState extends State<UnifiedRequestsScreen> {
                 DropdownMenuItem(value: 'approved', child: Text('Approved')),
                 DropdownMenuItem(value: 'rejected', child: Text('Rejected')),
               ],
-              onChanged: (v) {},
+              onChanged: (v) {
+                if (v != null) {
+                  setState(() {
+                    _statusFilter = v;
+                    _updateFilteredList();
+                  });
+                }
+              },
             ),
           ),
         ],
@@ -168,94 +232,108 @@ class _UnifiedRequestsScreenState extends State<UnifiedRequestsScreen> {
           ),
         ],
       ),
-      child: FutureBuilder<List<UserRequest>>(
-        future: _requestsFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(
-              child: Padding(
-                padding: EdgeInsets.all(64.0),
-                child: CircularProgressIndicator(),
-              ),
-            );
-          } else if (snapshot.hasError) {
-            return Center(
-              child: Padding(
-                padding: const EdgeInsets.all(64.0),
-                child: Text('Error: ${snapshot.error}'),
-              ),
-            );
-          } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return const Center(
-              child: Padding(
-                padding: EdgeInsets.all(64.0),
-                child: Text('No requests found.'),
-              ),
-            );
-          }
+      child: _buildTableContent(),
+    );
+  }
 
-          final requests = snapshot.data!;
+  Widget _buildTableContent() {
+    if (_isLoading) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(64.0),
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
 
-          return LayoutBuilder(
-            builder: (context, constraints) {
-              return SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(minWidth: constraints.maxWidth),
-                  child: DataTable(
-                    headingRowColor: MaterialStateProperty.all(
-                      AppTheme.backgroundLight,
-                    ),
-                    dataRowMinHeight: 60,
-                    dataRowMaxHeight: 60,
-                    columnSpacing: 32,
-                    horizontalMargin: 24,
-                    columns: const [
-                      DataColumn(
-                        label: Text(
-                          'Request ID',
-                          style: TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                      DataColumn(
-                        label: Text(
-                          'Procedure Title',
-                          style: TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                      DataColumn(
-                        label: Text(
-                          'Submission Date',
-                          style: TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                      DataColumn(
-                        label: Text(
-                          'Current Level',
-                          style: TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                      DataColumn(
-                        label: Text(
-                          'Status',
-                          style: TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                      DataColumn(
-                        label: Text(
-                          'Action',
-                          style: TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                    ],
-                    rows: requests.map((req) => _buildRow(req)).toList(),
+    if (_errorMessage.isNotEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(64.0),
+          child: Column(
+            children: [
+              const Icon(Icons.error_outline, color: AppTheme.error, size: 48),
+              const SizedBox(height: 16),
+              Text('Error: $_errorMessage', textAlign: TextAlign.center),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: _fetchRequests,
+                child: const Text('Retry'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (_filteredRequests.isEmpty) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(64.0),
+          child: Text('No requests found.'),
+        ),
+      );
+    }
+
+    final requests = _filteredRequests;
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minWidth: constraints.maxWidth),
+            child: DataTable(
+              headingRowColor: WidgetStateProperty.all(
+                AppTheme.backgroundLight,
+              ),
+              dataRowMinHeight: 60,
+              dataRowMaxHeight: 60,
+              columnSpacing: 32,
+              horizontalMargin: 24,
+              columns: const [
+                DataColumn(
+                  label: Text(
+                    'Request ID',
+                    style: TextStyle(fontWeight: FontWeight.bold),
                   ),
                 ),
-              );
-            },
-          );
-        },
-      ),
+                DataColumn(
+                  label: Text(
+                    'Procedure Title',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                ),
+                DataColumn(
+                  label: Text(
+                    'Submission Date',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                ),
+                DataColumn(
+                  label: Text(
+                    'Current Level',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                ),
+                DataColumn(
+                  label: Text(
+                    'Status',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                ),
+                DataColumn(
+                  label: Text(
+                    'Action',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ],
+              rows: requests.map((req) => _buildRow(req)).toList(),
+            ),
+          ),
+        );
+      },
     );
   }
 

@@ -1,3 +1,5 @@
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'auth_service.dart';
 
@@ -88,6 +90,37 @@ class StudentProfileService {
     } catch (e) {
       print('✗ Error checking hosteler status: $e');
       return null;
+    }
+  }
+
+  /// Fetch the full student profile from the backend
+  Future<Map<String, dynamic>> getStudentProfile() async {
+    try {
+      final user = AuthService().currentUser;
+      if (user == null) throw Exception('User not authenticated');
+
+      final token = await user.getIdToken();
+      final response = await http.get(
+        Uri.parse('http://localhost:3000/api/student/profile'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> data = json.decode(response.body);
+        if (data['success'] == true) {
+          return data['data'];
+        } else {
+          throw Exception(data['message'] ?? 'Failed to fetch profile');
+        }
+      } else {
+        throw Exception('Failed to load profile: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Error fetching student profile: $e');
+      rethrow;
     }
   }
 }

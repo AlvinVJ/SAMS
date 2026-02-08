@@ -121,6 +121,29 @@ class UserRequest {
 class UserRequestService {
   final String baseUrl = 'http://localhost:3000';
 
+  Future<DashboardData> fetchDashboardData() async {
+    try {
+      final user = AuthService().currentUser;
+      if (user == null) throw Exception('User not authenticated');
+
+      final idToken = await user.getIdToken();
+      final response = await http.get(
+        Uri.parse('$baseUrl/api/requests/dashboard_data'),
+        headers: {'Authorization': 'Bearer $idToken'},
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        return DashboardData.fromJson(data['data']);
+      } else {
+        throw Exception('Failed to load dashboard data');
+      }
+    } catch (e) {
+      print('Error fetching dashboard data: $e');
+      rethrow;
+    }
+  }
+
   Future<List<UserRequest>> fetchUserRequests() async {
     try {
       final user = AuthService().currentUser;
@@ -322,6 +345,60 @@ class PendingApproval {
       approvalHistory: (json['approvalHistory'] as List? ?? [])
           .map((h) => ApprovalAction.fromJson(Map<String, dynamic>.from(h)))
           .toList(),
+    );
+  }
+}
+
+class ActiveRequest {
+  final String id;
+  final String title;
+  final String date;
+  final String status;
+  final int currentLevel;
+
+  ActiveRequest({
+    required this.id,
+    required this.title,
+    required this.date,
+    required this.status,
+    required this.currentLevel,
+  });
+
+  factory ActiveRequest.fromJson(Map<String, dynamic> json) {
+    return ActiveRequest(
+      id: json['id'] ?? '',
+      title: json['title'] ?? '',
+      date: json['date'] ?? '',
+      status: json['status'] ?? '',
+      currentLevel: json['currentLevel'] ?? 1,
+    );
+  }
+}
+
+class DashboardData {
+  final Map<String, int> stats;
+  final List<ActiveRequest> activeRequests;
+  final List<Map<String, dynamic>> notifications;
+
+  DashboardData({
+    required this.stats,
+    required this.activeRequests,
+    required this.notifications,
+  });
+
+  factory DashboardData.fromJson(Map<String, dynamic> json) {
+    final stats = Map<String, int>.from(json['stats'] ?? {});
+    final activeRequests = (json['activeRequests'] as List? ?? [])
+        .map((req) => ActiveRequest.fromJson(req))
+        .toList();
+    final notifications = List<Map<String, dynamic>>.from(
+      json['notifications'] ?? [],
+    );
+
+    return DashboardData(
+      stats: stats,
+      activeRequests: activeRequests,
+      notifications: notifications,
     );
   }
 }
