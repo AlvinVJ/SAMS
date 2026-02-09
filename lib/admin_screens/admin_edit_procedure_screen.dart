@@ -10,8 +10,13 @@ import 'admin_workflow_canvas_screen.dart';
 
 class AdminEditProcedureScreen extends StatefulWidget {
   final String procedureId;
+  final bool readOnly;
 
-  const AdminEditProcedureScreen({super.key, required this.procedureId});
+  const AdminEditProcedureScreen({
+    super.key,
+    required this.procedureId,
+    this.readOnly = false,
+  });
 
   @override
   State<AdminEditProcedureScreen> createState() =>
@@ -451,12 +456,14 @@ class _AdminEditProcedureScreenState extends State<AdminEditProcedureScreen> {
 
           // Header
           Text(
-            'Edit Procedure',
+            widget.readOnly ? 'View Procedure' : 'Edit Procedure',
             style: Theme.of(context).textTheme.headlineLarge,
           ),
           const SizedBox(height: 6),
           Text(
-            'Update your approval workflow',
+            widget.readOnly
+                ? 'Review the historical procedure definition'
+                : 'Update your approval workflow',
             style: Theme.of(
               context,
             ).textTheme.bodyLarge?.copyWith(color: AppTheme.textLight),
@@ -478,56 +485,62 @@ class _AdminEditProcedureScreenState extends State<AdminEditProcedureScreen> {
                 ),
                 const SizedBox(height: 12),
 
-                ToggleButtons(
-                  isSelected: [
-                    _visibility.contains(ProcedureVisibility.student),
-                    _visibility.contains(ProcedureVisibility.faculty),
-                    _visibility.contains(ProcedureVisibility.guest),
-                    _visibility.contains(ProcedureVisibility.all),
-                  ],
-                  onPressed: (index) {
-                    setState(() {
-                      final selected = ProcedureVisibility.values[index];
+                IgnorePointer(
+                  ignoring: widget.readOnly,
+                  child: Opacity(
+                    opacity: widget.readOnly ? 0.7 : 1.0,
+                    child: ToggleButtons(
+                      isSelected: [
+                        _visibility.contains(ProcedureVisibility.student),
+                        _visibility.contains(ProcedureVisibility.faculty),
+                        _visibility.contains(ProcedureVisibility.guest),
+                        _visibility.contains(ProcedureVisibility.all),
+                      ],
+                      onPressed: (index) {
+                        setState(() {
+                          final selected = ProcedureVisibility.values[index];
 
-                      if (_visibility.contains(ProcedureVisibility.all) &&
-                          selected != ProcedureVisibility.all) {
-                        return;
-                      }
+                          if (_visibility.contains(ProcedureVisibility.all) &&
+                              selected != ProcedureVisibility.all) {
+                            return;
+                          }
 
-                      if (selected == ProcedureVisibility.all) {
-                        if (_visibility.contains(ProcedureVisibility.all)) {
-                          _visibility.remove(ProcedureVisibility.all);
-                        } else {
-                          _visibility = {ProcedureVisibility.all};
-                        }
-                      } else {
-                        if (_visibility.contains(selected)) {
-                          _visibility.remove(selected);
-                        } else {
-                          _visibility.add(selected);
-                        }
-                      }
-                    });
-                  },
-                  borderRadius: BorderRadius.circular(8),
-                  children: const [
-                    Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 16),
-                      child: Text('Student'),
+                          if (selected == ProcedureVisibility.all) {
+                            if (_visibility.contains(ProcedureVisibility.all)) {
+                              _visibility.remove(ProcedureVisibility.all);
+                            } else {
+                              _visibility = {ProcedureVisibility.all};
+                            }
+                          } else {
+                            if (_visibility.contains(selected)) {
+                              _visibility.remove(selected);
+                            } else {
+                              _visibility.add(selected);
+                            }
+                          }
+                        });
+                      },
+                      borderRadius: BorderRadius.circular(8),
+                      children: const [
+                        Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 16),
+                          child: Text('Student'),
+                        ),
+                        Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 16),
+                          child: Text('Faculty'),
+                        ),
+                        Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 16),
+                          child: Text('Guest'),
+                        ),
+                        Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 16),
+                          child: Text('All'),
+                        ),
+                      ],
                     ),
-                    Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 16),
-                      child: Text('Faculty'),
-                    ),
-                    Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 16),
-                      child: Text('Guest'),
-                    ),
-                    Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 16),
-                      child: Text('All'),
-                    ),
-                  ],
+                  ),
                 ),
               ],
             ),
@@ -566,62 +579,68 @@ class _AdminEditProcedureScreenState extends State<AdminEditProcedureScreen> {
               width: double.infinity,
               child: Form(
                 key: _formKey,
-                child: FormBuilderSection(
-                  fields: _formFields,
-                  onAdd: _addField,
-                  onChanged: () => setState(() {}),
-                  onRemove: _removeField,
-                  generateFieldId: _generateFieldId,
-                  onRemoveForm: _removeFormBuilder,
+                child: AbsorbPointer(
+                  absorbing: widget.readOnly,
+                  child: FormBuilderSection(
+                    fields: _formFields,
+                    onAdd: _addField,
+                    onChanged: () => setState(() {}),
+                    onRemove: _removeField,
+                    generateFieldId: _generateFieldId,
+                    onRemoveForm: _removeFormBuilder,
+                  ),
                 ),
               ),
             ),
 
           if (_approvalLevels.isNotEmpty)
-            Column(
-              children: List.generate(
-                _approvalLevels.length,
-                (index) => ApprovalLevelCard(
-                  level: index + 1,
-                  roles: _approvalLevels[index].roles,
-                  minApprovals: _approvalLevels[index].minApprovals,
-                  allMustApprove: _approvalLevels[index].allMustApprove,
-                  onRemove: () => _removeApprovalLevel(index),
-                  onAddRole: () => _openAddRoleDialog(index),
-                  onRemoveRole: (role) {
-                    setState(() {
-                      final level = _approvalLevels[index];
-                      level.roles.removeWhere(
-                        (r) => r['role_tag'] == role['role_tag'],
-                      );
+            AbsorbPointer(
+              absorbing: widget.readOnly,
+              child: Column(
+                children: List.generate(
+                  _approvalLevels.length,
+                  (index) => ApprovalLevelCard(
+                    level: index + 1,
+                    roles: _approvalLevels[index].roles,
+                    minApprovals: _approvalLevels[index].minApprovals,
+                    allMustApprove: _approvalLevels[index].allMustApprove,
+                    onRemove: () => _removeApprovalLevel(index),
+                    onAddRole: () => _openAddRoleDialog(index),
+                    onRemoveRole: (role) {
+                      setState(() {
+                        final level = _approvalLevels[index];
+                        level.roles.removeWhere(
+                          (r) => r['role_tag'] == role['role_tag'],
+                        );
 
-                      if (!level.allMustApprove) {
-                        level.minApprovals = level.roles.length;
-                      }
-                    });
-                  },
-                  onToggleAllMustApprove: (checked) {
-                    setState(() {
-                      final level = _approvalLevels[index];
-                      final value = checked ?? false;
-                      level.allMustApprove = value;
-                      if (value) {
-                        level.minApprovals = level.roles.length;
-                      }
-                    });
-                  },
-                  onMinApprovalsChanged: (value) {
-                    setState(() {
-                      final level = _approvalLevels[index];
-                      if (value < 1) {
-                        level.minApprovals = 1;
-                      } else if (value > level.roles.length) {
-                        level.minApprovals = level.roles.length;
-                      } else {
-                        level.minApprovals = value;
-                      }
-                    });
-                  },
+                        if (!level.allMustApprove) {
+                          level.minApprovals = level.roles.length;
+                        }
+                      });
+                    },
+                    onToggleAllMustApprove: (checked) {
+                      setState(() {
+                        final level = _approvalLevels[index];
+                        final value = checked ?? false;
+                        level.allMustApprove = value;
+                        if (value) {
+                          level.minApprovals = level.roles.length;
+                        }
+                      });
+                    },
+                    onMinApprovalsChanged: (value) {
+                      setState(() {
+                        final level = _approvalLevels[index];
+                        if (value < 1) {
+                          level.minApprovals = 1;
+                        } else if (value > level.roles.length) {
+                          level.minApprovals = level.roles.length;
+                        } else {
+                          level.minApprovals = value;
+                        }
+                      });
+                    },
+                  ),
                 ),
               ),
             ),
@@ -662,24 +681,25 @@ class _AdminEditProcedureScreenState extends State<AdminEditProcedureScreen> {
           const SizedBox(height: 40),
 
           // Footer
-          Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              ElevatedButton.icon(
-                onPressed: _updateProcedure,
-                icon: const Icon(Icons.save),
-                label: const Text('Update Procedure'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.primary,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 24,
-                    vertical: 14,
+          if (!widget.readOnly)
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                ElevatedButton.icon(
+                  onPressed: _updateProcedure,
+                  icon: const Icon(Icons.save),
+                  label: const Text('Update Procedure'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.primary,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 14,
+                    ),
                   ),
                 ),
-              ),
-            ],
-          ),
+              ],
+            ),
         ],
       ),
     );

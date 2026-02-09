@@ -19,6 +19,7 @@ class _AdminProceduresScreenState extends State<AdminProceduresScreen> {
   bool _isLoading = true;
   String? _errorMessage;
   String _searchQuery = '';
+  bool _showActiveOnly = true;
 
   @override
   void initState() {
@@ -36,7 +37,7 @@ class _AdminProceduresScreenState extends State<AdminProceduresScreen> {
       final procedures = await _service.fetchProcedures();
       setState(() {
         _procedures = procedures;
-        _filteredProcedures = procedures;
+        _applyFilters();
         _isLoading = false;
       });
     } catch (e) {
@@ -47,21 +48,30 @@ class _AdminProceduresScreenState extends State<AdminProceduresScreen> {
     }
   }
 
-  void _filterProcedures(String query) {
+  void _applyFilters() {
     setState(() {
-      _searchQuery = query;
-      if (query.isEmpty) {
-        _filteredProcedures = _procedures;
-      } else {
-        _filteredProcedures = _procedures
-            .where(
-              (p) =>
-                  p.title.toLowerCase().contains(query.toLowerCase()) ||
-                  p.description.toLowerCase().contains(query.toLowerCase()),
-            )
-            .toList();
-      }
+      _filteredProcedures = _procedures.where((p) {
+        final matchesSearch =
+            p.title.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+            p.description.toLowerCase().contains(_searchQuery.toLowerCase());
+        // Exclusive filtering: Show Active OR Inactive based on toggle
+        final matchesStatus = p.isActive == _showActiveOnly;
+        return matchesSearch && matchesStatus;
+      }).toList();
+
+      // Sort: Active first, then by title
+      _filteredProcedures.sort((a, b) {
+        if (a.isActive != b.isActive) {
+          return a.isActive ? -1 : 1;
+        }
+        return a.title.compareTo(b.title);
+      });
     });
+  }
+
+  void _filterProcedures(String query) {
+    _searchQuery = query;
+    _applyFilters();
   }
 
   Future<void> _deleteProcedure(String procedureId, String title) async {
@@ -179,6 +189,26 @@ class _AdminProceduresScreenState extends State<AdminProceduresScreen> {
                       Icons.search,
                     ),
                   ),
+                ),
+                const SizedBox(width: 16),
+                Row(
+                  children: [
+                    Text(
+                      _showActiveOnly ? 'Show Active' : 'Show Inactive',
+                      style: const TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                    const SizedBox(width: 8),
+                    Switch(
+                      value: _showActiveOnly,
+                      onChanged: (value) {
+                        setState(() {
+                          _showActiveOnly = value;
+                          _applyFilters();
+                        });
+                      },
+                      activeColor: AppTheme.primary,
+                    ),
+                  ],
                 ),
                 const SizedBox(width: 16),
                 IconButton(
@@ -320,13 +350,14 @@ class _ProcedureCard extends StatelessWidget {
                   vertical: 4,
                 ),
                 decoration: BoxDecoration(
-                  color: AppTheme.success.withValues(alpha: 0.1),
+                  color: (procedure.isActive ? AppTheme.success : Colors.grey)
+                      .withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(20),
                 ),
-                child: const Text(
-                  'Active',
+                child: Text(
+                  procedure.isActive ? 'Active' : 'Inactive',
                   style: TextStyle(
-                    color: AppTheme.success,
+                    color: procedure.isActive ? AppTheme.success : Colors.grey,
                     fontWeight: FontWeight.bold,
                     fontSize: 12,
                   ),
@@ -339,7 +370,11 @@ class _ProcedureCard extends StatelessWidget {
 
           Text(
             procedure.title,
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: procedure.isActive ? Colors.black : Colors.grey,
+            ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
@@ -350,7 +385,12 @@ class _ProcedureCard extends StatelessWidget {
             procedure.description,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(color: AppTheme.textLight, fontSize: 13),
+            style: TextStyle(
+              color: procedure.isActive
+                  ? AppTheme.textLight
+                  : Colors.grey.shade400,
+              fontSize: 13,
+            ),
           ),
 
           const Spacer(),
@@ -361,7 +401,7 @@ class _ProcedureCard extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               _meta('Levels', '${procedure.approvalLevelsCount}'),
-              _meta('Status', 'Active'),
+              _meta('Status', procedure.isActive ? 'Active' : 'Inactive'),
             ],
           ),
 
@@ -377,6 +417,7 @@ class _ProcedureCard extends StatelessWidget {
                       MaterialPageRoute(
                         builder: (_) => AdminEditProcedureScreen(
                           procedureId: procedure.procId,
+                          readOnly: !procedure.isActive,
                         ),
                       ),
                     );
@@ -386,8 +427,11 @@ class _ProcedureCard extends StatelessWidget {
                       onRefresh();
                     }
                   },
-                  icon: const Icon(Icons.edit, size: 16),
-                  label: const Text('Edit'),
+                  icon: Icon(
+                    procedure.isActive ? Icons.edit : Icons.visibility,
+                    size: 16,
+                  ),
+                  label: Text(procedure.isActive ? 'Edit' : 'View'),
                 ),
               ),
               const SizedBox(width: 8),
