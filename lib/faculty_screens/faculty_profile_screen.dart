@@ -2,17 +2,52 @@ import 'package:flutter/material.dart';
 import '../styles/app_theme.dart';
 import '../widgets/app_header.dart';
 import '../widgets/faculty_sidebar.dart';
+import '../services/faculty_service.dart';
+import '../models/faculty_profile.dart';
 
-class FacultyProfileScreen extends StatelessWidget {
-  FacultyProfileScreen({super.key});
+class FacultyProfileScreen extends StatefulWidget {
+  const FacultyProfileScreen({super.key});
 
-  // ===== Dummy Data (API-ready later) =====
-  final String facultyName = "Dr. Sarah Johnson";
-  final String employeeId = "FAC-2023-88";
-  final String department = "Computer Science";
-  final String designation = "Associate Professor";
-  final String assignedClass = "S6 CSE A";
-  final List<String> roles = ["IEEE Faculty Advisor", "Innovation Cell Mentor"];
+  @override
+  State<FacultyProfileScreen> createState() => _FacultyProfileScreenState();
+}
+
+class _FacultyProfileScreenState extends State<FacultyProfileScreen> {
+  final FacultyService _facultyService = FacultyService();
+  FacultyProfile? _profile;
+  Map<String, dynamic>? _stats;
+  bool _isLoading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    try {
+      final profile = await _facultyService.getFacultyProfile();
+      final dashboardData = await _facultyService.fetchDashboardData(
+        role: "all",
+      );
+
+      if (mounted) {
+        setState(() {
+          _profile = profile;
+          _stats = dashboardData['stats'];
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _error = e.toString();
+          _isLoading = false;
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -21,91 +56,108 @@ class FacultyProfileScreen extends StatelessWidget {
       body: Row(
         children: [
           const FacultySidebar(activeRoute: '/faculty/profile'),
-
           Expanded(
             child: Column(
               children: [
-                AppHeader(),
-
+                const AppHeader(),
                 Expanded(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.all(32),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        /// ================= BREADCRUMB =================
-                        Row(
-                          children: const [
-                            Text(
-                              'Home',
-                              style: TextStyle(color: AppTheme.textLight),
-                            ),
-                            SizedBox(width: 6),
-                            Icon(
-                              Icons.chevron_right,
-                              size: 16,
-                              color: AppTheme.textLight,
-                            ),
-                            SizedBox(width: 6),
-                            Text(
-                              'Profile',
-                              style: TextStyle(fontWeight: FontWeight.w600),
-                            ),
-                          ],
-                        ),
+                  child: _isLoading
+                      ? const Center(child: CircularProgressIndicator())
+                      : _error != null
+                      ? Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                "Error: $_error",
+                                style: const TextStyle(color: Colors.red),
+                              ),
+                              const SizedBox(height: 16),
+                              ElevatedButton(
+                                onPressed: _loadData,
+                                child: const Text("Retry"),
+                              ),
+                            ],
+                          ),
+                        )
+                      : SingleChildScrollView(
+                          padding: const EdgeInsets.all(32),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              /// ================= BREADCRUMB =================
+                              Row(
+                                children: const [
+                                  Text(
+                                    'Home',
+                                    style: TextStyle(color: AppTheme.textLight),
+                                  ),
+                                  SizedBox(width: 6),
+                                  Icon(
+                                    Icons.chevron_right,
+                                    size: 16,
+                                    color: AppTheme.textLight,
+                                  ),
+                                  SizedBox(width: 6),
+                                  Text(
+                                    'Profile',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 24),
 
-                        const SizedBox(height: 24),
+                              /// ================= PROFILE HEADER =================
+                              _profileHeader(),
+                              const SizedBox(height: 24),
 
-                        /// ================= PROFILE HEADER =================
-                        _profileHeader(),
+                              /// ================= STATS =================
+                              Row(
+                                children: [
+                                  _StatCard(
+                                    title: 'Total Requests',
+                                    value: _stats?['total']?.toString() ?? '0',
+                                    icon: Icons.folder_open,
+                                    color: AppTheme.primary,
+                                  ),
+                                  const SizedBox(width: 16),
+                                  _StatCard(
+                                    title: 'Approved',
+                                    value:
+                                        _stats?['approved']?.toString() ?? '0',
+                                    icon: Icons.check_circle,
+                                    color: Colors.green,
+                                  ),
+                                  const SizedBox(width: 16),
+                                  _StatCard(
+                                    title: 'Pending',
+                                    value:
+                                        _stats?['pending']?.toString() ?? '0',
+                                    icon: Icons.pending,
+                                    color: Colors.orange,
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 32),
 
-                        const SizedBox(height: 24),
+                              /// ================= CONTACT INFO =================
+                              _ContactInfoCard(email: _profile?.email ?? 'N/A'),
+                              const SizedBox(height: 32),
 
-                        /// ================= STATS =================
-                        Row(
-                          children: const [
-                            _StatCard(
-                              title: 'Total Requests',
-                              value: '124',
-                              icon: Icons.folder_open,
-                              color: AppTheme.primary,
-                            ),
-                            SizedBox(width: 16),
-                            _StatCard(
-                              title: 'Approved',
-                              value: '110',
-                              icon: Icons.check_circle,
-                              color: Colors.green,
-                            ),
-                            SizedBox(width: 16),
-                            _StatCard(
-                              title: 'Pending',
-                              value: '14',
-                              icon: Icons.pending,
-                              color: Colors.orange,
-                            ),
-                          ],
-                        ),
-
-                        const SizedBox(height: 32),
-
-                        /// ================= CONTACT INFO =================
-                        const _ContactInfoCard(),
-
-                        const SizedBox(height: 32),
-
-                        const Center(
-                          child: Text(
-                            '© 2023 SAMS Faculty Portal. All rights reserved.',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: AppTheme.textLight,
-                            ),
+                              const Center(
+                                child: Text(
+                                  '© 2024 SAMS Faculty Portal. All rights reserved.',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: AppTheme.textLight,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                      ],
-                    ),
-                  ),
                 ),
               ],
             ),
@@ -117,6 +169,8 @@ class FacultyProfileScreen extends StatelessWidget {
 
   /// =============== PROFILE HEADER COMPONENT ===============
   Widget _profileHeader() {
+    if (_profile == null) return const SizedBox.shrink();
+
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -125,10 +179,12 @@ class FacultyProfileScreen extends StatelessWidget {
         border: Border.all(color: Colors.grey.shade200),
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const CircleAvatar(
             radius: 48,
-            backgroundImage: NetworkImage("https://i.pravatar.cc/300?img=47"),
+            backgroundColor: AppTheme.primary,
+            child: Icon(Icons.person, size: 48, color: Colors.white),
           ),
           const SizedBox(width: 24),
 
@@ -138,7 +194,7 @@ class FacultyProfileScreen extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  facultyName,
+                  _profile!.name,
                   style: const TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.bold,
@@ -146,38 +202,54 @@ class FacultyProfileScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  "$designation • Employee ID: $employeeId",
+                  "${_profile!.designation} • Employee ID: ${_profile!.mitsUid}",
                   style: const TextStyle(color: AppTheme.primary),
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  "Dept. of $department",
+                  "Dept. of ${_profile!.department}",
                   style: const TextStyle(color: AppTheme.textLight),
                 ),
                 const SizedBox(height: 12),
 
-                /// Assigned Class
-                Row(
-                  children: [
-                    const Icon(
-                      Icons.group,
-                      size: 18,
-                      color: AppTheme.textLight,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      "Class Faculty: $assignedClass",
-                      style: const TextStyle(fontWeight: FontWeight.w500),
-                    ),
-                  ],
-                ),
+                /// Assigned Classes
+                if (_profile!.assignedClasses.isNotEmpty)
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: _profile!.assignedClasses
+                        .map(
+                          (ac) => Padding(
+                            padding: const EdgeInsets.only(bottom: 4),
+                            child: Row(
+                              children: [
+                                const Icon(
+                                  Icons.group,
+                                  size: 18,
+                                  color: AppTheme.textLight,
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  "${ac.role}: ${ac.className}",
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        )
+                        .toList(),
+                  ),
 
                 const SizedBox(height: 12),
 
                 /// Roles / Clubs
                 Wrap(
                   spacing: 8,
-                  children: roles.map((r) => _Badge(r, Colors.indigo)).toList(),
+                  runSpacing: 8,
+                  children: _profile!.roles
+                      .map((r) => _Badge(r, Colors.indigo))
+                      .toList(),
                 ),
               ],
             ),
@@ -237,7 +309,8 @@ class _StatCard extends StatelessWidget {
 /* ================= CONTACT INFO ================= */
 
 class _ContactInfoCard extends StatelessWidget {
-  const _ContactInfoCard();
+  final String email;
+  const _ContactInfoCard({required this.email});
 
   @override
   Widget build(BuildContext context) {
@@ -250,13 +323,13 @@ class _ContactInfoCard extends StatelessWidget {
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: const [
-          Text(
+        children: [
+          const Text(
             "Contact Information",
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
-          Divider(height: 28),
-          _InfoRow(Icons.mail, "Email", "s.johnson@university.edu"),
+          const Divider(height: 28),
+          _InfoRow(Icons.mail, "Email", email),
         ],
       ),
     );

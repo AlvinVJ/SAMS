@@ -29,6 +29,7 @@ import 'faculty_screens/faculty_dashboard_screen.dart';
 import 'faculty_screens/faculty_requests_screen.dart';
 // import 'faculty_screens/faculty_request_history_screen.dart'; // Removed
 
+import 'faculty_screens/faculty_notifications_screen.dart';
 import 'widgets/role_guard.dart';
 import 'state/auth_resolution.dart';
 
@@ -123,6 +124,10 @@ class MyApp extends StatelessWidget {
         '/faculty/profile': (context) => RoleGuard(
           allowedRoles: [AuthResolution.faculty],
           child: FacultyProfileScreen(),
+        ),
+        '/faculty/notifications': (context) => const RoleGuard(
+          allowedRoles: [AuthResolution.faculty],
+          child: FacultyNotificationsScreen(),
         ),
       },
     );
