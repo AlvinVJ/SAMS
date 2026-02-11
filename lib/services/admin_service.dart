@@ -134,4 +134,32 @@ class AdminService {
     // Note: I might need to implement this endpoint on backend if not existing
     return [];
   }
+
+  // ================= REQUESTS =================
+
+  Future<List<dynamic>> getGlobalRequests() async {
+    final token = await _getToken();
+    final response = await http.get(
+      Uri.parse("$_baseUrl/api/admin/global-requests"),
+      headers: _headers(token!),
+    );
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      return data['data'];
+    }
+    throw Exception("Failed to fetch global requests");
+  }
+
+  Future<Map<String, dynamic>> getAdminDashboardStats() async {
+    final token = await _getToken();
+    final response = await http.get(
+      Uri.parse("$_baseUrl/api/admin/dashboard-stats"),
+      headers: _headers(token!),
+    );
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      return data['data'];
+    }
+    throw Exception("Failed to fetch dashboard stats");
+  }
 }
