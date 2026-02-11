@@ -88,6 +88,15 @@ class AdminSidebar extends StatelessWidget {
                       Navigator.pushReplacementNamed(context, '/admin/users'),
                 ),
                 _NavItem(
+                  icon: Icons.account_tree,
+                  label: 'Academic Structure',
+                  isActive: activeRoute == '/admin/academic-structure',
+                  onTap: () => Navigator.pushReplacementNamed(
+                    context,
+                    '/admin/academic-structure',
+                  ),
+                ),
+                _NavItem(
                   icon: Icons.settings,
                   label: 'Settings',
                   isActive: activeRoute == '/admin/settings',

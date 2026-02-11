@@ -50,28 +50,18 @@ class AuthService {
           .get();
       //print("ResolveUser: Profile Exists? ${profileDoc.exists}");
 
+      final backendBaseUrl = 'http://localhost:3000';
+      final backendData = await sendUserProfileToBackend(
+        baseUrl: backendBaseUrl,
+      );
+      final String? role = backendData['role'];
+
       if (!profileDoc.exists) {
-        bool onboarding = false;
-        final backendBaseUrl = 'http://localhost:3000';
-
-        final backendData = await sendUserProfileToBackend(
-          baseUrl: backendBaseUrl,
-        );
-        print(backendData);
-
-        final String? role = backendData['role'];
-        //final String? email = backendData['email'];
-        //final String uid = backendData['uid'];
-
         final snapshot = await _db
             .collection('profiles')
             .doc(emailPrefix)
             .get();
-        print(snapshot.data());
-        print(user);
-
-        // checking for faculty role and then calling the api end point.
-        //List<String> roleTags = [];
+        // handling for faculty role and then calling the api end point.
         if (snapshot.data()?['role'] == 'faculty') {
           try {
             roleTags = await fetchRoleTags();
