@@ -95,7 +95,6 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
     final nameController = TextEditingController(
       text: user['Student']?['name'] ?? user['Faculty']?['name'] ?? '',
     );
-    final emailController = TextEditingController(text: user['email'] ?? '');
 
     // Find current role id
     final List roleMappings = user['RoleMapping'] ?? [];
@@ -114,11 +113,6 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
               TextField(
                 controller: nameController,
                 decoration: const InputDecoration(labelText: 'Full Name'),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: emailController,
-                decoration: const InputDecoration(labelText: 'Email Address'),
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<int>(
@@ -154,7 +148,6 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                 try {
                   await _adminService.updateUser(user['mits_uid'], {
                     'name': nameController.text,
-                    'email': emailController.text,
                     'role_id': selectedRoleId,
                   });
                   Navigator.pop(context);
@@ -287,7 +280,9 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                 u['mits_uid'] ??
                 'Unknown User')
             .toString();
+
     final String email = (u['email'] ?? 'No Email').toString();
+
     final String uid = (u['mits_uid'] ?? 'N/A').toString();
     final bool isActive = u['is_active'] ?? true;
 
