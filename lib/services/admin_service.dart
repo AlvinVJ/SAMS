@@ -98,12 +98,13 @@ class AdminService {
 
   // ================= USERS =================
 
-  Future<List<dynamic>> getUsers() async {
+  Future<List<dynamic>> getUsers({String? query}) async {
     final token = await _getToken();
-    final response = await http.get(
-      Uri.parse("$_baseUrl/api/admin/users"),
-      headers: _headers(token!),
-    );
+    String url = "$_baseUrl/api/admin/users";
+    if (query != null && query.isNotEmpty) {
+      url += "?q=${Uri.encodeComponent(query)}";
+    }
+    final response = await http.get(Uri.parse(url), headers: _headers(token!));
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
       return data['data'];
@@ -161,5 +162,25 @@ class AdminService {
       return data['data'];
     }
     throw Exception("Failed to fetch dashboard stats");
+  }
+
+  Future<void> uploadUsersFile(List<int> bytes, String fileName) async {
+    final token = await _getToken();
+    var request = http.MultipartRequest(
+      'POST',
+      Uri.parse("$_baseUrl/api/admin/bulk-import-users"),
+    );
+    request.headers.addAll(_headers(token!));
+    request.files.add(
+      http.MultipartFile.fromBytes('file', bytes, filename: fileName),
+    );
+
+    final streamedResponse = await request.send();
+    final response = await http.Response.fromStream(streamedResponse);
+
+    if (response.statusCode != 200) {
+      final error = json.decode(response.body);
+      throw Exception(error['message'] ?? "Failed to import users data");
+    }
   }
 }

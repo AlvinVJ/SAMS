@@ -73,18 +73,24 @@ class _AcademicStructureScreenState extends State<AcademicStructureScreen> {
   }
 
   Widget _header(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(
-          'Academic Structure',
-          style: Theme.of(context).textTheme.headlineMedium,
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Academic Structure',
+              style: Theme.of(context).textTheme.headlineMedium,
+            ),
+            const SizedBox(height: 4),
+            const Text(
+              'Manage the foundational organization of the institution.',
+              style: TextStyle(color: AppTheme.textLight),
+            ),
+          ],
         ),
-        const SizedBox(height: 4),
-        const Text(
-          'Manage the foundational organization of the institution.',
-          style: TextStyle(color: AppTheme.textLight),
-        ),
+        const SizedBox.shrink(),
       ],
     );
   }

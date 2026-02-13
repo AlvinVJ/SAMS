@@ -97,6 +97,15 @@ class AdminSidebar extends StatelessWidget {
                   ),
                 ),
                 _NavItem(
+                  icon: Icons.upload_file,
+                  label: 'Data Import',
+                  isActive: activeRoute == '/admin/data-import',
+                  onTap: () => Navigator.pushReplacementNamed(
+                    context,
+                    '/admin/data-import',
+                  ),
+                ),
+                _NavItem(
                   icon: Icons.settings,
                   label: 'Settings',
                   isActive: activeRoute == '/admin/settings',

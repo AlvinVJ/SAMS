@@ -12,38 +12,31 @@ class AdminUsersScreen extends StatefulWidget {
 
 class _AdminUsersScreenState extends State<AdminUsersScreen> {
   final AdminService _adminService = AdminService();
-  bool _isLoading = true;
-  List<dynamic> _users = [];
+  bool _isLoading = false;
+  bool _hasSearched = false;
   List<dynamic> _filteredUsers = [];
   List<dynamic> _roles = [];
   final TextEditingController _searchController = TextEditingController();
 
   @override
-  void initState() {
-    super.initState();
-    _fetchData();
-    _searchController.addListener(_onSearchChanged);
-  }
-
-  @override
   void dispose() {
-    _searchController.removeListener(_onSearchChanged);
     _searchController.dispose();
     super.dispose();
   }
 
-  Future<void> _fetchData() async {
+  Future<void> _fetchData({String? query}) async {
     setState(() => _isLoading = true);
     try {
       final results = await Future.wait([
-        _adminService.getUsers(),
+        _adminService.getUsers(query: query), // Pass query to service
         _adminService.getRoles(),
       ]);
       setState(() {
-        _users = results[0];
-        _filteredUsers = results[0];
+        _filteredUsers =
+            results[0]; // _filteredUsers will now directly reflect fetched data
         _roles = results[1];
         _isLoading = false;
+        _hasSearched = true;
       });
     } catch (e) {
       setState(() => _isLoading = false);
@@ -53,21 +46,19 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
     }
   }
 
-  void _onSearchChanged() {
-    final query = _searchController.text.toLowerCase();
-    setState(() {
-      _filteredUsers = _users.where((user) {
-        final uid = (user['mits_uid'] as String).toLowerCase();
-        final email = (user['email'] as String?)?.toLowerCase() ?? '';
-        final studentName = user['Student']?['name']?.toLowerCase() ?? '';
-        final facultyName = user['Faculty']?['name']?.toLowerCase() ?? '';
-
-        return uid.contains(query) ||
-            email.contains(query) ||
-            studentName.contains(query) ||
-            facultyName.contains(query);
-      }).toList();
-    });
+  Future<void> _triggerSearch() async {
+    final query = _searchController.text.trim();
+    if (query.isNotEmpty) {
+      await _fetchData(query: query);
+    } else {
+      setState(() {
+        _filteredUsers = [];
+        _hasSearched = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter a UID or Name to search')),
+      );
+    }
   }
 
   Future<void> _toggleUserStatus(dynamic user) async {
@@ -83,7 +74,9 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
           ),
         ),
       );
-      _fetchData(); // Refresh list
+      _fetchData(
+        query: _searchController.text.trim(),
+      ); // Refresh list with current query
     } catch (e) {
       ScaffoldMessenger.of(
         context,
@@ -151,7 +144,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                     'role_id': selectedRoleId,
                   });
                   Navigator.pop(context);
-                  _fetchData();
+                  _fetchData(query: _searchController.text.trim());
                 } catch (e) {
                   ScaffoldMessenger.of(
                     context,
@@ -184,6 +177,20 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                     child: CircularProgressIndicator(),
                   ),
                 )
+              : (_hasSearched && _filteredUsers.isEmpty)
+              ? const Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(40),
+                    child: Text('No users found matching your search.'),
+                  ),
+                )
+              : (!_hasSearched)
+              ? const Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(40),
+                    child: Text('Enter a UID or name to search for users.'),
+                  ),
+                )
               : _table(),
         ],
       ),
@@ -209,6 +216,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
             ),
           ],
         ),
+        const SizedBox.shrink(),
       ],
     );
   }
@@ -225,6 +233,10 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
               decoration: InputDecoration(
                 hintText: 'Search users by name, email or UID...',
                 prefixIcon: const Icon(Icons.search, size: 20),
+                suffixIcon: IconButton(
+                  icon: const Icon(Icons.arrow_forward),
+                  onPressed: _triggerSearch,
+                ),
                 filled: true,
                 fillColor: AppTheme.backgroundLight,
                 border: OutlineInputBorder(
@@ -232,6 +244,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                   borderSide: BorderSide.none,
                 ),
               ),
+              onSubmitted: (_) => _triggerSearch(),
             ),
           ),
         ],
