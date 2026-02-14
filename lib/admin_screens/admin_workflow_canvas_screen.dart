@@ -30,6 +30,9 @@ class _AdminCreateProcedureScreenState
   // Visibility toggle variable
   Set<ProcedureVisibility> _visibility = {};
 
+  // System Hook (Plugin)
+  String? _selectedHook;
+
   // Local UI state for form builder
   bool _hasForm = false;
   final List<FormFieldDraft> _formFields = [];
@@ -330,6 +333,7 @@ class _AdminCreateProcedureScreenState
         );
       }).toList(),
       visibility: _visibility,
+      systemHook: _selectedHook,
     );
 
     try {
@@ -429,7 +433,10 @@ class _AdminCreateProcedureScreenState
                   isSelected: [
                     _visibility.contains(ProcedureVisibility.student),
                     _visibility.contains(ProcedureVisibility.faculty),
-                    _visibility.contains(ProcedureVisibility.guest),
+                    _visibility.contains(ProcedureVisibility.clubLead),
+                    _visibility.contains(
+                      ProcedureVisibility.placementCoordinator,
+                    ),
                     _visibility.contains(ProcedureVisibility.all),
                   ],
                   onPressed: (index) {
@@ -471,7 +478,11 @@ class _AdminCreateProcedureScreenState
                     ),
                     Padding(
                       padding: EdgeInsets.symmetric(horizontal: 16),
-                      child: Text('Guest'),
+                      child: Text('Club Lead'),
+                    ),
+                    Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 16),
+                      child: Text('Placement'),
                     ),
                     Padding(
                       padding: EdgeInsets.symmetric(horizontal: 16),
@@ -479,6 +490,85 @@ class _AdminCreateProcedureScreenState
                     ),
                   ],
                 ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 24),
+
+          // ───────────────── Hook selection ─────────────────
+          Container(
+            margin: const EdgeInsets.only(bottom: 24),
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppTheme.backgroundLight,
+              border: Border.all(color: Colors.blue.withOpacity(0.3)),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'System Hook (Plugin)',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Special logic for specific procedure types',
+                  style: TextStyle(fontSize: 12, color: AppTheme.textLight),
+                ),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<String>(
+                  value: _selectedHook,
+                  decoration: const InputDecoration(
+                    border: OutlineInputBorder(),
+                    contentPadding: EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
+                  ),
+                  hint: const Text('Regular Procedure (No Hook)'),
+                  items: const [
+                    DropdownMenuItem(
+                      value: null,
+                      child: Text('Regular Procedure (No Hook)'),
+                    ),
+                    DropdownMenuItem(
+                      value: 'PLACEMENT_BULK',
+                      child: Text('Placement Attendance (Bulk)'),
+                    ),
+                  ],
+                  onChanged: (val) {
+                    setState(() {
+                      _selectedHook = val;
+                    });
+                  },
+                ),
+                if (_selectedHook == 'PLACEMENT_BULK') ...[
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    color: Colors.blue.withOpacity(0.1),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.info_outline,
+                          size: 16,
+                          color: Colors.blue,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Placement Hook requires a "File" field and "Class Advisor" as the first approval level.',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.blue[800],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ],
             ),
           ),

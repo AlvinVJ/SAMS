@@ -161,6 +161,7 @@ class ProcedureDetail {
   final List<dynamic> formFields;
   final List<dynamic> approvalLevels;
   final List<String> visibility;
+  final String? systemHook;
 
   ProcedureDetail({
     required this.procId,
@@ -169,6 +170,7 @@ class ProcedureDetail {
     required this.formFields,
     required this.approvalLevels,
     required this.visibility,
+    this.systemHook,
   });
 
   factory ProcedureDetail.fromJson(Map<String, dynamic> json) {
@@ -179,6 +181,7 @@ class ProcedureDetail {
       formFields: json['formFields'] ?? json['formBuilder'] ?? [],
       approvalLevels: json['approvalLevels'] ?? [],
       visibility: List<String>.from(json['visibility'] ?? []),
+      systemHook: json['system_hook'],
     );
   }
 }

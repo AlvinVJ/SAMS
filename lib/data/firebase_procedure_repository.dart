@@ -42,9 +42,23 @@ class ApiProcedureRepository {
         "procedure": {
           "title": procedure.title,
           "desc": procedure.description,
+          "system_hook": procedure.systemHook,
           "visibility": procedure.visibility.contains(ProcedureVisibility.all)
               ? ["all"]
-              : procedure.visibility.map((v) => v.name).toList(),
+              : procedure.visibility.map((v) {
+                  switch (v) {
+                    case ProcedureVisibility.student:
+                      return "STUDENT";
+                    case ProcedureVisibility.faculty:
+                      return "FACULTY";
+                    case ProcedureVisibility.clubLead:
+                      return "CLUB_LEAD";
+                    case ProcedureVisibility.placementCoordinator:
+                      return "PLACEMENT_COORDINATOR";
+                    default:
+                      return "ALL";
+                  }
+                }).toList(),
           "priority": "NORMAL",
           "isActive": true,
 
@@ -74,7 +88,7 @@ class ApiProcedureRepository {
       throw Exception('Auth token is missing');
     }
     final response = await http.post(
-      Uri.parse('$baseUrl/api/requests/create'),
+      Uri.parse('$baseUrl/api/common/create_request'),
       headers: {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $authToken',

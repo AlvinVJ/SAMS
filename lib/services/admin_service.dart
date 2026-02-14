@@ -183,4 +183,33 @@ class AdminService {
       throw Exception(error['message'] ?? "Failed to import users data");
     }
   }
+
+  Future<void> uploadPlacementAttendance(
+    List<int> bytes,
+    String fileName,
+    String eventName,
+    String date,
+  ) async {
+    final token = await _getToken();
+    var request = http.MultipartRequest(
+      'POST',
+      Uri.parse("$_baseUrl/api/faculty/bulk-placement-attendance"),
+    );
+    request.headers.addAll(_headers(token!));
+    request.fields['eventName'] = eventName;
+    request.fields['date'] = date;
+    request.files.add(
+      http.MultipartFile.fromBytes('file', bytes, filename: fileName),
+    );
+
+    final streamedResponse = await request.send();
+    final response = await http.Response.fromStream(streamedResponse);
+
+    if (response.statusCode != 201) {
+      final error = json.decode(response.body);
+      throw Exception(
+        error['message'] ?? "Failed to upload placement attendance",
+      );
+    }
+  }
 }

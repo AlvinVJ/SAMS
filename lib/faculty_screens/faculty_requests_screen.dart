@@ -420,6 +420,114 @@ class _RequestCardState extends State<_RequestCard> {
     );
   }
 
+  void _showStudentList(BuildContext context, PendingApproval request) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Student Participation List',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              '${request.eventName ?? 'Placement Event'} - ${request.eventDate ?? ''}',
+              style: const TextStyle(
+                fontSize: 14,
+                color: AppTheme.textLight,
+                fontWeight: FontWeight.normal,
+              ),
+            ),
+          ],
+        ),
+        content: SizedBox(
+          width: 400,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.blue.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.info_outline,
+                      color: Colors.blue,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'This request contains ${request.students?.length ?? 0} students from ${request.className ?? 'their class'}.',
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: Colors.blue,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              if (request.students != null && request.students!.isNotEmpty)
+                Flexible(
+                  child: Container(
+                    constraints: const BoxConstraints(maxHeight: 300),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.grey.shade200),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: ListView.separated(
+                      shrinkWrap: true,
+                      itemCount: request.students!.length,
+                      separatorBuilder: (context, index) =>
+                          const Divider(height: 1),
+                      itemBuilder: (context, index) {
+                        final student = request.students![index];
+                        return ListTile(
+                          dense: true,
+                          title: Text(student['name'] ?? 'Unknown'),
+                          subtitle: Text(student['mits_uid'] ?? '-'),
+                          leading: CircleAvatar(
+                            radius: 14,
+                            backgroundColor: AppTheme.primary.withOpacity(0.1),
+                            child: Text(
+                              (student['name'] ?? '?')[0].toUpperCase(),
+                              style: const TextStyle(
+                                fontSize: 10,
+                                color: AppTheme.primary,
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                )
+              else
+                const Padding(
+                  padding: EdgeInsets.all(20.0),
+                  child: Text('No student data available'),
+                ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final request = widget.request;
@@ -509,8 +617,6 @@ class _RequestCardState extends State<_RequestCard> {
                   onPressed: _isProcessing ? null : _handleApprove,
                 ),
               ),
-              const SizedBox(width: 8),
-              // Reject Button
               Expanded(
                 child: OutlinedButton.icon(
                   icon: const Icon(Icons.cancel_outlined, size: 16),
@@ -526,6 +632,24 @@ class _RequestCardState extends State<_RequestCard> {
                   onPressed: _isProcessing ? null : _handleReject,
                 ),
               ),
+              if (request.isBulk) ...[
+                const SizedBox(width: 8),
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.orange.shade50,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: IconButton(
+                    tooltip: 'View Students',
+                    icon: const Icon(
+                      Icons.people_outline,
+                      color: Colors.orange,
+                      size: 20,
+                    ),
+                    onPressed: () => _showStudentList(context, request),
+                  ),
+                ),
+              ],
               const SizedBox(width: 8),
               // View Form Button
               Container(

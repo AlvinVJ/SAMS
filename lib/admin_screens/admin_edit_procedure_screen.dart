@@ -37,6 +37,7 @@ class _AdminEditProcedureScreenState extends State<AdminEditProcedureScreen> {
   final List<FormFieldDraft> _formFields = [];
   final _formKey = GlobalKey<FormState>();
   final List<ApprovalLevelDraft> _approvalLevels = [];
+  String? _selectedHook;
 
   bool _isLoading = true;
   String? _errorMessage;
@@ -64,11 +65,16 @@ class _AdminEditProcedureScreenState extends State<AdminEditProcedureScreen> {
 
         // Parse visibility
         _visibility = procedure.visibility.map((v) {
-          return ProcedureVisibility.values.firstWhere(
-            (pv) => pv.name == v,
-            orElse: () => ProcedureVisibility.all,
-          );
+          final tag = v.toString().toUpperCase();
+          if (tag == 'STUDENT') return ProcedureVisibility.student;
+          if (tag == 'FACULTY') return ProcedureVisibility.faculty;
+          if (tag == 'CLUB_LEAD') return ProcedureVisibility.clubLead;
+          if (tag == 'PLACEMENT_COORDINATOR')
+            return ProcedureVisibility.placementCoordinator;
+          return ProcedureVisibility.all;
         }).toSet();
+
+        _selectedHook = procedure.systemHook;
 
         // Parse form fields
         if (procedure.formFields.isNotEmpty) {
@@ -350,9 +356,23 @@ class _AdminEditProcedureScreenState extends State<AdminEditProcedureScreen> {
     final procedureData = {
       "title": _titleController.text.trim(),
       "desc": _descriptionController.text.trim(),
+      "system_hook": _selectedHook,
       "visibility": _visibility.contains(ProcedureVisibility.all)
           ? ["all"]
-          : _visibility.map((v) => v.name).toList(),
+          : _visibility.map((v) {
+              switch (v) {
+                case ProcedureVisibility.student:
+                  return "STUDENT";
+                case ProcedureVisibility.faculty:
+                  return "FACULTY";
+                case ProcedureVisibility.clubLead:
+                  return "CLUB_LEAD";
+                case ProcedureVisibility.placementCoordinator:
+                  return "PLACEMENT_COORDINATOR";
+                default:
+                  return "ALL";
+              }
+            }).toList(),
       "formBuilder": _formFields.map((f) => f.toJson()).toList(),
       "formFields": _formFields.map((f) => f.toJson()).toList(),
       "approvalLevels": _approvalLevels
@@ -493,25 +513,26 @@ class _AdminEditProcedureScreenState extends State<AdminEditProcedureScreen> {
                       isSelected: [
                         _visibility.contains(ProcedureVisibility.student),
                         _visibility.contains(ProcedureVisibility.faculty),
-                        _visibility.contains(ProcedureVisibility.guest),
+                        _visibility.contains(ProcedureVisibility.clubLead),
+                        _visibility.contains(
+                          ProcedureVisibility.placementCoordinator,
+                        ),
                         _visibility.contains(ProcedureVisibility.all),
                       ],
                       onPressed: (index) {
                         setState(() {
                           final selected = ProcedureVisibility.values[index];
 
-                          if (_visibility.contains(ProcedureVisibility.all) &&
-                              selected != ProcedureVisibility.all) {
-                            return;
-                          }
-
                           if (selected == ProcedureVisibility.all) {
                             if (_visibility.contains(ProcedureVisibility.all)) {
                               _visibility.remove(ProcedureVisibility.all);
                             } else {
+                              // Select ALL and clear others
                               _visibility = {ProcedureVisibility.all};
                             }
                           } else {
+                            // If selecting a specific one, remove 'all'
+                            _visibility.remove(ProcedureVisibility.all);
                             if (_visibility.contains(selected)) {
                               _visibility.remove(selected);
                             } else {
@@ -532,7 +553,11 @@ class _AdminEditProcedureScreenState extends State<AdminEditProcedureScreen> {
                         ),
                         Padding(
                           padding: EdgeInsets.symmetric(horizontal: 16),
-                          child: Text('Guest'),
+                          child: Text('Club Lead'),
+                        ),
+                        Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 16),
+                          child: Text('Placement'),
                         ),
                         Padding(
                           padding: EdgeInsets.symmetric(horizontal: 16),
@@ -543,6 +568,91 @@ class _AdminEditProcedureScreenState extends State<AdminEditProcedureScreen> {
                   ),
                 ),
               ],
+            ),
+          ),
+          const SizedBox(height: 24),
+
+          // Hook selection
+          IgnorePointer(
+            ignoring: widget.readOnly,
+            child: Opacity(
+              opacity: widget.readOnly ? 0.7 : 1.0,
+              child: Container(
+                margin: const EdgeInsets.only(bottom: 24),
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppTheme.backgroundLight,
+                  border: Border.all(color: Colors.blue.withOpacity(0.3)),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'System Hook (Plugin)',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Special logic for specific procedure types',
+                      style: TextStyle(fontSize: 12, color: AppTheme.textLight),
+                    ),
+                    const SizedBox(height: 12),
+                    DropdownButtonFormField<String>(
+                      value: _selectedHook,
+                      decoration: const InputDecoration(
+                        border: OutlineInputBorder(),
+                        contentPadding: EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
+                      ),
+                      hint: const Text('Regular Procedure (No Hook)'),
+                      items: const [
+                        DropdownMenuItem(
+                          value: null,
+                          child: Text('Regular Procedure (No Hook)'),
+                        ),
+                        DropdownMenuItem(
+                          value: 'PLACEMENT_BULK',
+                          child: Text('Placement Attendance (Bulk)'),
+                        ),
+                      ],
+                      onChanged: (val) {
+                        setState(() {
+                          _selectedHook = val;
+                        });
+                      },
+                    ),
+                    if (_selectedHook == 'PLACEMENT_BULK') ...[
+                      const SizedBox(height: 12),
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        color: Colors.blue.withOpacity(0.1),
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.info_outline,
+                              size: 16,
+                              color: Colors.blue,
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'Placement Hook requires a "File" field and "Class Advisor" as the first approval level.',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.blue[800],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
             ),
           ),
 

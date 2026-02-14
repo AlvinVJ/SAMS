@@ -294,6 +294,11 @@ class PendingApproval {
   final Color color;
   final Map<String, dynamic> formData;
   final List<ApprovalAction> approvalHistory;
+  final bool isBulk;
+  final List<dynamic>? students;
+  final String? eventName;
+  final String? eventDate;
+  final String? className;
 
   PendingApproval({
     required this.id,
@@ -308,6 +313,11 @@ class PendingApproval {
     required this.color,
     required this.formData,
     required this.approvalHistory,
+    this.isBulk = false,
+    this.students,
+    this.eventName,
+    this.eventDate,
+    this.className,
   });
 
   factory PendingApproval.fromJson(Map<String, dynamic> json) {
@@ -345,6 +355,11 @@ class PendingApproval {
       approvalHistory: (json['approvalHistory'] as List? ?? [])
           .map((h) => ApprovalAction.fromJson(Map<String, dynamic>.from(h)))
           .toList(),
+      isBulk: json['isBulk'] ?? false,
+      students: json['students'],
+      eventName: json['eventName'],
+      eventDate: json['eventDate'],
+      className: json['className'],
     );
   }
 }
