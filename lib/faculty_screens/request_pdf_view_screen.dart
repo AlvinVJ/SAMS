@@ -115,35 +115,34 @@ class _RequestPdfViewScreenState extends State<RequestPdfViewScreen> {
     final request = widget.request;
 
     // Use formData for body if available, otherwise fallback to description
+    final Map<String, dynamic> combinedData = Map.from(request.formData);
+
+    // If it's a bulk request, pull in the specialized fields if they aren't already in formData
+    if (request.isBulk) {
+      if (request.eventName != null)
+        combinedData['EVENT_NAME'] = request.eventName;
+      if (request.eventDate != null)
+        combinedData['EVENT_DATE'] = request.eventDate;
+      if (request.className != null) combinedData['CLASS'] = request.className;
+      if (request.students != null) {
+        combinedData['STUDENT_COUNT'] = request.students!.length;
+      }
+    }
+
     final List<pw.Widget> formFields = [];
-    if (request.formData.isNotEmpty) {
-      request.formData.forEach((key, value) {
-        formFields.add(
-          pw.Padding(
-            padding: const pw.EdgeInsets.symmetric(vertical: 4),
-            child: pw.Row(
-              crossAxisAlignment: pw.CrossAxisAlignment.start,
-              children: [
-                pw.SizedBox(
-                  width: 140,
-                  child: pw.Text(
-                    '${key.replaceAll('_', ' ').toUpperCase()}:',
-                    style: pw.TextStyle(
-                      fontWeight: pw.FontWeight.bold,
-                      fontSize: 11,
-                    ),
-                  ),
-                ),
-                pw.Expanded(
-                  child: pw.Text(
-                    value.toString(),
-                    style: const pw.TextStyle(fontSize: 11),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
+    if (combinedData.isNotEmpty) {
+      combinedData.forEach((key, value) {
+        // Skip keys that might contain large data or be irrelevant for PDF
+        if (key.toLowerCase().contains('student_list') || key == 'students') {
+          if (value is List) {
+            formFields.add(
+              _buildPdfField('TOTAL STUDENTS', value.length.toString()),
+            );
+          }
+          return;
+        }
+
+        formFields.add(_buildPdfField(key, value.toString()));
       });
     } else {
       formFields.add(
@@ -421,5 +420,26 @@ class _RequestPdfViewScreenState extends State<RequestPdfViewScreen> {
     );
 
     return pdf;
+  }
+
+  pw.Widget _buildPdfField(String label, String value) {
+    return pw.Padding(
+      padding: const pw.EdgeInsets.symmetric(vertical: 4),
+      child: pw.Row(
+        crossAxisAlignment: pw.CrossAxisAlignment.start,
+        children: [
+          pw.SizedBox(
+            width: 140,
+            child: pw.Text(
+              '${label.replaceAll('_', ' ').toUpperCase()}:',
+              style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 11),
+            ),
+          ),
+          pw.Expanded(
+            child: pw.Text(value, style: const pw.TextStyle(fontSize: 11)),
+          ),
+        ],
+      ),
+    );
   }
 }
