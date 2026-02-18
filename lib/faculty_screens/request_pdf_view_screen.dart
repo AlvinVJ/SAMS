@@ -142,7 +142,11 @@ class _RequestPdfViewScreenState extends State<RequestPdfViewScreen> {
           return;
         }
 
-        formFields.add(_buildPdfField(key, value.toString()));
+        if (value is Map && value.containsKey('name')) {
+          formFields.add(_buildPdfField(key, value['name'].toString()));
+        } else {
+          formFields.add(_buildPdfField(key, value.toString()));
+        }
       });
     } else {
       formFields.add(

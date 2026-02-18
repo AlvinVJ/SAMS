@@ -39,6 +39,61 @@ class _RequestFormScreenState extends State<RequestFormScreen> {
 
   bool _isUploading = false;
 
+  String _getMimeType(String? ext) {
+    switch (ext?.toLowerCase()) {
+      case 'pdf':
+        return 'application/pdf';
+      case 'jpg':
+      case 'jpeg':
+        return 'image/jpeg';
+      case 'png':
+        return 'image/png';
+      default:
+        return 'application/octet-stream';
+    }
+  }
+
+  Future<void> _pickGenericFile(FormFieldDraft field) async {
+    try {
+      FilePickerResult? result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['pdf', 'jpg', 'jpeg', 'png'],
+        withData: true,
+      );
+
+      if (result != null) {
+        setState(() => _isUploading = true);
+        final file = result.files.first;
+
+        // Convert to base64 for storage in formData
+        final base64String = base64Encode(file.bytes!);
+        final mimeType = _getMimeType(file.extension);
+        final dataUrl = "data:$mimeType;base64,$base64String";
+
+        setState(() {
+          _values[field.fieldId] = {
+            'name': file.name,
+            'type': mimeType,
+            'url': dataUrl,
+          };
+          _controllers[field.fieldId] ??= TextEditingController();
+          _controllers[field.fieldId]!.text = file.name;
+          _isUploading = false;
+        });
+      }
+    } catch (e) {
+      setState(() => _isUploading = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to pick file: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
   Future<void> _pickAndParseCSV(FormFieldDraft field) async {
     try {
       FilePickerResult? result = await FilePicker.platform.pickFiles(
@@ -187,44 +242,53 @@ class _RequestFormScreenState extends State<RequestFormScreen> {
 
         FormFieldType.multipleChoice => _buildMultiChoice(field, label),
 
-        FormFieldType.file => Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            ElevatedButton.icon(
-              icon: _isUploading
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Icon(Icons.upload_file),
-              label: Text(
-                _values[field.fieldId] == null
-                    ? "Upload Student List (CSV)"
-                    : "Change File",
-              ),
-              onPressed: _isUploading ? null : () => _pickAndParseCSV(field),
-            ),
-            if (_values[field.fieldId] != null)
-              Padding(
-                padding: const EdgeInsets.only(top: 8.0),
-                child: Text(
-                  _controllers[field.fieldId]?.text ?? "File selected",
-                  style: const TextStyle(
-                    color: Colors.green,
-                    fontWeight: FontWeight.bold,
+        FormFieldType.file => Builder(
+          builder: (context) {
+            final isStudentList = field.label.toLowerCase().contains('student');
+            final buttonLabel = _values[field.fieldId] == null
+                ? (isStudentList ? "Upload Student List (CSV)" : "Upload File")
+                : "Change File";
+
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                ElevatedButton.icon(
+                  icon: _isUploading
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.upload_file),
+                  label: Text(buttonLabel),
+                  onPressed: _isUploading
+                      ? null
+                      : () => isStudentList
+                            ? _pickAndParseCSV(field)
+                            : _pickGenericFile(field),
+                ),
+                if (_values[field.fieldId] != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8.0),
+                    child: Text(
+                      _controllers[field.fieldId]?.text ?? "File selected",
+                      style: const TextStyle(
+                        color: Colors.green,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ),
-                ),
-              ),
-            if (field.required && _values[field.fieldId] == null)
-              Padding(
-                padding: const EdgeInsets.only(top: 4.0),
-                child: Text(
-                  "Required *",
-                  style: TextStyle(color: Colors.red, fontSize: 12),
-                ),
-              ),
-          ],
+                if (field.required && _values[field.fieldId] == null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4.0),
+                    child: Text(
+                      "Required *",
+                      style: TextStyle(color: Colors.red, fontSize: 12),
+                    ),
+                  ),
+              ],
+            );
+          },
         ),
       },
     );
