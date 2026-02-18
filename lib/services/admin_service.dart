@@ -184,6 +184,28 @@ class AdminService {
     }
   }
 
+  Future<void> uploadAcademicFile(List<int> bytes, String fileName) async {
+    final token = await _getToken();
+    var request = http.MultipartRequest(
+      'POST',
+      Uri.parse("$_baseUrl/api/admin/bulk-import-academic"),
+    );
+    request.headers.addAll(_headers(token!));
+    request.files.add(
+      http.MultipartFile.fromBytes('file', bytes, filename: fileName),
+    );
+
+    final streamedResponse = await request.send();
+    final response = await http.Response.fromStream(streamedResponse);
+
+    if (response.statusCode != 201) {
+      final error = json.decode(response.body);
+      throw Exception(
+        error['message'] ?? "Failed to import academic structure",
+      );
+    }
+  }
+
   Future<void> uploadPlacementAttendance(
     List<int> bytes,
     String fileName,
