@@ -19,6 +19,7 @@ class UserRequest {
   final String studentId;
   final String department;
   final String roleTag;
+  final String lastLevelRoleTag;
 
   UserRequest({
     required this.id,
@@ -35,6 +36,7 @@ class UserRequest {
     this.studentId = '',
     this.department = '',
     this.roleTag = 'Approver',
+    this.lastLevelRoleTag = 'Principal',
   });
 
   PendingApproval toPendingApproval() {
@@ -51,6 +53,7 @@ class UserRequest {
       color: statusColor, // Map status color
       approvalHistory: approvalHistory,
       formData: formData,
+      lastLevelRoleTag: lastLevelRoleTag,
     );
   }
 
@@ -92,6 +95,7 @@ class UserRequest {
       studentId: json['studentId'] ?? '',
       department: json['department'] ?? '',
       roleTag: json['roleTag'] ?? 'Approver',
+      lastLevelRoleTag: json['lastLevelRoleTag'] ?? 'Principal',
     );
   }
 
@@ -114,6 +118,7 @@ class UserRequest {
       currentLevel: 1,
       totalLevels: 1,
       approvalHistory: [],
+      lastLevelRoleTag: 'Principal',
     );
   }
 }
@@ -299,6 +304,7 @@ class PendingApproval {
   final String? eventName;
   final String? eventDate;
   final String? className;
+  final String lastLevelRoleTag;
 
   PendingApproval({
     required this.id,
@@ -318,6 +324,7 @@ class PendingApproval {
     this.eventName,
     this.eventDate,
     this.className,
+    this.lastLevelRoleTag = 'Principal',
   });
 
   factory PendingApproval.fromJson(Map<String, dynamic> json) {
@@ -360,6 +367,7 @@ class PendingApproval {
       eventName: json['eventName'],
       eventDate: json['eventDate'],
       className: json['className'],
+      lastLevelRoleTag: json['lastLevelRoleTag'] ?? 'Principal',
     );
   }
 }
