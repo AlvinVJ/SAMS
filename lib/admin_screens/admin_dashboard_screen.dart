@@ -1,123 +1,188 @@
 import 'package:flutter/material.dart';
 import '../../widgets/admin_dashboard_layout.dart';
 import '../../styles/app_theme.dart';
+import '../../services/admin_service.dart';
 
-class AdminDashboardScreen extends StatelessWidget {
+class AdminDashboardScreen extends StatefulWidget {
   const AdminDashboardScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    // Dummy dashboard stats (replace with API data later)
-    final dashboardStats = {
-      'total': 1284,
-      'pending': 142,
-      'approved': 1089,
-      'rejected': 53,
-    };
+  State<AdminDashboardScreen> createState() => _AdminDashboardScreenState();
+}
 
+class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
+  final AdminService _adminService = AdminService();
+  bool _isLoading = true;
+  String? _errorMessage;
+  Map<String, dynamic>? _stats;
+  List<dynamic> _recentActivity = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchDashboardData();
+  }
+
+  Future<void> _fetchDashboardData() async {
+    try {
+      setState(() {
+        _isLoading = true;
+        _errorMessage = null;
+      });
+      final data = await _adminService.getAdminDashboardStats();
+      setState(() {
+        _stats = data['stats'];
+        _recentActivity = data['recentActivity'];
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _errorMessage = e.toString();
+        _isLoading = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return AdminDashboardLayout(
       activeRoute: '/admin/dashboard',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Page Title
-          Text(
-            'Dashboard',
-            style: Theme.of(context).textTheme.headlineMedium,
-          ),
-          const SizedBox(height: 4),
-          Text(
-            'Overview of your approval system',
-            style: Theme.of(context).textTheme.bodyMedium,
-          ),
-
-          const SizedBox(height: 32),
-
-          // Stats Cards
-          GridView.count(
-            crossAxisCount: 4,
-            crossAxisSpacing: 16,
-            mainAxisSpacing: 16,
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              _StatCard(
-                title: 'Total Requests',
-                value: dashboardStats['total']!,
-                color: AppTheme.primary,
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Dashboard',
+                    style: Theme.of(context).textTheme.headlineMedium,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Overview of your approval system',
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                ],
               ),
-              _StatCard(
-                title: 'Pending',
-                value: dashboardStats['pending']!,
-                color: AppTheme.warning,
-              ),
-              _StatCard(
-                title: 'Approved',
-                value: dashboardStats['approved']!,
-                color: AppTheme.success,
-              ),
-              _StatCard(
-                title: 'Rejected',
-                value: dashboardStats['rejected']!,
-                color: AppTheme.error,
+              IconButton(
+                onPressed: _fetchDashboardData,
+                icon: const Icon(Icons.refresh),
+                tooltip: 'Refresh Dashboard',
               ),
             ],
           ),
 
           const SizedBox(height: 32),
 
-          // Charts Section
-          // Row(
-          //   children: [
-          //     Expanded(
-          //       child: _ChartPlaceholder(
-          //         title: 'Monthly Requests',
-          //       ),
-          //     ),
-          //     const SizedBox(width: 24),
-          //     Expanded(
-          //       child: _ChartPlaceholder(
-          //         title: 'Weekly Approvals',
-          //       ),
-          //     ),
-          //   ],
-          // ),
-
-          const SizedBox(height: 32),
-
-          // Recent Activity
-          Text(
-            'Recent Activity',
-            style: Theme.of(context).textTheme.titleLarge,
-          ),
-          const SizedBox(height: 16),
-
-          // Dummy activity list (replace with API data later)
-          Column(
-            children: const [
-              _ActivityItem(
-                initials: 'JD',
-                title: 'John Doe created a request',
-                subtitle: 'Request #1235 - Marketing Budget Approval',
-                time: '5 min ago',
+          if (_isLoading)
+            const Center(child: CircularProgressIndicator())
+          else if (_errorMessage != null)
+            Center(
+              child: Column(
+                children: [
+                  const Icon(
+                    Icons.error_outline,
+                    size: 48,
+                    color: AppTheme.error,
+                  ),
+                  const SizedBox(height: 16),
+                  Text('Error: $_errorMessage'),
+                  TextButton(
+                    onPressed: _fetchDashboardData,
+                    child: const Text('Try Again'),
+                  ),
+                ],
               ),
-              _ActivityItem(
-                initials: 'SS',
-                title: 'Sarah Smith approved Request #1234',
-                subtitle: 'New Hire Onboarding Equipment',
-                time: '12 min ago',
+            )
+          else ...[
+            // Stats Cards
+            GridView.count(
+              crossAxisCount: 4,
+              crossAxisSpacing: 16,
+              mainAxisSpacing: 16,
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              children: [
+                _StatCard(
+                  title: 'Total Requests',
+                  value: _stats?['total'] ?? 0,
+                  color: AppTheme.primary,
+                ),
+                _StatCard(
+                  title: 'Pending',
+                  value: _stats?['pending'] ?? 0,
+                  color: AppTheme.warning,
+                ),
+                _StatCard(
+                  title: 'Approved',
+                  value: _stats?['approved'] ?? 0,
+                  color: AppTheme.success,
+                ),
+                _StatCard(
+                  title: 'Rejected',
+                  value: _stats?['rejected'] ?? 0,
+                  color: AppTheme.error,
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 32),
+
+            // Recent Activity
+            Text(
+              'Recent Activity',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: 16),
+
+            if (_recentActivity.isEmpty)
+              const Center(
+                child: Padding(
+                  padding: EdgeInsets.symmetric(vertical: 40),
+                  child: Text(
+                    'No recent activity found',
+                    style: TextStyle(color: AppTheme.textLight),
+                  ),
+                ),
+              )
+            else
+              Column(
+                children: _recentActivity.map((activity) {
+                  return _ActivityItem(
+                    initials: activity['initials'] ?? '??',
+                    title: activity['title'] ?? 'Unknown Action',
+                    subtitle: activity['subtitle'] ?? '',
+                    time: _formatTime(activity['time']),
+                  );
+                }).toList(),
               ),
-              _ActivityItem(
-                initials: 'ED',
-                title: 'Emily Davis rejected Request #1230',
-                subtitle: 'Missing manager approval signature',
-                time: '2 hours ago',
-              ),
-            ],
-          ),
+          ],
         ],
       ),
     );
+  }
+
+  String _formatTime(String? timeStr) {
+    if (timeStr == null) return '';
+    try {
+      final dateTime = DateTime.parse(timeStr);
+      final now = DateTime.now();
+      final difference = now.difference(dateTime);
+
+      if (difference.inMinutes < 60) {
+        return '${difference.inMinutes} min ago';
+      } else if (difference.inHours < 24) {
+        return '${difference.inHours} hours ago';
+      } else {
+        return timeStr.split('T')[0];
+      }
+    } catch (e) {
+      return '';
+    }
   }
 }
 
@@ -146,15 +211,13 @@ class _StatCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title,
-              style: Theme.of(context).textTheme.bodyMedium),
+          Text(title, style: Theme.of(context).textTheme.bodyMedium),
           const SizedBox(height: 12),
           Text(
             value.toString(),
-            style: Theme.of(context)
-                .textTheme
-                .headlineMedium
-                ?.copyWith(color: color),
+            style: Theme.of(
+              context,
+            ).textTheme.headlineMedium?.copyWith(color: color),
           ),
         ],
       ),
@@ -246,18 +309,13 @@ class _ActivityItem extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title,
-                    style: Theme.of(context).textTheme.bodyLarge),
+                Text(title, style: Theme.of(context).textTheme.bodyLarge),
                 const SizedBox(height: 4),
-                Text(subtitle,
-                    style: Theme.of(context).textTheme.bodySmall),
+                Text(subtitle, style: Theme.of(context).textTheme.bodySmall),
               ],
             ),
           ),
-          Text(
-            time,
-            style: Theme.of(context).textTheme.bodySmall,
-          ),
+          Text(time, style: Theme.of(context).textTheme.bodySmall),
         ],
       ),
     );

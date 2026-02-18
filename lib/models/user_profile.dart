@@ -18,6 +18,12 @@ class UserProfile {
   // 3. To take role tag for faculty
   final List<String>? roleTags;
 
+  // 4. NEW: Student classification fields for MVP
+  // isHosteler: Determines if student resides in hostel (used for Warden notification logic)
+  final bool isHosteler;
+  // department: Student's department (e.g., "Computer Science", "Mechanical")
+  final String department;
+
   UserProfile({
     required this.authUid,
     required this.email,
@@ -29,6 +35,9 @@ class UserProfile {
     this.studentId,
     this.createdAt,
     this.roleTags,
+    // NEW: Added for MVP - student classification
+    this.isHosteler = false, // Default to false (day scholar)
+    this.department = '', // Default to empty string
   });
 
   factory UserProfile.fromMap({
@@ -38,7 +47,6 @@ class UserProfile {
     String? displayName,
     String? photoUrl,
     List<String>? roleTags,
-
   }) {
     DateTime? getDoB(dynamic val) {
       if (val is Timestamp) return val.toDate();
@@ -57,6 +65,9 @@ class UserProfile {
       studentId: data?['uid'],
       createdAt: getDoB(data?['createdAt']),
       roleTags: roleTags,
+      // NEW: Parse student classification fields from Firestore
+      isHosteler: data?['isHosteler'] ?? false,
+      department: data?['department'] ?? '',
     );
   }
 
@@ -74,6 +85,8 @@ class UserProfile {
       Student ID   : ${studentId ?? 'N/A'}
       Created At   : ${createdAt?.toIso8601String() ?? 'N/A'}
       Role tags    : ${roleTags}
+      Is Hosteler  : $isHosteler
+      Department   : $department
       =================================
 ''');
   }

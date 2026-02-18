@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:sams_final/auth_gate.dart';
 
 import 'package:firebase_core/firebase_core.dart';
-import 'package:sams_final/services/auth_service.dart';
 import 'firebase_options.dart';
 //import 'services/auth_service.dart';
 
@@ -11,7 +10,7 @@ import 'firebase_options.dart';
 // Student screens
 import 'faculty_screens/faculty_acted_requests_screen.dart';
 import 'faculty_screens/faculty_profile_screen.dart';
-import 'screens/dashboard_screen.dart';
+// import 'screens/dashboard_screen.dart';
 import 'screens/unified_requests_screen.dart'; // Unified
 import 'screens/unified_create_request_screen.dart';
 import 'screens/notifications_screen.dart';
@@ -23,12 +22,15 @@ import 'admin_screens/admin_requests_screen.dart';
 import 'admin_screens/admin_settings_screen.dart';
 import 'admin_screens/admin_users_screen.dart';
 import 'admin_screens/admin_procedures_screen.dart';
+import 'admin_screens/academic_structure_screen.dart';
+import 'admin_screens/data_import_screen.dart';
 
 // Faculty screens
 import 'faculty_screens/faculty_dashboard_screen.dart';
 import 'faculty_screens/faculty_requests_screen.dart';
 // import 'faculty_screens/faculty_request_history_screen.dart'; // Removed
 
+import 'faculty_screens/faculty_notifications_screen.dart';
 import 'widgets/role_guard.dart';
 import 'state/auth_resolution.dart';
 
@@ -94,6 +96,14 @@ class MyApp extends StatelessWidget {
           allowedRoles: [AuthResolution.admin],
           child: AdminProceduresScreen(),
         ),
+        '/admin/academic-structure': (context) => const RoleGuard(
+          allowedRoles: [AuthResolution.admin],
+          child: AcademicStructureScreen(),
+        ),
+        '/admin/data-import': (context) => const RoleGuard(
+          allowedRoles: [AuthResolution.admin],
+          child: DataImportScreen(),
+        ),
         // ================= FACULTY =================
         '/faculty/dashboard': (context) => RoleGuard(
           allowedRoles: [AuthResolution.faculty],
@@ -123,6 +133,10 @@ class MyApp extends StatelessWidget {
         '/faculty/profile': (context) => RoleGuard(
           allowedRoles: [AuthResolution.faculty],
           child: FacultyProfileScreen(),
+        ),
+        '/faculty/notifications': (context) => const RoleGuard(
+          allowedRoles: [AuthResolution.faculty],
+          child: FacultyNotificationsScreen(),
         ),
       },
     );

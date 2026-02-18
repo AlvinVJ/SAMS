@@ -1,9 +1,92 @@
 import 'package:flutter/material.dart';
 import '../../styles/app_theme.dart';
 import '../../widgets/admin_dashboard_layout.dart';
+import '../../services/admin_service.dart';
 
-class AdminRequestsScreen extends StatelessWidget {
+class AdminRequestsScreen extends StatefulWidget {
   const AdminRequestsScreen({super.key});
+
+  @override
+  State<AdminRequestsScreen> createState() => _AdminRequestsScreenState();
+}
+
+class _AdminRequestsScreenState extends State<AdminRequestsScreen> {
+  final AdminService _adminService = AdminService();
+  List<dynamic> _allRequests = [];
+  List<dynamic> _filteredRequests = [];
+  bool _isLoading = true;
+  String _errorMessage = '';
+
+  // Filter state
+  String _searchQuery = '';
+  String _statusFilter = 'All Statuses';
+  String _procedureFilter = 'All Procedures';
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchRequests();
+  }
+
+  Future<void> _fetchRequests() async {
+    try {
+      setState(() => _isLoading = true);
+      final data = await _adminService.getGlobalRequests();
+      setState(() {
+        _allRequests = data;
+        _applyFilters();
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _errorMessage = e.toString();
+        _isLoading = false;
+      });
+    }
+  }
+
+  void _applyFilters() {
+    setState(() {
+      _filteredRequests = _allRequests.where((req) {
+        // Search filter
+        final idMatch = req['req_id'].toString().toLowerCase().contains(
+          _searchQuery.toLowerCase(),
+        );
+        final nameMatch = (req['studentName'] ?? '')
+            .toString()
+            .toLowerCase()
+            .contains(_searchQuery.toLowerCase());
+        final procedureMatch = (req['procedure_title'] ?? '')
+            .toString()
+            .toLowerCase()
+            .contains(_searchQuery.toLowerCase());
+        final searchMatch = idMatch || nameMatch || procedureMatch;
+
+        // Status filter
+        bool statusMatch = true;
+        if (_statusFilter != 'All Statuses') {
+          statusMatch = req['status_text'].toString() == _statusFilter;
+        }
+
+        // Procedure filter
+        bool procMatch = true;
+        if (_procedureFilter != 'All Procedures') {
+          procMatch = req['procedure_title'].toString() == _procedureFilter;
+        }
+
+        return searchMatch && statusMatch && procMatch;
+      }).toList();
+    });
+  }
+
+  List<String> _getUniqueProcedures() {
+    final procedures = _allRequests
+        .map((e) => e['procedure_title'].toString())
+        .toSet()
+        .toList();
+    procedures.sort();
+    return ['All Procedures', ...procedures];
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -38,7 +121,7 @@ class AdminRequestsScreen extends StatelessWidget {
                   ],
                 ),
                 ElevatedButton.icon(
-                  onPressed: () {},
+                  onPressed: _fetchRequests,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppTheme.primary,
                     foregroundColor: Colors.white,
@@ -50,9 +133,9 @@ class AdminRequestsScreen extends StatelessWidget {
                       borderRadius: BorderRadius.circular(8),
                     ),
                   ),
-                  icon: const Icon(Icons.add),
+                  icon: const Icon(Icons.refresh),
                   label: const Text(
-                    'New Request',
+                    'Refresh',
                     style: TextStyle(fontWeight: FontWeight.bold),
                   ),
                 ),
@@ -76,8 +159,12 @@ class AdminRequestsScreen extends StatelessWidget {
                   Expanded(
                     flex: 2,
                     child: TextField(
+                      onChanged: (val) {
+                        _searchQuery = val;
+                        _applyFilters();
+                      },
                       decoration: InputDecoration(
-                        hintText: 'Search requests...',
+                        hintText: 'Search requests, students...',
                         prefixIcon: const Icon(Icons.search),
                         filled: true,
                         fillColor: AppTheme.backgroundLight,
@@ -91,69 +178,44 @@ class AdminRequestsScreen extends StatelessWidget {
                   const SizedBox(width: 16),
                   Expanded(
                     child: DropdownButtonFormField<String>(
-                      initialValue: 'All Statuses',
-                      items: const [
-                        DropdownMenuItem(
-                          value: 'All Statuses',
-                          child: Text('All Statuses'),
-                        ),
-                        DropdownMenuItem(
-                          value: 'Pending',
-                          child: Text('Pending'),
-                        ),
-                        DropdownMenuItem(
-                          value: 'Approved',
-                          child: Text('Approved'),
-                        ),
-                        DropdownMenuItem(
-                          value: 'Rejected',
-                          child: Text('Rejected'),
-                        ),
-                      ],
-                      onChanged: (_) {},
+                      value: _statusFilter,
+                      items:
+                          const [
+                                'All Statuses',
+                                'Pending',
+                                'Approved',
+                                'Rejected',
+                              ]
+                              .map(
+                                (s) =>
+                                    DropdownMenuItem(value: s, child: Text(s)),
+                              )
+                              .toList(),
+                      onChanged: (val) {
+                        if (val != null) {
+                          _statusFilter = val;
+                          _applyFilters();
+                        }
+                      },
                       decoration: _dropdownDecoration(),
                     ),
                   ),
                   const SizedBox(width: 16),
                   Expanded(
                     child: DropdownButtonFormField<String>(
-                      initialValue: 'All Procedures',
-                      items: const [
-                        DropdownMenuItem(
-                          value: 'All Procedures',
-                          child: Text('All Procedures'),
-                        ),
-                        DropdownMenuItem(
-                          value: 'Leave Application',
-                          child: Text('Leave Application'),
-                        ),
-                        DropdownMenuItem(
-                          value: 'Purchase Request',
-                          child: Text('Purchase Request'),
-                        ),
-                        DropdownMenuItem(
-                          value: 'Travel Auth',
-                          child: Text('Travel Auth'),
-                        ),
-                      ],
-                      onChanged: (_) {},
+                      value: _procedureFilter,
+                      items: _getUniqueProcedures()
+                          .map(
+                            (p) => DropdownMenuItem(value: p, child: Text(p)),
+                          )
+                          .toList(),
+                      onChanged: (val) {
+                        if (val != null) {
+                          _procedureFilter = val;
+                          _applyFilters();
+                        }
+                      },
                       decoration: _dropdownDecoration(),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  SizedBox(
-                    width: 180,
-                    child: TextField(
-                      decoration: InputDecoration(
-                        hintText: 'dd / mm / yyyy',
-                        prefixIcon: const Icon(Icons.calendar_today, size: 20),
-                        filled: true,
-                        fillColor: AppTheme.backgroundLight,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: BorderSide.none,
-                        ),
-                      ),
                     ),
                   ),
                 ],
@@ -165,122 +227,130 @@ class AdminRequestsScreen extends StatelessWidget {
             // =========================
             // TABLE
             // =========================
-            Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.grey.shade200),
-              ),
-              child: Column(
-                children: [
-                  LayoutBuilder(
-                    builder: (context, constraints) {
-                      return SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: ConstrainedBox(
-                          constraints: BoxConstraints(
-                            minWidth: constraints.maxWidth,
-                          ),
-                          child: DataTable(
-                            horizontalMargin: 16, 
-                            columnSpacing: 24, 
-                            headingRowHeight: 56,
-                            dataRowMaxHeight: 64,
-                            headingRowColor: WidgetStateProperty.all(
-                              AppTheme.backgroundLight,
+            if (_isLoading)
+              const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(40.0),
+                  child: CircularProgressIndicator(),
+                ),
+              )
+            else if (_errorMessage.isNotEmpty)
+              Center(
+                child: Text(
+                  'Error: $_errorMessage',
+                  style: const TextStyle(color: Colors.red),
+                ),
+              )
+            else
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.grey.shade200),
+                ),
+                child: Column(
+                  children: [
+                    LayoutBuilder(
+                      builder: (context, constraints) {
+                        return SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: ConstrainedBox(
+                            constraints: BoxConstraints(
+                              minWidth: constraints.maxWidth,
                             ),
-                            columns: const [
-                              DataColumn(
-                                label: Text(
-                                  'Request ID',
-                                  style: TextStyle(fontWeight: FontWeight.bold),
-                                ),
+                            child: DataTable(
+                              horizontalMargin: 16,
+                              columnSpacing: 24,
+                              headingRowHeight: 56,
+                              dataRowMaxHeight: 64,
+                              headingRowColor: WidgetStateProperty.all(
+                                AppTheme.backgroundLight,
                               ),
-                              DataColumn(
-                                label: Text(
-                                  'Procedure Name',
-                                  style: TextStyle(fontWeight: FontWeight.bold),
+                              columns: const [
+                                DataColumn(
+                                  label: Text(
+                                    'Request ID',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
                                 ),
-                              ),
-                              DataColumn(
-                                label: Text(
-                                  'Submitted By',
-                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                DataColumn(
+                                  label: Text(
+                                    'Procedure Name',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
                                 ),
-                              ),
-                              DataColumn(
-                                label: Text(
-                                  'Current Level',
-                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                DataColumn(
+                                  label: Text(
+                                    'Submitted By',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
                                 ),
-                              ),
-                              DataColumn(
-                                label: Text(
-                                  'Status',
-                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                DataColumn(
+                                  label: Text(
+                                    'Current Level',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
                                 ),
-                              ),
-                              DataColumn(
-                                label: Text(
-                                  'Submission Date',
-                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                DataColumn(
+                                  label: Text(
+                                    'Status',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
                                 ),
-                              ),
-                              // DataColumn(
-                              //   label: Text(
-                              //     'Action',
-                              //     style: TextStyle(fontWeight: FontWeight.bold),
-                              //   ),
-                              // ),
-                            ],
-
-                            // To do: Replace this dummy request data with API response later
-                            rows: _dummyRequests.map(_buildRow).toList(),
+                                DataColumn(
+                                  label: Text(
+                                    'Submission Date',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                              rows: _filteredRequests
+                                  .map((r) => _buildRow(context, r))
+                                  .toList(),
+                            ),
                           ),
-                        ),
-                      );
-                    },
-                  ),
-
-                  // =========================
-                  // FOOTER
-                  // =========================
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 24,
-                      vertical: 16,
+                        );
+                      },
                     ),
-                    decoration: BoxDecoration(
-                      border: Border(
-                        top: BorderSide(color: Colors.grey.shade200),
+
+                    // =========================
+                    // FOOTER
+                    // =========================
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 16,
+                      ),
+                      decoration: BoxDecoration(
+                        border: Border(
+                          top: BorderSide(color: Colors.grey.shade200),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Showing ${_filteredRequests.length} of ${_allRequests.length} requests',
+                            style: const TextStyle(color: AppTheme.textLight),
+                          ),
+                        ],
                       ),
                     ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text(
-                          'Showing 1 to 2 of 124 requests',
-                          style: TextStyle(color: AppTheme.textLight),
-                        ),
-                        Row(
-                          children: [
-                            OutlinedButton(
-                              onPressed: null,
-                              child: const Text('Previous'),
-                            ),
-                            const SizedBox(width: 8),
-                            OutlinedButton(
-                              onPressed: () {},
-                              child: const Text('Next'),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
           ],
         ),
       ),
@@ -302,39 +372,63 @@ class AdminRequestsScreen extends StatelessWidget {
     );
   }
 
-  static DataRow _buildRow(_AdminRequest r) {
+  static DataRow _buildRow(BuildContext context, dynamic r) {
+    // Parse color
+    Color statusColor = AppTheme.warning;
+    final colorStr = r['color']?.toString().toLowerCase();
+    if (colorStr == 'success') statusColor = AppTheme.success;
+    if (colorStr == 'error') statusColor = AppTheme.error;
+
+    final dateStr = r['created_at']?.toString().split('T')[0] ?? '';
+
     return DataRow(
       cells: [
         DataCell(
-          Text(r.id, style: const TextStyle(fontWeight: FontWeight.w500)),
+          Text(
+            r['req_id'] ?? '',
+            style: const TextStyle(fontWeight: FontWeight.w500),
+          ),
         ),
-        DataCell(Text(r.procedure)),
+        DataCell(Text(r['procedure_title'] ?? '')),
         DataCell(
           Row(
             children: [
               CircleAvatar(
                 radius: 14,
-                backgroundColor: r.avatarBg,
+                backgroundColor: AppTheme.primary.withValues(alpha: 0.2),
                 child: Text(
-                  r.initials,
+                  (r['studentName'] ?? '?').toString().toUpperCase().substring(
+                    0,
+                    1,
+                  ),
                   style: const TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                    color: AppTheme.primary,
                   ),
                 ),
               ),
               const SizedBox(width: 8),
-              Text(r.name),
+              Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(r['studentName'] ?? 'Unknown'),
+                  Text(
+                    r['department'] ?? 'N/A',
+                    style: const TextStyle(
+                      fontSize: 10,
+                      color: AppTheme.textLight,
+                    ),
+                  ),
+                ],
+              ),
             ],
           ),
         ),
-        DataCell(Text(r.level)),
-        DataCell(_statusBadge(r.status, r.statusColor)),
-        DataCell(Text(r.date)),
-        // DataCell(
-        //   IconButton(icon: const Icon(Icons.visibility), onPressed: () {}),
-        // ),
+        DataCell(Text('Level ${r['current_level']} / ${r['total_levels']}')),
+        DataCell(_statusBadge(r['status_text'] ?? 'Pending', statusColor)),
+        DataCell(Text(dateStr)),
       ],
     );
   }
@@ -368,57 +462,3 @@ class AdminRequestsScreen extends StatelessWidget {
     );
   }
 }
-
-// =========================
-// DUMMY DATA MODEL
-// =========================
-
-class _AdminRequest {
-  final String id;
-  final String procedure;
-  final String name;
-  final String initials;
-  final String level;
-  final String status;
-  final String date;
-  final Color statusColor;
-  final Color avatarBg;
-
-  _AdminRequest({
-    required this.id,
-    required this.procedure,
-    required this.name,
-    required this.initials,
-    required this.level,
-    required this.status,
-    required this.date,
-    required this.statusColor,
-    required this.avatarBg,
-  });
-}
-
-// To do: Replace this dummy request data with API response later
-final List<_AdminRequest> _dummyRequests = [
-  _AdminRequest(
-    id: '#1001',
-    procedure: 'Leave Application',
-    name: 'John Doe',
-    initials: 'JD',
-    level: 'Level 2 – Dept. Head',
-    status: 'Pending',
-    date: '2024-11-25',
-    statusColor: AppTheme.warning,
-    avatarBg: Colors.blue,
-  ),
-  _AdminRequest(
-    id: '#1002',
-    procedure: 'Purchase Request',
-    name: 'Sarah Smith',
-    initials: 'SS',
-    level: 'Level 3 – Finance Mgr',
-    status: 'Approved',
-    date: '2024-11-24',
-    statusColor: AppTheme.success,
-    avatarBg: Colors.purple,
-  ),
-];

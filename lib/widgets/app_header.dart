@@ -65,7 +65,14 @@ class _AppHeaderState extends State<AppHeader> {
                   IconButton(
                     icon: const Icon(Icons.notifications_none),
                     color: AppTheme.textLight,
-                    onPressed: () {},
+                    onPressed: () {
+                      final profile = AuthService().userProfile;
+                      if (profile?.role == 'faculty') {
+                        Navigator.pushNamed(context, '/faculty/notifications');
+                      } else {
+                        Navigator.pushNamed(context, '/notifications');
+                      }
+                    },
                   ),
                   Positioned(
                     top: 8,

@@ -1,46 +1,163 @@
 import 'package:flutter/material.dart';
 import '../styles/app_theme.dart';
 import '../widgets/admin_dashboard_layout.dart';
+import '../services/admin_service.dart';
 
-class AdminUsersScreen extends StatelessWidget {
+class AdminUsersScreen extends StatefulWidget {
   const AdminUsersScreen({super.key});
 
-  ///  DUMMY DATA — replace with API later
-  static final List<_AdminUser> users = [
-    _AdminUser(
-      name: 'John Doe',
-      email: 'john.doe@example.com',
-      initials: 'JD',
-      role: 'Admin',
-      department: 'IT',
-      lastActive: '2 hours ago',
-      isActive: true,
-      avatarBg: Color(0xFFE0E7FF),
-      avatarText: Color(0xFF4338CA),
-    ),
-    _AdminUser(
-      name: 'Sarah Smith',
-      email: 'sarah.smith@example.com',
-      initials: 'SS',
-      role: 'Manager',
-      department: 'HR',
-      lastActive: '5 minutes ago',
-      isActive: true,
-      avatarBg: Color(0xFFFCE7F3),
-      avatarText: Color(0xFFBE185D),
-    ),
-    _AdminUser(
-      name: 'Lisa Brown',
-      email: 'lisa.brown@example.com',
-      initials: 'LB',
-      role: 'Manager',
-      department: 'Sales',
-      lastActive: '2 days ago',
-      isActive: false,
-      avatarBg: Color(0xFFFFEDD5),
-      avatarText: Color(0xFF9A3412),
-    ),
-  ];
+  @override
+  State<AdminUsersScreen> createState() => _AdminUsersScreenState();
+}
+
+class _AdminUsersScreenState extends State<AdminUsersScreen> {
+  final AdminService _adminService = AdminService();
+  bool _isLoading = false;
+  bool _hasSearched = false;
+  List<dynamic> _filteredUsers = [];
+  List<dynamic> _roles = [];
+  final TextEditingController _searchController = TextEditingController();
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _fetchData({String? query}) async {
+    setState(() => _isLoading = true);
+    try {
+      final results = await Future.wait([
+        _adminService.getUsers(query: query), // Pass query to service
+        _adminService.getRoles(),
+      ]);
+      setState(() {
+        _filteredUsers =
+            results[0]; // _filteredUsers will now directly reflect fetched data
+        _roles = results[1];
+        _isLoading = false;
+        _hasSearched = true;
+      });
+    } catch (e) {
+      setState(() => _isLoading = false);
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error: $e')));
+    }
+  }
+
+  Future<void> _triggerSearch() async {
+    final query = _searchController.text.trim();
+    if (query.isNotEmpty) {
+      await _fetchData(query: query);
+    } else {
+      setState(() {
+        _filteredUsers = [];
+        _hasSearched = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter a UID or Name to search')),
+      );
+    }
+  }
+
+  Future<void> _toggleUserStatus(dynamic user) async {
+    final bool currentStatus = user['is_active'] ?? true;
+    final String mitsUid = user['mits_uid'];
+
+    try {
+      await _adminService.updateUser(mitsUid, {'is_active': !currentStatus});
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'User ${!currentStatus ? 'activated' : 'deactivated'} successfully',
+          ),
+        ),
+      );
+      _fetchData(
+        query: _searchController.text.trim(),
+      ); // Refresh list with current query
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Failed to update status: $e')));
+    }
+  }
+
+  void _showEditUserDialog(dynamic user) {
+    final nameController = TextEditingController(
+      text: user['Student']?['name'] ?? user['Faculty']?['name'] ?? '',
+    );
+
+    // Find current role id
+    final List roleMappings = user['RoleMapping'] ?? [];
+    int? selectedRoleId = roleMappings.isNotEmpty
+        ? roleMappings[0]['role_id']
+        : null;
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: Text('Edit User: ${user['mits_uid']}'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nameController,
+                decoration: const InputDecoration(labelText: 'Full Name'),
+              ),
+              const SizedBox(height: 16),
+              DropdownButtonFormField<int>(
+                value: selectedRoleId,
+                decoration: const InputDecoration(
+                  labelText: 'Specific Role (HOD, Advisor, etc.)',
+                ),
+                items: [
+                  const DropdownMenuItem<int>(
+                    value: null,
+                    child: Text('No Specific Role'),
+                  ),
+                  ..._roles
+                      .map(
+                        (r) => DropdownMenuItem<int>(
+                          value: r['role_id'],
+                          child: Text(r['role_tag']),
+                        ),
+                      )
+                      .toList(),
+                ],
+                onChanged: (val) => setDialogState(() => selectedRoleId = val),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                try {
+                  await _adminService.updateUser(user['mits_uid'], {
+                    'name': nameController.text,
+                    'role_id': selectedRoleId,
+                  });
+                  Navigator.pop(context);
+                  _fetchData(query: _searchController.text.trim());
+                } catch (e) {
+                  ScaffoldMessenger.of(
+                    context,
+                  ).showSnackBar(SnackBar(content: Text('Update failed: $e')));
+                }
+              },
+              child: const Text('Save Changes'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -53,13 +170,32 @@ class AdminUsersScreen extends StatelessWidget {
           const SizedBox(height: 16),
           _filters(),
           const SizedBox(height: 16),
-          _table(),
+          _isLoading
+              ? const Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(40),
+                    child: CircularProgressIndicator(),
+                  ),
+                )
+              : (_hasSearched && _filteredUsers.isEmpty)
+              ? const Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(40),
+                    child: Text('No users found matching your search.'),
+                  ),
+                )
+              : (!_hasSearched)
+              ? const Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(40),
+                    child: Text('Enter a UID or name to search for users.'),
+                  ),
+                )
+              : _table(),
         ],
       ),
     );
   }
-
-  // ================= HEADER =================
 
   Widget _header(BuildContext context) {
     return Row(
@@ -80,24 +216,10 @@ class AdminUsersScreen extends StatelessWidget {
             ),
           ],
         ),
-        ElevatedButton.icon(
-          onPressed: () {},
-          icon: const Icon(Icons.add, size: 18),
-          label: const Text('Add User'),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppTheme.primary,
-            foregroundColor: Colors.white,
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
-          ),
-        ),
+        const SizedBox.shrink(),
       ],
     );
   }
-
-  // ================= FILTERS =================
 
   Widget _filters() {
     return Container(
@@ -107,9 +229,14 @@ class AdminUsersScreen extends StatelessWidget {
         children: [
           Expanded(
             child: TextField(
+              controller: _searchController,
               decoration: InputDecoration(
-                hintText: 'Search users by name or email...',
+                hintText: 'Search users by name, email or UID...',
                 prefixIcon: const Icon(Icons.search, size: 20),
+                suffixIcon: IconButton(
+                  icon: const Icon(Icons.arrow_forward),
+                  onPressed: _triggerSearch,
+                ),
                 filled: true,
                 fillColor: AppTheme.backgroundLight,
                 border: OutlineInputBorder(
@@ -117,45 +244,41 @@ class AdminUsersScreen extends StatelessWidget {
                   borderSide: BorderSide.none,
                 ),
               ),
+              onSubmitted: (_) => _triggerSearch(),
             ),
-          ),
-          const SizedBox(width: 12),
-          OutlinedButton.icon(
-            onPressed: () {},
-            icon: const Icon(Icons.filter_list, size: 18),
-            label: const Text('All Roles'),
           ),
         ],
       ),
     );
   }
 
-  // ================= DATATABLE =================
-
   Widget _table() {
     return Container(
       decoration: _card(),
       child: LayoutBuilder(
         builder: (context, constraints) {
-          return SizedBox(
-            width: constraints.maxWidth, // 🔑 remove side whitespace
-            child: DataTable(
-              columnSpacing: 24,
-              horizontalMargin: 16, // 🔑 controlled margin
-              headingRowHeight: 52,
-              dataRowMaxHeight: 64,
-              headingRowColor: WidgetStateProperty.all(
-                AppTheme.backgroundLight,
+          return SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minWidth: constraints.maxWidth),
+              child: DataTable(
+                columnSpacing: 24,
+                horizontalMargin: 16,
+                headingRowHeight: 52,
+                dataRowMaxHeight: 64,
+                headingRowColor: WidgetStateProperty.all(
+                  AppTheme.backgroundLight,
+                ),
+                columns: const [
+                  DataColumn(label: _Header('User')),
+                  DataColumn(label: _Header('UID')),
+                  DataColumn(label: _Header('Role')),
+                  DataColumn(label: _Header('Affiliation')),
+                  DataColumn(label: _Header('Email')),
+                  DataColumn(label: _Header('Actions')),
+                ],
+                rows: _filteredUsers.map(_row).toList(),
               ),
-              columns: const [
-                DataColumn(label: _Header('User',)),
-                DataColumn(label: _Header('Email')),
-                DataColumn(label: _Header('Role')),
-                DataColumn(label: _Header('Department')),
-                DataColumn(label: _Header('Last Active')),
-                DataColumn(label: _Header('Actions')),
-              ],
-              rows: users.map(_row).toList(),
             ),
           );
         },
@@ -163,72 +286,86 @@ class AdminUsersScreen extends StatelessWidget {
     );
   }
 
-  DataRow _row(_AdminUser u) {
+  DataRow _row(dynamic u) {
+    final String name =
+        (u['Student']?['name'] ??
+                u['Faculty']?['name'] ??
+                u['mits_uid'] ??
+                'Unknown User')
+            .toString();
+
+    final String email = (u['email'] ?? 'No Email').toString();
+
+    final String uid = (u['mits_uid'] ?? 'N/A').toString();
+    final bool isActive = u['is_active'] ?? true;
+
+    final List roles = u['RoleMapping'] ?? [];
+    String roleStr = 'User';
+    if (roles.isNotEmpty && roles[0]['Roles'] != null) {
+      roleStr = roles[0]['Roles']['role_tag']?.toString() ?? 'User';
+    } else if (u['UserTypes'] != null) {
+      roleStr = u['UserTypes']['user_type_tag']?.toString() ?? 'User';
+    }
+
+    String affiliation = 'N/A';
+    if (u['Student'] != null) {
+      final className =
+          u['Student']['Classes']?['class']?.toString() ?? 'No Class';
+      final batchName =
+          u['Student']['Batches']?['batch']?.toString() ?? 'No Batch';
+      affiliation = "$className ($batchName)";
+    } else if (u['Faculty'] != null) {
+      affiliation =
+          u['Faculty']['Departments']?['dept_name']?.toString() ?? 'No Dept';
+    }
+
     return DataRow(
       cells: [
-        // USER CELL
         DataCell(
           Row(
             children: [
-              _avatar(u),
+              _avatar(name),
               const SizedBox(width: 10),
               Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    u.name,
+                    name,
                     style: const TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
-                  const SizedBox(height: 2),
-                  _status(u.isActive),
+                  _status(isActive),
                 ],
               ),
             ],
           ),
         ),
-
-        DataCell(_cellText(u.email)),
-        DataCell(_role(u.role)),
-        DataCell(_cellText(u.department)),
-        DataCell(_cellText(u.lastActive)),
-
+        DataCell(_cellText(uid)),
+        DataCell(_role(roleStr)),
+        DataCell(_cellText(affiliation)),
+        DataCell(_cellText(email)),
         DataCell(
           Row(
-            children: const [
-              Icon(Icons.edit, size: 18, color: AppTheme.primary),
-              SizedBox(width: 12),
-              Icon(Icons.block, size: 18, color: AppTheme.textLight),
+            children: [
+              IconButton(
+                icon: const Icon(Icons.edit, size: 18, color: AppTheme.primary),
+                onPressed: () => _showEditUserDialog(u),
+              ),
+              IconButton(
+                icon: Icon(
+                  isActive ? Icons.block : Icons.check_circle_outline,
+                  size: 18,
+                  color: isActive ? Colors.red : Colors.green,
+                ),
+                onPressed: () => _toggleUserStatus(u),
+              ),
             ],
           ),
         ),
       ],
-    );
-  }
-
-  // ================= SMALL UI =================
-
-  Widget _avatar(_AdminUser u) {
-    return Container(
-      width: 36,
-      height: 36,
-      decoration: BoxDecoration(
-        color: u.avatarBg,
-        shape: BoxShape.circle,
-      ),
-      child: Center(
-        child: Text(
-          u.initials,
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-            color: u.avatarText,
-          ),
-        ),
-      ),
     );
   }
 
@@ -239,20 +376,47 @@ class AdminUsersScreen extends StatelessWidget {
           width: 6,
           height: 6,
           decoration: BoxDecoration(
-            color: active ? const Color(0xFF22C55E) : Colors.grey,
+            color: active ? Colors.green : Colors.red,
             shape: BoxShape.circle,
           ),
         ),
-        const SizedBox(width: 6),
+        const SizedBox(width: 4),
         Text(
-          active ? 'Active' : 'Inactive',
+          active ? 'Active' : 'Blocked',
           style: TextStyle(
-            fontSize: 12,
-            color: active ? const Color(0xFF16A34A) : Colors.grey,
-            fontWeight: FontWeight.w500,
+            fontSize: 10,
+            color: active ? Colors.green : Colors.red,
           ),
         ),
       ],
+    );
+  }
+
+  Widget _avatar(String name) {
+    String initials = '??';
+    try {
+      final parts = name.trim().split(' ').where((e) => e.isNotEmpty).toList();
+      if (parts.isNotEmpty) {
+        initials = parts.take(2).map((e) => e[0]).join().toUpperCase();
+      }
+    } catch (_) {}
+    return Container(
+      width: 36,
+      height: 36,
+      decoration: const BoxDecoration(
+        color: Color(0xFFE0E7FF),
+        shape: BoxShape.circle,
+      ),
+      child: Center(
+        child: Text(
+          initials,
+          style: const TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: Color(0xFF4338CA),
+          ),
+        ),
+      ),
     );
   }
 
@@ -264,11 +428,8 @@ class AdminUsersScreen extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
       ),
       child: Text(
-        role,
-        style: const TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.w500,
-        ),
+        role.toUpperCase(),
+        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
       ),
     );
   }
@@ -276,26 +437,20 @@ class AdminUsersScreen extends StatelessWidget {
   Widget _cellText(String text) {
     return Text(
       text,
-      style: const TextStyle(
-        fontSize: 13,
-        color: AppTheme.textLight,
-      ),
+      style: const TextStyle(fontSize: 13, color: AppTheme.textLight),
     );
   }
 
   BoxDecoration _card() => BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
-      );
+    color: Colors.white,
+    borderRadius: BorderRadius.circular(12),
+    border: Border.all(color: Colors.grey.shade200),
+  );
 }
-
-// ================= HELPERS =================
 
 class _Header extends StatelessWidget {
   final String text;
   const _Header(this.text);
-
   @override
   Widget build(BuildContext context) {
     return Text(
@@ -307,28 +462,4 @@ class _Header extends StatelessWidget {
       ),
     );
   }
-}
-
-class _AdminUser {
-  final String name;
-  final String email;
-  final String initials;
-  final String role;
-  final String department;
-  final String lastActive;
-  final bool isActive;
-  final Color avatarBg;
-  final Color avatarText;
-
-  _AdminUser({
-    required this.name,
-    required this.email,
-    required this.initials,
-    required this.role,
-    required this.department,
-    required this.lastActive,
-    required this.isActive,
-    required this.avatarBg,
-    required this.avatarText,
-  });
 }

@@ -42,13 +42,28 @@ class ApiProcedureRepository {
         "procedure": {
           "title": procedure.title,
           "desc": procedure.description,
+          "system_hook": procedure.systemHook,
           "visibility": procedure.visibility.contains(ProcedureVisibility.all)
               ? ["all"]
-              : procedure.visibility.map((v) => v.name).toList(),
+              : procedure.visibility.map((v) {
+                  switch (v) {
+                    case ProcedureVisibility.student:
+                      return "STUDENT";
+                    case ProcedureVisibility.faculty:
+                      return "FACULTY";
+                    case ProcedureVisibility.clubLead:
+                      return "CLUB_LEAD";
+                    case ProcedureVisibility.placementCoordinator:
+                      return "PLACEMENT_COORDINATOR";
+                    default:
+                      return "ALL";
+                  }
+                }).toList(),
           "priority": "NORMAL",
           "isActive": true,
 
           "formBuilder": procedure.formSchema.map((f) => f.toJson()).toList(),
+          "formFields": procedure.formSchema.map((f) => f.toJson()).toList(),
 
           "approvalLevels": procedure.approvalLevels
               .asMap()
@@ -73,7 +88,7 @@ class ApiProcedureRepository {
       throw Exception('Auth token is missing');
     }
     final response = await http.post(
-      Uri.parse('$baseUrl/api/requests/create'),
+      Uri.parse('$baseUrl/api/common/create_request'),
       headers: {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $authToken',
@@ -82,7 +97,8 @@ class ApiProcedureRepository {
     );
 
     if (response.statusCode != 201 && response.statusCode != 200) {
-      throw Exception('Failed to create request');
+      print('DEBUG: createRequest Error: ${response.body}');
+      throw Exception('Failed to create request: ${response.body}');
     }
   }
 

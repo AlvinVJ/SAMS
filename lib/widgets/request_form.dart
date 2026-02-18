@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:file_picker/file_picker.dart';
+import 'dart:convert';
 import '../widgets/dashboard_layout.dart';
 import '../styles/app_theme.dart';
 import '../data/firebase_procedure_repository.dart';
@@ -34,6 +36,58 @@ class _RequestFormScreenState extends State<RequestFormScreen> {
   final ApiProcedureRepository _requestRepo = ApiProcedureRepository(
     "http://localhost:3000",
   );
+
+  bool _isUploading = false;
+
+  Future<void> _pickAndParseCSV(FormFieldDraft field) async {
+    try {
+      FilePickerResult? result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['csv'],
+        withData: true,
+      );
+
+      if (result != null) {
+        setState(() => _isUploading = true);
+        final file = result.files.first;
+        final content = utf8.decode(file.bytes!);
+        final lines = content.split('\n');
+
+        // Simple CSV parsing: assume first column is mits_uid
+        // Skip header if it exists
+        List<Map<String, String>> students = [];
+        bool hasHeader = lines.first.toLowerCase().contains('mits_uid');
+        int startIndex = hasHeader ? 1 : 0;
+
+        for (int i = startIndex; i < lines.length; i++) {
+          final line = lines[i].trim();
+          if (line.isEmpty) continue;
+          final parts = line.split(',');
+          if (parts.isNotEmpty) {
+            students.add({'mits_uid': parts[0].trim()});
+          }
+        }
+
+        setState(() {
+          _values[field.fieldId] = students;
+          _controllers[field.fieldId] ??= TextEditingController();
+          _controllers[field.fieldId]!.text =
+              "${file.name} (${students.length} students)";
+          _isUploading = false;
+        });
+      }
+    } catch (e) {
+      setState(() => _isUploading = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to parse CSV: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -82,14 +136,25 @@ class _RequestFormScreenState extends State<RequestFormScreen> {
                   Align(
                     alignment: Alignment.centerRight,
                     child: ElevatedButton(
-                      onPressed: _submit,
+                      onPressed: _isSubmitting ? null : _submit,
                       style: ElevatedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 28,
                           vertical: 14,
                         ),
                       ),
-                      child: const Text('Submit Request'),
+                      child: _isSubmitting
+                          ? const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  Colors.white,
+                                ),
+                              ),
+                            )
+                          : const Text('Submit Request'),
                     ),
                   ),
                 ],
@@ -122,10 +187,44 @@ class _RequestFormScreenState extends State<RequestFormScreen> {
 
         FormFieldType.multipleChoice => _buildMultiChoice(field, label),
 
-        FormFieldType.file => ElevatedButton.icon(
-          icon: const Icon(Icons.upload),
-          label: Text(label),
-          onPressed: () {},
+        FormFieldType.file => Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ElevatedButton.icon(
+              icon: _isUploading
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.upload_file),
+              label: Text(
+                _values[field.fieldId] == null
+                    ? "Upload Student List (CSV)"
+                    : "Change File",
+              ),
+              onPressed: _isUploading ? null : () => _pickAndParseCSV(field),
+            ),
+            if (_values[field.fieldId] != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 8.0),
+                child: Text(
+                  _controllers[field.fieldId]?.text ?? "File selected",
+                  style: const TextStyle(
+                    color: Colors.green,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            if (field.required && _values[field.fieldId] == null)
+              Padding(
+                padding: const EdgeInsets.only(top: 4.0),
+                child: Text(
+                  "Required *",
+                  style: TextStyle(color: Colors.red, fontSize: 12),
+                ),
+              ),
+          ],
         ),
       },
     );
@@ -150,12 +249,11 @@ class _RequestFormScreenState extends State<RequestFormScreen> {
         );
 
         if (picked != null) {
+          final dateString = picked.toIso8601String().split('T').first;
           setState(() {
-            _values[field.fieldId] = picked;
-            _controllers[field.fieldId]!.text = picked
-                .toIso8601String()
-                .split('T')
-                .first;
+            // Store as ISO string, not DateTime object
+            _values[field.fieldId] = dateString;
+            _controllers[field.fieldId]!.text = dateString;
           });
         }
       },
@@ -246,7 +344,11 @@ class _RequestFormScreenState extends State<RequestFormScreen> {
 
   // ───────────────── Submit ─────────────────
 
+  bool _isSubmitting = false;
+
   Future<void> _submit() async {
+    if (_isSubmitting) return;
+
     _multiChoiceErrors.clear();
 
     for (final field in widget.fields) {
@@ -262,17 +364,52 @@ class _RequestFormScreenState extends State<RequestFormScreen> {
       return;
     }
 
-    if (!_formKey.currentState!.validate()) return;
+    if (!_formKey.currentState!.validate()) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please fill all required fields'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
 
-    final token = await FirebaseAuth.instance.currentUser!.getIdToken();
+    setState(() => _isSubmitting = true);
 
-    await _requestRepo.createRequest(
-      procedureId: widget.procedureId,
-      values: _values,
-      authToken: token,
-    );
+    try {
+      // Submit to backend using ProcedureService
+      await _requestRepo.createRequest(
+        procedureId: widget.procedureId,
+        values: _values,
+        authToken: await FirebaseAuth.instance.currentUser!.getIdToken(),
+      );
 
-    if (!mounted) return;
-    Navigator.pop(context);
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('✓ Request submitted successfully'),
+          backgroundColor: Colors.green,
+          duration: Duration(seconds: 2),
+        ),
+      );
+
+      // Navigate back to requests screen
+      Navigator.pop(context);
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('✗ Error: $e'),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+      }
+    }
   }
 }

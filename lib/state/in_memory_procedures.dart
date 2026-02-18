@@ -20,6 +20,7 @@ class ProcedureDraft {
   final List<FormFieldDraft> formSchema;
   final List<ApprovalLevelDraft> approvalLevels;
   final Set<ProcedureVisibility> visibility;
+  final String? systemHook;
 
   ProcedureDraft({
     required this.title,
@@ -27,6 +28,7 @@ class ProcedureDraft {
     required this.formSchema,
     required this.approvalLevels,
     required this.visibility,
+    this.systemHook,
   });
 
   factory ProcedureDraft.fromJson(Map<String, dynamic> json) {
@@ -45,8 +47,13 @@ class ProcedureDraft {
       title: json['title']?.toString() ?? 'Untitled',
       description:
           json['description']?.toString() ?? json['desc']?.toString() ?? '',
+      systemHook: json['system_hook']?.toString(),
       formSchema:
-          (json['formBuilder'] as List?)
+          ((json['formFields'] ??
+                      json['formSchema'] ??
+                      json['form_fields'] ??
+                      json['formBuilder'])
+                  as List?)
               ?.map((e) => FormFieldDraft.fromJson(e as Map<String, dynamic>))
               .toList() ??
           [],
@@ -81,8 +88,12 @@ class FormFieldDraft {
 
   factory FormFieldDraft.fromJson(Map<String, dynamic> json) {
     return FormFieldDraft(
-      fieldId: json['fieldId']?.toString() ?? 'unknown_id',
-      label: json['label']?.toString() ?? 'Untitled Field',
+      fieldId:
+          (json['fieldId'] ?? json['id'] ?? json['field_id'])?.toString() ??
+          'unknown_id',
+      label:
+          (json['label'] ?? json['title'] ?? json['name'])?.toString() ??
+          'Untitled Field',
       type: FormFieldType.values.firstWhere(
         (e) => e.name == json['type'],
         orElse: () => FormFieldType.text,
@@ -115,7 +126,11 @@ class ApprovalLevelDraft {
     List<Map<String, String>> rolesList = [];
     if (json['roleIds'] != null && json['roleIds'] is List) {
       rolesList = (json['roleIds'] as List).map((id) {
-        return {'id': id.toString(), 'name': 'Role $id'};
+        return {
+          'id': id.toString(),
+          'name': 'Role $id',
+          'role_tag': id.toString(),
+        };
       }).toList();
     }
 
@@ -129,7 +144,13 @@ class ApprovalLevelDraft {
 
 // visibility button
 
-enum ProcedureVisibility { student, faculty, guest, all }
+enum ProcedureVisibility {
+  student,
+  faculty,
+  clubLead,
+  placementCoordinator,
+  all,
+}
 
 extension FormFieldDraftJson on FormFieldDraft {
   Map<String, dynamic> toJson() {
@@ -174,6 +195,7 @@ extension ProcedureDraftJson on ProcedureDraft {
 
       "requestFormat": 0,
       "priority": "NORMAL",
+      "system_hook": systemHook,
 
       "formSchema": formSchema.map((f) => f.toJson()).toList(),
 
