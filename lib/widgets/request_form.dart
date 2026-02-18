@@ -183,6 +183,7 @@ class _RequestFormScreenState extends State<RequestFormScreen> {
             child: Form(
               key: _formKey,
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   ...widget.fields.map(_buildField),
 
@@ -252,6 +253,7 @@ class _RequestFormScreenState extends State<RequestFormScreen> {
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                _sectionLabel(label),
                 ElevatedButton.icon(
                   icon: _isUploading
                       ? const SizedBox(
@@ -392,7 +394,10 @@ class _RequestFormScreenState extends State<RequestFormScreen> {
   Widget _sectionLabel(String text) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
-      child: Text(text, style: const TextStyle(fontWeight: FontWeight.w600)),
+      child: Text(
+        text,
+        style: TextStyle(color: Colors.grey.shade700, fontSize: 14),
+      ),
     );
   }
 
