@@ -19,7 +19,7 @@ class ProcedureDraft {
   final String description;
   final List<FormFieldDraft> formSchema;
   final List<ApprovalLevelDraft> approvalLevels;
-  final Set<ProcedureVisibility> visibility;
+  final Set<String> visibility;
   final String? systemHook;
 
   ProcedureDraft({
@@ -33,14 +33,11 @@ class ProcedureDraft {
 
   factory ProcedureDraft.fromJson(Map<String, dynamic> json) {
     // Safely parse visibility set
-    Set<ProcedureVisibility> visibilitySet = {ProcedureVisibility.all};
+    Set<String> visibilitySet = {"all"};
     if (json['visibility'] != null && json['visibility'] is List) {
-      visibilitySet = (json['visibility'] as List).map((e) {
-        return ProcedureVisibility.values.firstWhere(
-          (v) => v.name == e,
-          orElse: () => ProcedureVisibility.all,
-        );
-      }).toSet();
+      visibilitySet = (json['visibility'] as List)
+          .map((e) => e.toString().toLowerCase())
+          .toSet();
     }
 
     return ProcedureDraft(
@@ -144,13 +141,14 @@ class ApprovalLevelDraft {
 
 // visibility button
 
-enum ProcedureVisibility {
-  student,
-  faculty,
-  clubLead,
-  placementCoordinator,
-  all,
-}
+// visibility button - Deprecated in favor of dynamic role tags
+// enum ProcedureVisibility {
+//   student,
+//   faculty,
+//   clubLead,
+//   placementCoordinator,
+//   all,
+// }
 
 extension FormFieldDraftJson on FormFieldDraft {
   Map<String, dynamic> toJson() {
@@ -189,9 +187,7 @@ extension ProcedureDraftJson on ProcedureDraft {
       "title": title,
       "desc": description,
 
-      "visibility": visibility.contains(ProcedureVisibility.all)
-          ? ["all"]
-          : visibility.map((v) => v.name).toList(),
+      "visibility": visibility.contains("all") ? ["all"] : visibility.toList(),
 
       "requestFormat": 0,
       "priority": "NORMAL",

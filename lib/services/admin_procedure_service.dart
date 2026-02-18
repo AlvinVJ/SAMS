@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:firebase_auth/firebase_auth.dart';
+import '../models/user_type.dart';
 
 /// Service for admin procedure management operations
 class AdminProcedureService {
@@ -119,6 +120,36 @@ class AdminProcedureService {
       }
     } catch (e) {
       throw Exception('Error deleting procedure: $e');
+    }
+  }
+
+  /// Fetch all available user types for visibility settings
+  Future<List<UserType>> fetchUserTypes() async {
+    try {
+      final authToken = await FirebaseAuth.instance.currentUser?.getIdToken();
+
+      if (authToken == null) {
+        throw Exception('Not authenticated');
+      }
+
+      final response = await http.get(
+        Uri.parse('$baseUrl/api/admin/user-types'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $authToken',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final types = data['data'] as List;
+        return types.map((t) => UserType.fromJson(t)).toList();
+      } else {
+        final error = jsonDecode(response.body);
+        throw Exception(error['message'] ?? 'Failed to fetch user types');
+      }
+    } catch (e) {
+      throw Exception('Error fetching user types: $e');
     }
   }
 }
