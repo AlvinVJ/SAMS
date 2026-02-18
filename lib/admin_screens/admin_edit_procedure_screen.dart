@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import '../styles/app_theme.dart';
 import '../widgets/admin_dashboard_layout.dart';
 import '../state/in_memory_procedures.dart';
+import '../models/user_type.dart';
 
 import '../data/firebase_procedure_repository.dart';
 import '../services/admin_procedure_service.dart';
@@ -32,7 +33,8 @@ class _AdminEditProcedureScreenState extends State<AdminEditProcedureScreen> {
   );
   final AdminProcedureService _adminService = AdminProcedureService();
 
-  Set<ProcedureVisibility> _visibility = {};
+  List<UserType> _availableUserTypes = [];
+  Set<String> _visibility = {};
   bool _hasForm = false;
   final List<FormFieldDraft> _formFields = [];
   final _formKey = GlobalKey<FormState>();
@@ -45,7 +47,26 @@ class _AdminEditProcedureScreenState extends State<AdminEditProcedureScreen> {
   @override
   void initState() {
     super.initState();
-    _loadProcedure();
+    _initData();
+  }
+
+  Future<void> _initData() async {
+    await _loadUserTypes();
+    await _loadProcedure();
+  }
+
+  Future<void> _loadUserTypes() async {
+    try {
+      final types = await _adminService.fetchUserTypes();
+      setState(() {
+        // Filter out ADMIN as per user request
+        _availableUserTypes = types
+            .where((t) => t.userTypeTag.toUpperCase() != 'ADMIN')
+            .toList();
+      });
+    } catch (e) {
+      print('Error fetching user types: $e');
+    }
   }
 
   Future<void> _loadProcedure() async {
@@ -64,15 +85,9 @@ class _AdminEditProcedureScreenState extends State<AdminEditProcedureScreen> {
         _descriptionController.text = procedure.description;
 
         // Parse visibility
-        _visibility = procedure.visibility.map((v) {
-          final tag = v.toString().toUpperCase();
-          if (tag == 'STUDENT') return ProcedureVisibility.student;
-          if (tag == 'FACULTY') return ProcedureVisibility.faculty;
-          if (tag == 'CLUB_LEAD') return ProcedureVisibility.clubLead;
-          if (tag == 'PLACEMENT_COORDINATOR')
-            return ProcedureVisibility.placementCoordinator;
-          return ProcedureVisibility.all;
-        }).toSet();
+        _visibility = procedure.visibility
+            .map((v) => v.toString().toLowerCase())
+            .toSet();
 
         _selectedHook = procedure.systemHook;
 
@@ -357,22 +372,9 @@ class _AdminEditProcedureScreenState extends State<AdminEditProcedureScreen> {
       "title": _titleController.text.trim(),
       "desc": _descriptionController.text.trim(),
       "system_hook": _selectedHook,
-      "visibility": _visibility.contains(ProcedureVisibility.all)
+      "visibility": _visibility.contains("all")
           ? ["all"]
-          : _visibility.map((v) {
-              switch (v) {
-                case ProcedureVisibility.student:
-                  return "STUDENT";
-                case ProcedureVisibility.faculty:
-                  return "FACULTY";
-                case ProcedureVisibility.clubLead:
-                  return "CLUB_LEAD";
-                case ProcedureVisibility.placementCoordinator:
-                  return "PLACEMENT_COORDINATOR";
-                default:
-                  return "ALL";
-              }
-            }).toList(),
+          : _visibility.toList(),
       "formBuilder": _formFields.map((f) => f.toJson()).toList(),
       "formFields": _formFields.map((f) => f.toJson()).toList(),
       "approvalLevels": _approvalLevels
@@ -511,55 +513,42 @@ class _AdminEditProcedureScreenState extends State<AdminEditProcedureScreen> {
                     opacity: widget.readOnly ? 0.7 : 1.0,
                     child: ToggleButtons(
                       isSelected: [
-                        _visibility.contains(ProcedureVisibility.student),
-                        _visibility.contains(ProcedureVisibility.faculty),
-                        _visibility.contains(ProcedureVisibility.clubLead),
-                        _visibility.contains(
-                          ProcedureVisibility.placementCoordinator,
+                        ..._availableUserTypes.map(
+                          (t) =>
+                              _visibility.contains(t.userTypeTag.toLowerCase()),
                         ),
-                        _visibility.contains(ProcedureVisibility.all),
+                        _visibility.contains('all'),
                       ],
                       onPressed: (index) {
                         setState(() {
-                          final selected = ProcedureVisibility.values[index];
-
-                          if (selected == ProcedureVisibility.all) {
-                            if (_visibility.contains(ProcedureVisibility.all)) {
-                              _visibility.remove(ProcedureVisibility.all);
+                          if (index == _availableUserTypes.length) {
+                            // "All" button clicked
+                            if (_visibility.contains('all')) {
+                              _visibility.remove('all');
                             } else {
-                              // Select ALL and clear others
-                              _visibility = {ProcedureVisibility.all};
+                              _visibility = {'all'};
                             }
                           } else {
-                            // If selecting a specific one, remove 'all'
-                            _visibility.remove(ProcedureVisibility.all);
-                            if (_visibility.contains(selected)) {
-                              _visibility.remove(selected);
+                            final tag = _availableUserTypes[index].userTypeTag
+                                .toLowerCase();
+                            _visibility.remove('all');
+                            if (_visibility.contains(tag)) {
+                              _visibility.remove(tag);
                             } else {
-                              _visibility.add(selected);
+                              _visibility.add(tag);
                             }
                           }
                         });
                       },
                       borderRadius: BorderRadius.circular(8),
-                      children: const [
-                        Padding(
-                          padding: EdgeInsets.symmetric(horizontal: 16),
-                          child: Text('Student'),
+                      children: [
+                        ..._availableUserTypes.map(
+                          (t) => Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            child: Text(t.userTypeTag),
+                          ),
                         ),
-                        Padding(
-                          padding: EdgeInsets.symmetric(horizontal: 16),
-                          child: Text('Faculty'),
-                        ),
-                        Padding(
-                          padding: EdgeInsets.symmetric(horizontal: 16),
-                          child: Text('Club Lead'),
-                        ),
-                        Padding(
-                          padding: EdgeInsets.symmetric(horizontal: 16),
-                          child: Text('Placement'),
-                        ),
-                        Padding(
+                        const Padding(
                           padding: EdgeInsets.symmetric(horizontal: 16),
                           child: Text('All'),
                         ),

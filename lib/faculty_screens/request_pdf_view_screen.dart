@@ -142,7 +142,11 @@ class _RequestPdfViewScreenState extends State<RequestPdfViewScreen> {
           return;
         }
 
-        formFields.add(_buildPdfField(key, value.toString()));
+        if (value is Map && value.containsKey('name')) {
+          formFields.add(_buildPdfField(key, value['name'].toString()));
+        } else {
+          formFields.add(_buildPdfField(key, value.toString()));
+        }
       });
     } else {
       formFields.add(
@@ -183,14 +187,6 @@ class _RequestPdfViewScreenState extends State<RequestPdfViewScreen> {
                     '(AUTONOMOUS INSTITUTION)',
                     style: const pw.TextStyle(fontSize: 10),
                   ),
-                  pw.Text(
-                    'DEPARTMENT OF ${request.department.toUpperCase()}',
-                    style: pw.TextStyle(
-                      fontSize: 14,
-                      fontWeight: pw.FontWeight.bold,
-                      color: PdfColors.blue900,
-                    ),
-                  ),
                 ],
               ),
             ),
@@ -213,7 +209,7 @@ class _RequestPdfViewScreenState extends State<RequestPdfViewScreen> {
             // Recipient Details
             pw.Text('To,', style: const pw.TextStyle(fontSize: 11)),
             pw.Text(
-              'The ${request.roleTag.replaceAll('_', ' ').toUpperCase()},',
+              'The ${request.lastLevelRoleTag.replaceAll('_', ' ').toUpperCase()},',
               style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold),
             ),
             pw.Text(
@@ -406,7 +402,7 @@ class _RequestPdfViewScreenState extends State<RequestPdfViewScreen> {
                   ),
                 ),
                 pw.Text(
-                  'Reference ID: ${widget.requestId}',
+                  'SAMS - Student Approval Management System',
                   style: const pw.TextStyle(
                     fontSize: 8,
                     color: PdfColors.grey600,

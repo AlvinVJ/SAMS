@@ -5,6 +5,8 @@ import '../widgets/admin_dashboard_layout.dart';
 import '../state/in_memory_procedures.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../data/firebase_procedure_repository.dart';
+import '../services/admin_procedure_service.dart';
+import '../models/user_type.dart';
 
 class AdminCreateProcedureScreen extends StatefulWidget {
   const AdminCreateProcedureScreen({super.key});
@@ -27,8 +29,11 @@ class _AdminCreateProcedureScreenState
   final ApiProcedureRepository _procedureRepo = ApiProcedureRepository(
     "http://localhost:3000",
   );
-  // Visibility toggle variable
-  Set<ProcedureVisibility> _visibility = {};
+  final AdminProcedureService _adminService = AdminProcedureService();
+
+  // Visibility toggle variables
+  List<UserType> _availableUserTypes = [];
+  Set<String> _visibility = {};
 
   // System Hook (Plugin)
   String? _selectedHook;
@@ -40,6 +45,26 @@ class _AdminCreateProcedureScreenState
 
   // Local UI state for approval steps
   final List<ApprovalLevelDraft> _approvalLevels = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserTypes();
+  }
+
+  Future<void> _loadUserTypes() async {
+    try {
+      final types = await _adminService.fetchUserTypes();
+      setState(() {
+        // Filter out ADMIN as per user request
+        _availableUserTypes = types
+            .where((t) => t.userTypeTag.toUpperCase() != 'ADMIN')
+            .toList();
+      });
+    } catch (e) {
+      print('Error fetching user types: $e');
+    }
+  }
 
   // ─────────────────Form builder functions ─────────────────
 
@@ -332,7 +357,7 @@ class _AdminCreateProcedureScreenState
           allMustApprove: level.allMustApprove,
         );
       }).toList(),
-      visibility: _visibility,
+      visibility: _visibility.contains("all") ? {"all"} : _visibility,
       systemHook: _selectedHook,
     );
 
@@ -431,60 +456,41 @@ class _AdminCreateProcedureScreenState
 
                 ToggleButtons(
                   isSelected: [
-                    _visibility.contains(ProcedureVisibility.student),
-                    _visibility.contains(ProcedureVisibility.faculty),
-                    _visibility.contains(ProcedureVisibility.clubLead),
-                    _visibility.contains(
-                      ProcedureVisibility.placementCoordinator,
+                    ..._availableUserTypes.map(
+                      (t) => _visibility.contains(t.userTypeTag.toLowerCase()),
                     ),
-                    _visibility.contains(ProcedureVisibility.all),
+                    _visibility.contains('all'),
                   ],
                   onPressed: (index) {
                     setState(() {
-                      final selected = ProcedureVisibility.values[index];
-
-                      // If ALL is active, block other selections
-                      if (_visibility.contains(ProcedureVisibility.all) &&
-                          selected != ProcedureVisibility.all) {
-                        return;
-                      }
-
-                      if (selected == ProcedureVisibility.all) {
-                        // Toggle ALL
-                        if (_visibility.contains(ProcedureVisibility.all)) {
-                          _visibility.remove(ProcedureVisibility.all);
+                      if (index == _availableUserTypes.length) {
+                        // "All" button clicked
+                        if (_visibility.contains('all')) {
+                          _visibility.remove('all');
                         } else {
-                          _visibility = {ProcedureVisibility.all};
+                          _visibility = {'all'};
                         }
                       } else {
-                        // Normal toggle behavior
-                        if (_visibility.contains(selected)) {
-                          _visibility.remove(selected);
+                        final tag = _availableUserTypes[index].userTypeTag
+                            .toLowerCase();
+                        _visibility.remove('all');
+                        if (_visibility.contains(tag)) {
+                          _visibility.remove(tag);
                         } else {
-                          _visibility.add(selected);
+                          _visibility.add(tag);
                         }
                       }
                     });
                   },
                   borderRadius: BorderRadius.circular(8),
-                  children: const [
-                    Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 16),
-                      child: Text('Student'),
+                  children: [
+                    ..._availableUserTypes.map(
+                      (t) => Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Text(t.userTypeTag),
+                      ),
                     ),
-                    Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 16),
-                      child: Text('Faculty'),
-                    ),
-                    Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 16),
-                      child: Text('Club Lead'),
-                    ),
-                    Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 16),
-                      child: Text('Placement'),
-                    ),
-                    Padding(
+                    const Padding(
                       padding: EdgeInsets.symmetric(horizontal: 16),
                       child: Text('All'),
                     ),

@@ -105,9 +105,28 @@ class _AcademicStructureScreenState extends State<AcademicStructureScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            title,
-            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          Row(
+            children: [
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(width: 8),
+              IconButton(
+                onPressed: () => _showCSVFormatDialog(singular.toLowerCase()),
+                icon: const Icon(
+                  Icons.info_outline,
+                  size: 20,
+                  color: AppTheme.textLight,
+                ),
+                tooltip: 'CSV Format Hint',
+                constraints: const BoxConstraints(),
+                padding: EdgeInsets.zero,
+              ),
+            ],
           ),
           ElevatedButton.icon(
             onPressed: () => _showAddDialog(singular.toLowerCase()),
@@ -117,6 +136,94 @@ class _AcademicStructureScreenState extends State<AcademicStructureScreen> {
               backgroundColor: AppTheme.primary,
               foregroundColor: Colors.white,
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showCSVFormatDialog(String type) {
+    List<List<String>> rows = [];
+    if (type == 'department') {
+      rows = [
+        ['type', 'Yes', '"department"'],
+        ['dept_id', 'Yes', 'Numeric Department ID'],
+        ['dept_name', 'Yes', 'Name of Department'],
+      ];
+    } else if (type == 'batch') {
+      rows = [
+        ['type', 'Yes', '"batch"'],
+        ['batch_id', 'Yes', 'Numeric Batch ID'],
+        ['batch', 'Yes', 'Batch Name (e.g. 2021)'],
+      ];
+    } else if (type == 'class') {
+      rows = [
+        ['type', 'Yes', '"class"'],
+        ['class_id', 'Yes', 'Numeric Class ID'],
+        ['batch_id', 'Yes', 'Numeric Batch ID'],
+        ['class', 'Yes', 'Class Name (e.g. CS-A)'],
+        ['dept_id', 'Yes', 'Numeric Department ID'],
+      ];
+    }
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('${type[0].toUpperCase()}${type.substring(1)} CSV Format'),
+        content: SizedBox(
+          width: 500,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'When using bulk import, ensure your CSV columns match the following keys:',
+                style: TextStyle(fontSize: 14, color: AppTheme.textLight),
+              ),
+              const SizedBox(height: 16),
+              Table(
+                border: TableBorder.all(color: Colors.grey.shade200),
+                children: [
+                  TableRow(
+                    decoration: BoxDecoration(color: Colors.grey.shade50),
+                    children: ['Key', 'Required', 'Description']
+                        .map(
+                          (h) => Padding(
+                            padding: const EdgeInsets.all(8),
+                            child: Text(
+                              h,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ),
+                        )
+                        .toList(),
+                  ),
+                  ...rows.map(
+                    (row) => TableRow(
+                      children: row
+                          .map(
+                            (cell) => Padding(
+                              padding: const EdgeInsets.all(8),
+                              child: Text(
+                                cell,
+                                style: const TextStyle(fontSize: 12),
+                              ),
+                            ),
+                          )
+                          .toList(),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
           ),
         ],
       ),

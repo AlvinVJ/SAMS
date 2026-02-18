@@ -43,22 +43,9 @@ class ApiProcedureRepository {
           "title": procedure.title,
           "desc": procedure.description,
           "system_hook": procedure.systemHook,
-          "visibility": procedure.visibility.contains(ProcedureVisibility.all)
+          "visibility": procedure.visibility.contains("all")
               ? ["all"]
-              : procedure.visibility.map((v) {
-                  switch (v) {
-                    case ProcedureVisibility.student:
-                      return "STUDENT";
-                    case ProcedureVisibility.faculty:
-                      return "FACULTY";
-                    case ProcedureVisibility.clubLead:
-                      return "CLUB_LEAD";
-                    case ProcedureVisibility.placementCoordinator:
-                      return "PLACEMENT_COORDINATOR";
-                    default:
-                      return "ALL";
-                  }
-                }).toList(),
+              : procedure.visibility.toList(),
           "priority": "NORMAL",
           "isActive": true,
 
