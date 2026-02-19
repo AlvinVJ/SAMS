@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../styles/app_theme.dart';
 import '../widgets/admin_dashboard_layout.dart';
 import '../services/admin_service.dart';
+import 'department_faculty_dialog.dart';
 
 class AcademicStructureScreen extends StatefulWidget {
   const AcademicStructureScreen({super.key});
@@ -243,31 +244,67 @@ class _AcademicStructureScreenState extends State<AcademicStructureScreen> {
       itemCount: data.length,
       itemBuilder: (context, index) {
         final item = data[index];
-        return Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.grey.shade200),
-          ),
-          child: Row(
-            children: [
-              Icon(
-                type == 'department' ? Icons.business : Icons.calendar_today,
-                color: AppTheme.primary,
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  type == 'department' ? item['dept_name'] : item['batch'],
-                  style: const TextStyle(fontWeight: FontWeight.w600),
+        return InkWell(
+          onTap: type == 'department'
+              ? () => _showDepartmentFacultyDialog(item)
+              : null,
+          borderRadius: BorderRadius.circular(12),
+          child: Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.grey.shade200),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  type == 'department' ? Icons.business : Icons.calendar_today,
+                  color: AppTheme.primary,
+                  size: 20,
                 ),
-              ),
-            ],
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      if (type == 'department')
+                        Text(
+                          'ID: ${item['dept_id']}',
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: Colors.grey.shade500,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      Text(
+                        type == 'department'
+                            ? item['dept_name']
+                            : item['batch'],
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
         );
       },
     );
+  }
+
+  void _showDepartmentFacultyDialog(dynamic department) {
+    showDialog(
+      context: context,
+      builder: (context) => DepartmentFacultyDialog(department: department),
+    ).then((_) => _fetchData());
   }
 
   Widget _classTable() {
