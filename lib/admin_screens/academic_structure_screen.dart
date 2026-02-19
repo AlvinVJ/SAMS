@@ -3,6 +3,7 @@ import '../styles/app_theme.dart';
 import '../widgets/admin_dashboard_layout.dart';
 import '../services/admin_service.dart';
 import 'department_faculty_dialog.dart';
+import 'batch_classes_dialog.dart';
 
 class AcademicStructureScreen extends StatefulWidget {
   const AcademicStructureScreen({super.key});
@@ -120,18 +121,7 @@ class _AcademicStructureScreenState extends State<AcademicStructureScreen> {
                 ),
               ),
               const SizedBox(width: 8),
-              if (title != 'Roles')
-                IconButton(
-                  onPressed: () => _showCSVFormatDialog(singular.toLowerCase()),
-                  icon: const Icon(
-                    Icons.info_outline,
-                    size: 20,
-                    color: AppTheme.textLight,
-                  ),
-                  tooltip: 'CSV Format Hint',
-                  constraints: const BoxConstraints(),
-                  padding: EdgeInsets.zero,
-                ),
+
             ],
           ),
           ElevatedButton.icon(
@@ -244,7 +234,9 @@ class _AcademicStructureScreenState extends State<AcademicStructureScreen> {
         return InkWell(
           onTap: type == 'department'
               ? () => _showDepartmentFacultyDialog(item)
-              : null,
+              : type == 'batch'
+                  ? () => _showBatchClassesDialog(item)
+                  : () => _showEditDialog(item, type), // Roles can be edited by tap or icon
           borderRadius: BorderRadius.circular(12),
           child: Container(
             padding: const EdgeInsets.all(12),
@@ -286,6 +278,23 @@ class _AcademicStructureScreenState extends State<AcademicStructureScreen> {
                     ],
                   ),
                 ),
+                // Edit Icon
+                IconButton(
+                  icon: const Icon(Icons.edit, size: 16, color: Colors.blue),
+                  onPressed: () => _showEditDialog(item, type),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                  visualDensity: VisualDensity.compact,
+                ),
+                const SizedBox(width: 4),
+                // Delete Icon
+                IconButton(
+                  icon: const Icon(Icons.delete_outline, size: 16, color: Colors.red),
+                  onPressed: () => _handleDelete(item, type),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                  visualDensity: VisualDensity.compact,
+                ),
               ],
             ),
           ),
@@ -298,6 +307,13 @@ class _AcademicStructureScreenState extends State<AcademicStructureScreen> {
     showDialog(
       context: context,
       builder: (context) => DepartmentFacultyDialog(department: department),
+    ).then((_) => _fetchData());
+  }
+
+  void _showBatchClassesDialog(dynamic batch) {
+    showDialog(
+      context: context,
+      builder: (context) => BatchClassesDialog(batch: batch),
     ).then((_) => _fetchData());
   }
 
@@ -369,6 +385,137 @@ class _AcademicStructureScreenState extends State<AcademicStructureScreen> {
           ],
         );
       },
+    );
+  }
+
+  void _showEditDialog(dynamic item, String type) {
+    final nameController = TextEditingController(
+      text: type == 'department'
+          ? item['dept_name']
+          : type == 'batch'
+              ? item['batch']
+              : item['role_tag'],
+    );
+    final descController = TextEditingController(
+      text: type == 'role' ? item['role_desc'] ?? '' : '',
+    );
+    bool isActive = item['is_active'] ?? true;
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: Text('Edit ${type[0].toUpperCase()}${type.substring(1)}'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nameController,
+                decoration: InputDecoration(
+                  labelText: type == 'department'
+                      ? 'Department Name'
+                      : type == 'batch'
+                          ? 'Batch Year'
+                          : 'Role Tag',
+                ),
+              ),
+              if (type == 'role') ...[
+                const SizedBox(height: 16),
+                TextField(
+                  controller: descController,
+                  decoration: const InputDecoration(labelText: 'Description'),
+                ),
+              ],
+              const SizedBox(height: 16),
+              SwitchListTile(
+                title: const Text('Is Active'),
+                value: isActive,
+                onChanged: (val) => setDialogState(() => isActive = val),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                try {
+                  if (type == 'department') {
+                    await _adminService.updateDepartment({
+                      'dept_id': item['dept_id'],
+                      'dept_name': nameController.text,
+                      'is_active': isActive,
+                    });
+                  } else if (type == 'batch') {
+                    await _adminService.updateBatch({
+                      'batch_id': item['batch_id'],
+                      'batch': nameController.text,
+                      'is_active': isActive,
+                    });
+                  } else if (type == 'role') {
+                    await _adminService.updateRole({
+                      'role_id': item['role_id'],
+                      'role_tag': nameController.text,
+                      'role_desc': descController.text,
+                      'is_active': isActive,
+                    });
+                  }
+                  if (mounted) {
+                    Navigator.pop(context);
+                    _fetchData();
+                  }
+                } catch (e) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Error: $e')),
+                  );
+                }
+              },
+              child: const Text('Save'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _handleDelete(dynamic item, String type) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Confirm Delete'),
+        content: Text('Are you sure you want to delete this $type?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () async {
+              try {
+                if (type == 'department') {
+                  await _adminService.deleteDepartment(item['dept_id']);
+                } else if (type == 'batch') {
+                  await _adminService.deleteBatch(item['batch_id']);
+                } else if (type == 'role') {
+                  await _adminService.deleteRole(item['role_id']);
+                }
+                if (mounted) {
+                  Navigator.pop(context);
+                  _fetchData();
+                }
+              } catch (e) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Error: $e')),
+                );
+              }
+            },
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
     );
   }
 }
