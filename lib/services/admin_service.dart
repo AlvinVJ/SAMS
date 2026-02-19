@@ -30,12 +30,12 @@ class AdminService {
     throw Exception("Failed to fetch departments");
   }
 
-  Future<void> createDepartment(int id, String name) async {
+  Future<void> createDepartment(String name) async {
     final token = await _getToken();
     final response = await http.post(
       Uri.parse("$_baseUrl/api/admin/department"),
       headers: _headers(token!),
-      body: json.encode({"dept_id": id, "dept_name": name}),
+      body: json.encode({"dept_name": name}),
     );
     if (response.statusCode != 201)
       throw Exception("Failed to create department");
@@ -56,12 +56,12 @@ class AdminService {
     throw Exception("Failed to fetch batches");
   }
 
-  Future<void> createBatch(int id, String name) async {
+  Future<void> createBatch(String name) async {
     final token = await _getToken();
     final response = await http.post(
       Uri.parse("$_baseUrl/api/admin/batch"),
       headers: _headers(token!),
-      body: json.encode({"batch_id": id, "batch": name}),
+      body: json.encode({"batch": name}),
     );
     if (response.statusCode != 201) throw Exception("Failed to create batch");
   }
@@ -81,13 +81,12 @@ class AdminService {
     throw Exception("Failed to fetch classes");
   }
 
-  Future<void> createClass(int id, String name, int batchId, int deptId) async {
+  Future<void> createClass(String name, int batchId, int deptId) async {
     final token = await _getToken();
     final response = await http.post(
       Uri.parse("$_baseUrl/api/admin/class"),
       headers: _headers(token!),
       body: json.encode({
-        "class_id": id,
         "class": name,
         "batch_id": batchId,
         "dept_id": deptId,
@@ -132,8 +131,17 @@ class AdminService {
       final data = json.decode(response.body);
       return data['data'];
     }
-    // Note: I might need to implement this endpoint on backend if not existing
-    return [];
+    throw Exception("Failed to fetch roles");
+  }
+
+  Future<void> createRole(String tag, String desc) async {
+    final token = await _getToken();
+    final response = await http.post(
+      Uri.parse("$_baseUrl/api/admin/role"),
+      headers: _headers(token!),
+      body: json.encode({"role_tag": tag, "role_desc": desc}),
+    );
+    if (response.statusCode != 201) throw Exception("Failed to create role");
   }
 
   // ================= REQUESTS =================
@@ -233,5 +241,49 @@ class AdminService {
         error['message'] ?? "Failed to upload placement attendance",
       );
     }
+  }
+
+  // ================= DEPARTMENT FACULTY =================
+
+  Future<List<dynamic>> getDepartmentFacultyRoles(int deptId) async {
+    final token = await _getToken();
+    final response = await http.get(
+      Uri.parse("$_baseUrl/api/admin/department/$deptId/faculty-roles"),
+      headers: _headers(token!),
+    );
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      return data['data'];
+    }
+    throw Exception("Failed to fetch department faculty roles");
+  }
+
+  Future<void> assignDepartmentRole(
+    int deptId,
+    String mitsUid,
+    String roleTag,
+  ) async {
+    final token = await _getToken();
+    final response = await http.post(
+      Uri.parse("$_baseUrl/api/admin/department/assign-role"),
+      headers: _headers(token!),
+      body: json.encode({
+        "dept_id": deptId,
+        "mits_uid": mitsUid,
+        "role_tag": roleTag,
+      }),
+    );
+    if (response.statusCode != 200)
+      throw Exception("Failed to assign department role");
+  }
+
+  Future<void> removeDepartmentRole(String mitsUid) async {
+    final token = await _getToken();
+    final response = await http.delete(
+      Uri.parse("$_baseUrl/api/admin/department/faculty/$mitsUid"),
+      headers: _headers(token!),
+    );
+    if (response.statusCode != 200)
+      throw Exception("Failed to remove department role");
   }
 }

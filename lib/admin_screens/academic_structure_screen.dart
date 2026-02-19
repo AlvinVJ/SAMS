@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../styles/app_theme.dart';
 import '../widgets/admin_dashboard_layout.dart';
 import '../services/admin_service.dart';
+import 'department_faculty_dialog.dart';
 
 class AcademicStructureScreen extends StatefulWidget {
   const AcademicStructureScreen({super.key});
@@ -16,7 +17,7 @@ class _AcademicStructureScreenState extends State<AcademicStructureScreen> {
   bool _isLoading = true;
   List<dynamic> _departments = [];
   List<dynamic> _batches = [];
-  List<dynamic> _classes = [];
+  List<dynamic> _roles = [];
 
   @override
   void initState() {
@@ -30,19 +31,21 @@ class _AcademicStructureScreenState extends State<AcademicStructureScreen> {
       final results = await Future.wait([
         _adminService.getDepartments(),
         _adminService.getBatches(),
-        _adminService.getClasses(),
+        _adminService.getRoles(),
       ]);
       setState(() {
         _departments = results[0];
         _batches = results[1];
-        _classes = results[2];
+        _roles = results[2];
         _isLoading = false;
       });
     } catch (e) {
-      setState(() => _isLoading = false);
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Error: $e')));
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
+      }
     }
   }
 
@@ -64,8 +67,8 @@ class _AcademicStructureScreenState extends State<AcademicStructureScreen> {
                   _sectionTitle('Batches'),
                   _entityGrid(_batches, 'batch'),
                   const SizedBox(height: 32),
-                  _sectionTitle('Classes'),
-                  _classTable(),
+                  _sectionTitle('Roles'),
+                  _entityGrid(_roles, 'role'),
                 ],
               ),
             ),
@@ -96,9 +99,11 @@ class _AcademicStructureScreenState extends State<AcademicStructureScreen> {
   }
 
   Widget _sectionTitle(String title) {
-    String singular = title.endsWith('es')
-        ? title.substring(0, title.length - 2)
-        : title.substring(0, title.length - 1);
+    String singular = title == 'Roles'
+        ? 'Role'
+        : (title.endsWith('es')
+              ? title.substring(0, title.length - 2)
+              : title.substring(0, title.length - 1));
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
@@ -115,17 +120,18 @@ class _AcademicStructureScreenState extends State<AcademicStructureScreen> {
                 ),
               ),
               const SizedBox(width: 8),
-              IconButton(
-                onPressed: () => _showCSVFormatDialog(singular.toLowerCase()),
-                icon: const Icon(
-                  Icons.info_outline,
-                  size: 20,
-                  color: AppTheme.textLight,
+              if (title != 'Roles')
+                IconButton(
+                  onPressed: () => _showCSVFormatDialog(singular.toLowerCase()),
+                  icon: const Icon(
+                    Icons.info_outline,
+                    size: 20,
+                    color: AppTheme.textLight,
+                  ),
+                  tooltip: 'CSV Format Hint',
+                  constraints: const BoxConstraints(),
+                  padding: EdgeInsets.zero,
                 ),
-                tooltip: 'CSV Format Hint',
-                constraints: const BoxConstraints(),
-                padding: EdgeInsets.zero,
-              ),
             ],
           ),
           ElevatedButton.icon(
@@ -155,14 +161,6 @@ class _AcademicStructureScreenState extends State<AcademicStructureScreen> {
         ['type', 'Yes', '"batch"'],
         ['batch_id', 'Yes', 'Numeric Batch ID'],
         ['batch', 'Yes', 'Batch Name (e.g. 2021)'],
-      ];
-    } else if (type == 'class') {
-      rows = [
-        ['type', 'Yes', '"class"'],
-        ['class_id', 'Yes', 'Numeric Class ID'],
-        ['batch_id', 'Yes', 'Numeric Batch ID'],
-        ['class', 'Yes', 'Class Name (e.g. CS-A)'],
-        ['dept_id', 'Yes', 'Numeric Department ID'],
       ];
     }
 
@@ -243,59 +241,64 @@ class _AcademicStructureScreenState extends State<AcademicStructureScreen> {
       itemCount: data.length,
       itemBuilder: (context, index) {
         final item = data[index];
-        return Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.grey.shade200),
-          ),
-          child: Row(
-            children: [
-              Icon(
-                type == 'department' ? Icons.business : Icons.calendar_today,
-                color: AppTheme.primary,
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  type == 'department' ? item['dept_name'] : item['batch'],
-                  style: const TextStyle(fontWeight: FontWeight.w600),
+        return InkWell(
+          onTap: type == 'department'
+              ? () => _showDepartmentFacultyDialog(item)
+              : null,
+          borderRadius: BorderRadius.circular(12),
+          child: Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.grey.shade200),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  type == 'department'
+                      ? Icons.business
+                      : type == 'batch'
+                      ? Icons.calendar_today
+                      : Icons.person_outline,
+                  color: AppTheme.primary,
+                  size: 20,
                 ),
-              ),
-            ],
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        type == 'department'
+                            ? item['dept_name']
+                            : type == 'batch'
+                            ? item['batch']
+                            : item['role_tag'],
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
         );
       },
     );
   }
 
-  Widget _classTable() {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
-      ),
-      child: DataTable(
-        columns: const [
-          DataColumn(label: Text('Class Name')),
-          DataColumn(label: Text('Department')),
-          DataColumn(label: Text('Batch')),
-          DataColumn(label: Text('Status')),
-        ],
-        rows: _classes.map((c) {
-          return DataRow(
-            cells: [
-              DataCell(Text(c['class'])),
-              DataCell(Text(c['Departments']['dept_name'])),
-              DataCell(Text(c['Batches']['batch'])),
-              DataCell(Text(c['is_active'] ? 'Active' : 'Inactive')),
-            ],
-          );
-        }).toList(),
-      ),
-    );
+  void _showDepartmentFacultyDialog(dynamic department) {
+    showDialog(
+      context: context,
+      builder: (context) => DepartmentFacultyDialog(department: department),
+    ).then((_) => _fetchData());
   }
 
   void _showAddDialog(String type) {
@@ -303,106 +306,67 @@ class _AcademicStructureScreenState extends State<AcademicStructureScreen> {
       context: context,
       builder: (context) {
         final nameController = TextEditingController();
-        final idController = TextEditingController();
-        dynamic selectedDept;
-        dynamic selectedBatch;
+        final descController = TextEditingController();
 
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            return AlertDialog(
-              title: Text('Add New $type'),
-              content: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    TextField(
-                      controller: idController,
-                      decoration: const InputDecoration(
-                        labelText: 'ID (Number)',
-                        hintText: 'e.g. 101',
-                      ),
-                      keyboardType: TextInputType.number,
+        return AlertDialog(
+          title: Text('Add New $type'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: nameController,
+                  decoration: InputDecoration(
+                    labelText: type == 'role' ? 'Role Tag' : 'Name / Title',
+                    hintText: type == 'role' ? 'e.g. PRINCIPAL' : 'e.g. IT',
+                  ),
+                ),
+                if (type == 'role')
+                  TextField(
+                    controller: descController,
+                    decoration: const InputDecoration(
+                      labelText: 'Description',
+                      hintText: 'e.g. Institution Principal',
                     ),
-                    TextField(
-                      controller: nameController,
-                      decoration: InputDecoration(
-                        labelText: 'Name / Title',
-                        hintText: type == 'class' ? 'e.g. CS-A' : 'e.g. IT',
-                      ),
-                    ),
-                    if (type == 'class') ...[
-                      const SizedBox(height: 16),
-                      DropdownButtonFormField<dynamic>(
-                        value: selectedDept,
-                        decoration: const InputDecoration(
-                          labelText: 'Department',
-                        ),
-                        items: _departments.map((d) {
-                          return DropdownMenuItem(
-                            value: d,
-                            child: Text(d['dept_name']),
-                          );
-                        }).toList(),
-                        onChanged: (val) =>
-                            setDialogState(() => selectedDept = val),
-                      ),
-                      const SizedBox(height: 16),
-                      DropdownButtonFormField<dynamic>(
-                        value: selectedBatch,
-                        decoration: const InputDecoration(labelText: 'Batch'),
-                        items: _batches.map((b) {
-                          return DropdownMenuItem(
-                            value: b,
-                            child: Text(b['batch']),
-                          );
-                        }).toList(),
-                        onChanged: (val) =>
-                            setDialogState(() => selectedBatch = val),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('Cancel'),
-                ),
-                ElevatedButton(
-                  onPressed: () async {
-                    try {
-                      final id = int.parse(idController.text);
-                      final name = nameController.text;
-
-                      if (type == 'department') {
-                        await _adminService.createDepartment(id, name);
-                      } else if (type == 'batch') {
-                        await _adminService.createBatch(id, name);
-                      } else if (type == 'class') {
-                        if (selectedDept == null || selectedBatch == null) {
-                          throw Exception("Please select Department and Batch");
-                        }
-                        await _adminService.createClass(
-                          id,
-                          name,
-                          selectedBatch['batch_id'],
-                          selectedDept['dept_id'],
-                        );
-                      }
-
-                      Navigator.pop(context);
-                      _fetchData();
-                    } catch (e) {
-                      ScaffoldMessenger.of(
-                        context,
-                      ).showSnackBar(SnackBar(content: Text('Error: $e')));
-                    }
-                  },
-                  child: const Text('Save'),
-                ),
+                  ),
               ],
-            );
-          },
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                try {
+                  final name = nameController.text;
+
+                  if (name.isEmpty) {
+                    throw Exception("Please fill all required fields");
+                  }
+
+                  if (type == 'department') {
+                    await _adminService.createDepartment(name);
+                  } else if (type == 'batch') {
+                    await _adminService.createBatch(name);
+                  } else if (type == 'role') {
+                    await _adminService.createRole(name, descController.text);
+                  }
+
+                  if (mounted) {
+                    Navigator.pop(context);
+                    _fetchData();
+                  }
+                } catch (e) {
+                  ScaffoldMessenger.of(
+                    context,
+                  ).showSnackBar(SnackBar(content: Text('Error: $e')));
+                }
+              },
+              child: const Text('Save'),
+            ),
+          ],
         );
       },
     );
