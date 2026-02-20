@@ -121,6 +121,19 @@ class AdminService {
     if (response.statusCode != 200) throw Exception("Failed to update user");
   }
 
+  Future<void> createUser(Map<String, dynamic> data) async {
+    final token = await _getToken();
+    final response = await http.post(
+      Uri.parse("$_baseUrl/api/admin/user"),
+      headers: _headers(token!),
+      body: json.encode(data),
+    );
+    if (response.statusCode != 201) {
+      final error = json.decode(response.body);
+      throw Exception(error['message'] ?? "Failed to create user");
+    }
+  }
+
   Future<List<dynamic>> getRoles() async {
     final token = await _getToken();
     final response = await http.get(
@@ -132,6 +145,19 @@ class AdminService {
       return data['data'];
     }
     throw Exception("Failed to fetch roles");
+  }
+
+  Future<List<dynamic>> getUserTypes() async {
+    final token = await _getToken();
+    final response = await http.get(
+      Uri.parse("$_baseUrl/api/admin/user-types"),
+      headers: _headers(token!),
+    );
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      return data['data'];
+    }
+    throw Exception("Failed to fetch user types");
   }
 
   Future<void> createRole(String tag, String desc) async {
