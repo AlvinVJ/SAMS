@@ -240,15 +240,16 @@ class _RequestCardState extends State<_RequestCard> {
   Future<void> _handleApprove() async {
     if (_isProcessing) return;
 
-    final comment = await _showActionDialog(
+    final actionResult = await _showActionDialog(
       title: 'Approve Request',
       message: 'Are you sure you want to approve this request?',
       confirmText: 'Approve',
       confirmColor: Colors.blue,
       isCommentRequired: false,
+      showForwardOption: true,
     );
 
-    if (comment == null) return; // User cancelled
+    if (actionResult == null) return; // User cancelled
 
     setState(() => _isProcessing = true);
 
@@ -265,7 +266,10 @@ class _RequestCardState extends State<_RequestCard> {
       final success = await service.approveRequest(
         requestId: widget.request.id,
         role: activeRole,
-        comments: comment.trim().isNotEmpty ? comment.trim() : null,
+        comments: actionResult['comment']?.trim().isNotEmpty
+            ? actionResult['comment'].trim()
+            : null,
+        nextApproverUid: actionResult['nextApproverUid'],
       );
 
       if (success && mounted) {
@@ -299,15 +303,18 @@ class _RequestCardState extends State<_RequestCard> {
   Future<void> _handleReject() async {
     if (_isProcessing) return;
 
-    final reason = await _showActionDialog(
+    final actionResult = await _showActionDialog(
       title: 'Reject Request',
       message: 'Please provide a reason for rejection:',
       confirmText: 'Reject',
       confirmColor: Colors.red,
       isCommentRequired: true,
+      showForwardOption: false,
     );
 
-    if (reason == null || reason.trim().isEmpty) return;
+    if (actionResult == null ||
+        (actionResult['comment']?.trim().isEmpty ?? true))
+      return;
 
     setState(() => _isProcessing = true);
 
@@ -324,7 +331,7 @@ class _RequestCardState extends State<_RequestCard> {
       final success = await service.rejectRequest(
         requestId: widget.request.id,
         role: activeRole,
-        reason: reason.trim(),
+        reason: actionResult['comment']!.trim(),
       );
 
       if (success && mounted) {
@@ -355,67 +362,232 @@ class _RequestCardState extends State<_RequestCard> {
   }
 
   // Helper to show approval/rejection dialog
-  Future<String?> _showActionDialog({
+  Future<Map<String, dynamic>?> _showActionDialog({
     required String title,
     required String message,
     required String confirmText,
     required Color confirmColor,
     required bool isCommentRequired,
+    bool showForwardOption = false,
   }) async {
-    final controller = TextEditingController();
-    return showDialog<String>(
+    final commentController = TextEditingController();
+    final searchController = TextEditingController();
+    bool isForwarding = false;
+    Map<String, dynamic>? selectedFaculty;
+    List<Map<String, dynamic>> searchResults = [];
+    bool isSearching = false;
+
+    return showDialog<Map<String, dynamic>>(
       context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-        title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(message),
-            const SizedBox(height: 16),
-            TextField(
-              controller: controller,
-              maxLines: 3,
-              decoration: InputDecoration(
-                hintText: isCommentRequired
-                    ? 'Enter reason...'
-                    : 'Add a comment (optional)...',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          return AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(15),
+            ),
+            title: Text(
+              title,
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            content: SizedBox(
+              width: 400,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(message),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: commentController,
+                      maxLines: 2,
+                      decoration: InputDecoration(
+                        hintText: isCommentRequired
+                            ? 'Enter reason...'
+                            : 'Add a comment (optional)...',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        filled: true,
+                        fillColor: Colors.grey.shade50,
+                      ),
+                    ),
+                    if (showForwardOption) ...[
+                      const SizedBox(height: 20),
+                      Row(
+                        children: [
+                          Switch(
+                            value: isForwarding,
+                            onChanged: (val) {
+                              setDialogState(() => isForwarding = val);
+                            },
+                          ),
+                          const Text(
+                            "Forward to specific person?",
+                            style: TextStyle(fontWeight: FontWeight.w500),
+                          ),
+                        ],
+                      ),
+                      if (isForwarding) ...[
+                        const SizedBox(height: 12),
+                        TextField(
+                          controller: searchController,
+                          decoration: InputDecoration(
+                            hintText: 'Search faculty name or ID...',
+                            prefixIcon: const Icon(Icons.search),
+                            suffixIcon: isSearching
+                                ? const SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                : null,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          ),
+                          onChanged: (val) async {
+                            if (val.trim().length >= 2) {
+                              setDialogState(() => isSearching = true);
+                              try {
+                                final results = await UserRequestService()
+                                    .searchFaculty(val);
+                                setDialogState(() {
+                                  searchResults = results;
+                                  isSearching = false;
+                                });
+                              } catch (e) {
+                                setDialogState(() => isSearching = false);
+                              }
+                            } else {
+                              setDialogState(() => searchResults = []);
+                            }
+                          },
+                        ),
+                        if (selectedFaculty != null) ...[
+                          const SizedBox(height: 8),
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: Colors.blue.shade50,
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: Colors.blue.shade200),
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(
+                                  Icons.person,
+                                  color: Colors.blue,
+                                  size: 20,
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    "Selected: ${selectedFaculty!['name']}",
+                                    style: const TextStyle(
+                                      color: Colors.blue,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                                IconButton(
+                                  icon: const Icon(Icons.close, size: 18),
+                                  onPressed: () {
+                                    setDialogState(
+                                      () => selectedFaculty = null,
+                                    );
+                                  },
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                        if (searchResults.isNotEmpty &&
+                            selectedFaculty == null) ...[
+                          const SizedBox(height: 8),
+                          Container(
+                            constraints: const BoxConstraints(maxHeight: 150),
+                            decoration: BoxDecoration(
+                              border: Border.all(color: Colors.grey.shade300),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: ListView.separated(
+                              shrinkWrap: true,
+                              itemCount: searchResults.length,
+                              separatorBuilder: (context, index) =>
+                                  const Divider(height: 1),
+                              itemBuilder: (context, index) {
+                                final f = searchResults[index];
+                                return ListTile(
+                                  title: Text(
+                                    f['name'],
+                                    style: const TextStyle(fontSize: 13),
+                                  ),
+                                  subtitle: Text(
+                                    "${f['uid']} - ${f['department']}",
+                                    style: const TextStyle(fontSize: 11),
+                                  ),
+                                  onTap: () {
+                                    setDialogState(() => selectedFaculty = f);
+                                  },
+                                );
+                              },
+                            ),
+                          ),
+                        ],
+                      ],
+                    ],
+                  ],
                 ),
-                filled: true,
-                fillColor: Colors.grey.shade50,
               ),
             ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: confirmColor,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text(
+                  'Cancel',
+                  style: TextStyle(color: Colors.grey),
+                ),
               ),
-            ),
-            onPressed: () {
-              if (isCommentRequired && controller.text.trim().isEmpty) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Description/Reason is required'),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: confirmColor,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
                   ),
-                );
-                return;
-              }
-              Navigator.pop(context, controller.text);
-            },
-            child: Text(confirmText),
-          ),
-        ],
+                ),
+                onPressed: () {
+                  if (isCommentRequired &&
+                      commentController.text.trim().isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Description/Reason is required'),
+                      ),
+                    );
+                    return;
+                  }
+                  if (isForwarding && selectedFaculty == null) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Please select an approver to forward'),
+                      ),
+                    );
+                    return;
+                  }
+                  Navigator.pop(context, {
+                    'comment': commentController.text,
+                    'nextApproverUid': isForwarding
+                        ? selectedFaculty!['uid']
+                        : null,
+                  });
+                },
+                child: Text(confirmText),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
