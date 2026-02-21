@@ -21,6 +21,7 @@ class ProcedureDraft {
   final List<ApprovalLevelDraft> approvalLevels;
   final Set<String> visibility;
   final String? systemHook;
+  final bool isHosteller;
 
   ProcedureDraft({
     required this.title,
@@ -29,6 +30,7 @@ class ProcedureDraft {
     required this.approvalLevels,
     required this.visibility,
     this.systemHook,
+    this.isHosteller = false,
   });
 
   factory ProcedureDraft.fromJson(Map<String, dynamic> json) {
@@ -62,6 +64,7 @@ class ProcedureDraft {
               .toList() ??
           [],
       visibility: visibilitySet,
+      isHosteller: json['is_hosteller'] == true,
     );
   }
 }
@@ -105,7 +108,7 @@ class FormFieldDraft {
   }
 }
 
-enum FormFieldType { text, file, singleChoice, multipleChoice, date }
+enum FormFieldType { text, file, csv, singleChoice, multipleChoice, date }
 
 class ApprovalLevelDraft {
   List<Map<String, String>> roles;
@@ -192,6 +195,7 @@ extension ProcedureDraftJson on ProcedureDraft {
       "requestFormat": 0,
       "priority": "NORMAL",
       "system_hook": systemHook,
+      "is_hosteller": isHosteller,
 
       "formSchema": formSchema.map((f) => f.toJson()).toList(),
 

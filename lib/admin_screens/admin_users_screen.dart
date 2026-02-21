@@ -19,6 +19,23 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
   final TextEditingController _searchController = TextEditingController();
 
   @override
+  void initState() {
+    super.initState();
+    _fetchRoles();
+  }
+
+  Future<void> _fetchRoles() async {
+    try {
+      final roles = await _adminService.getRoles();
+      if (mounted) {
+        setState(() => _roles = roles);
+      }
+    } catch (e) {
+      debugPrint("Error fetching roles: $e");
+    }
+  }
+
+  @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
@@ -28,7 +45,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
     setState(() => _isLoading = true);
     try {
       final results = await Future.wait([
-        _adminService.getUsers(query: query), // Pass query to service
+        _adminService.getUsers(query: query),
         _adminService.getRoles(),
       ]);
       setState(() {
@@ -89,47 +106,79 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
       text: user['Student']?['name'] ?? user['Faculty']?['name'] ?? '',
     );
 
-    // Find current role id
+    // Current roles
     final List roleMappings = user['RoleMapping'] ?? [];
-    int? selectedRoleId = roleMappings.isNotEmpty
-        ? roleMappings[0]['role_id']
-        : null;
+    List<int> selectedRoleIds = roleMappings
+        .map<int>((m) => m['role_id'] as int)
+        .toList();
 
     showDialog(
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
           title: Text('Edit User: ${user['mits_uid']}'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: nameController,
-                decoration: const InputDecoration(labelText: 'Full Name'),
-              ),
-              const SizedBox(height: 16),
-              DropdownButtonFormField<int>(
-                value: selectedRoleId,
-                decoration: const InputDecoration(
-                  labelText: 'Specific Role (HOD, Advisor, etc.)',
-                ),
-                items: [
-                  const DropdownMenuItem<int>(
-                    value: null,
-                    child: Text('No Specific Role'),
+          content: SizedBox(
+            width: 500,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                TextField(
+                  controller: nameController,
+                  decoration: const InputDecoration(
+                    labelText: 'Full Name',
+                    border: OutlineInputBorder(),
                   ),
-                  ..._roles
+                ),
+                const SizedBox(height: 20),
+                const Text(
+                  'Roles',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: selectedRoleIds.map((rid) {
+                    final role = _roles.firstWhere(
+                      (r) => r['role_id'] == rid,
+                      orElse: () => null,
+                    );
+                    return Chip(
+                      label: Text(role?['role_tag'] ?? rid.toString()),
+                      onDeleted: () {
+                        setDialogState(() => selectedRoleIds.remove(rid));
+                      },
+                    );
+                  }).toList(),
+                ),
+                const SizedBox(height: 16),
+                DropdownButtonFormField<int>(
+                  key: ValueKey("edit_role_${selectedRoleIds.length}"),
+                  value: null,
+                  decoration: const InputDecoration(
+                    labelText: 'Add Role',
+                    border: OutlineInputBorder(),
+                  ),
+                  items: _roles
+                      .where((r) => !selectedRoleIds.contains(r['role_id']))
                       .map(
                         (r) => DropdownMenuItem<int>(
-                          value: r['role_id'],
-                          child: Text(r['role_tag']),
+                          value: (r['role_id'] is int)
+                              ? r['role_id']
+                              : int.tryParse(r['role_id'].toString()),
+                          child: Text(r['role_tag'] ?? "Unnamed"),
                         ),
                       )
                       .toList(),
-                ],
-                onChanged: (val) => setDialogState(() => selectedRoleId = val),
-              ),
-            ],
+                  onChanged: (val) {
+                    if (val != null) {
+                      setDialogState(() => selectedRoleIds.add(val));
+                    }
+                  },
+                ),
+              ],
+            ),
           ),
           actions: [
             TextButton(
@@ -141,7 +190,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                 try {
                   await _adminService.updateUser(user['mits_uid'], {
                     'name': nameController.text,
-                    'role_id': selectedRoleId,
+                    'role_ids': selectedRoleIds,
                   });
                   Navigator.pop(context);
                   _fetchData(query: _searchController.text.trim());
@@ -155,6 +204,176 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _showAddUserDialog() {
+    final uidController = TextEditingController();
+    final nameController = TextEditingController();
+    final emailController = TextEditingController();
+    List<int> selectedRoleIds = [];
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          // Fetch roles if not already fetched
+          if (_roles.isEmpty) {
+            _adminService.getRoles().then((val) {
+              if (mounted) {
+                setState(() => _roles = val);
+                setDialogState(() {}); // Rebuild dialog
+              }
+            });
+          }
+
+          return AlertDialog(
+            title: const Text('Add New User'),
+            content: SizedBox(
+              width: 500,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextField(
+                      controller: uidController,
+                      decoration: const InputDecoration(
+                        labelText: 'MITS UID (Required)',
+                        border: OutlineInputBorder(),
+                        hintText: 'e.g., MITS001',
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: nameController,
+                      decoration: const InputDecoration(
+                        labelText: 'Full Name (Required)',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: emailController,
+                      decoration: const InputDecoration(
+                        labelText: 'Email (Optional)',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    const Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        'Assign Roles',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: selectedRoleIds.map((rid) {
+                        final role = _roles.firstWhere(
+                          (r) => r['role_id'] == rid,
+                          orElse: () => null,
+                        );
+                        return Chip(
+                          label: Text(role?['role_tag'] ?? rid.toString()),
+                          onDeleted: () =>
+                              setDialogState(() => selectedRoleIds.remove(rid)),
+                        );
+                      }).toList(),
+                    ),
+                    const SizedBox(height: 8),
+                    DropdownButtonFormField<int>(
+                      key: ValueKey("add_role_${selectedRoleIds.length}"),
+                      value: null,
+                      decoration: InputDecoration(
+                        labelText: 'Add a Role',
+                        border: const OutlineInputBorder(),
+                        hintText: (_roles.isEmpty) ? "Loading roles..." : null,
+                      ),
+                      items: _roles
+                          .where((r) => !selectedRoleIds.contains(r['role_id']))
+                          .map(
+                            (r) => DropdownMenuItem<int>(
+                              value: (r['role_id'] is int)
+                                  ? r['role_id']
+                                  : int.tryParse(r['role_id'].toString()),
+                              child: Text(r['role_tag'] ?? "Unnamed"),
+                            ),
+                          )
+                          .toList(),
+                      onChanged: (val) {
+                        if (val != null) {
+                          setDialogState(() => selectedRoleIds.add(val));
+                        }
+                      },
+                    ),
+                    if (_roles.isNotEmpty &&
+                        _roles
+                            .where(
+                              (r) => !selectedRoleIds.contains(r['role_id']),
+                            )
+                            .isEmpty)
+                      const Padding(
+                        padding: EdgeInsets.only(top: 8),
+                        child: Text(
+                          "All available roles assigned.",
+                          style: TextStyle(fontSize: 12, color: Colors.grey),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancel'),
+              ),
+              ElevatedButton(
+                onPressed: () async {
+                  if (uidController.text.trim().isEmpty ||
+                      nameController.text.trim().isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('MITS UID and Name are required'),
+                      ),
+                    );
+                    return;
+                  }
+                  try {
+                    await _adminService.createUser({
+                      'mits_uid': uidController.text.trim(),
+                      'name': nameController.text.trim(),
+                      'email': emailController.text.trim().isEmpty
+                          ? null
+                          : emailController.text.trim(),
+                      'user_type_tag':
+                          'FACULTY', // Default for staff/admin additions
+                      'role_ids': selectedRoleIds,
+                    });
+                    Navigator.pop(context);
+                    _fetchData(query: uidController.text.trim());
+                  } catch (e) {
+                    ScaffoldMessenger.of(
+                      context,
+                    ).showSnackBar(SnackBar(content: Text('Failed: $e')));
+                  }
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.primary,
+                  foregroundColor: Colors.white,
+                ),
+                child: const Text('Create User'),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -201,22 +420,33 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Users', style: Theme.of(context).textTheme.headlineMedium),
-            const SizedBox(height: 4),
-            const Text(
-              'Manage system users, roles, and access permissions.',
-              style: TextStyle(
-                fontSize: 14,
-                height: 1.4,
-                color: AppTheme.textLight,
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Users', style: Theme.of(context).textTheme.headlineMedium),
+              const SizedBox(height: 4),
+              const Text(
+                'Manage system users, roles, and access permissions.',
+                style: TextStyle(
+                  fontSize: 14,
+                  height: 1.4,
+                  color: AppTheme.textLight,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
-        const SizedBox.shrink(),
+        ElevatedButton.icon(
+          onPressed: _showAddUserDialog,
+          icon: const Icon(Icons.person_add),
+          label: const Text('Add User'),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppTheme.primary,
+            foregroundColor: Colors.white,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          ),
+        ),
       ],
     );
   }
@@ -300,11 +530,21 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
     final bool isActive = u['is_active'] ?? true;
 
     final List roles = u['RoleMapping'] ?? [];
-    String roleStr = 'User';
-    if (roles.isNotEmpty && roles[0]['Roles'] != null) {
-      roleStr = roles[0]['Roles']['role_tag']?.toString() ?? 'User';
-    } else if (u['UserTypes'] != null) {
-      roleStr = u['UserTypes']['user_type_tag']?.toString() ?? 'User';
+    List<String> roleTags = [];
+    if (roles.isNotEmpty) {
+      for (var m in roles) {
+        if (m['Roles'] != null) {
+          roleTags.add(m['Roles']['role_tag']?.toString() ?? 'User');
+        }
+      }
+    }
+
+    if (roleTags.isEmpty) {
+      if (u['UserTypes'] != null) {
+        roleTags.add(u['UserTypes']['user_type_tag']?.toString() ?? 'User');
+      } else {
+        roleTags.add('User');
+      }
     }
 
     String affiliation = 'N/A';
@@ -336,6 +576,8 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
                     ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                   _status(isActive),
                 ],
@@ -344,7 +586,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
           ),
         ),
         DataCell(_cellText(uid)),
-        DataCell(_role(roleStr)),
+        DataCell(_rolesWrap(roleTags)),
         DataCell(_cellText(affiliation)),
         DataCell(_cellText(email)),
         DataCell(
@@ -420,16 +662,29 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
     );
   }
 
+  Widget _rolesWrap(List<String> roles) {
+    return Wrap(
+      spacing: 4,
+      runSpacing: 4,
+      children: roles.map((r) => _role(r)).toList(),
+    );
+  }
+
   Widget _role(String role) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
         color: AppTheme.backgroundLight,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppTheme.primary.withOpacity(0.2)),
       ),
       child: Text(
         role.toUpperCase(),
-        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+        style: const TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.bold,
+          color: AppTheme.primary,
+        ),
       ),
     );
   }
@@ -438,6 +693,8 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
     return Text(
       text,
       style: const TextStyle(fontSize: 13, color: AppTheme.textLight),
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
     );
   }
 

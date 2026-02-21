@@ -100,34 +100,46 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
             )
           else ...[
             // Stats Cards
-            GridView.count(
-              crossAxisCount: 4,
-              crossAxisSpacing: 16,
-              mainAxisSpacing: 16,
+            GridView.builder(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
-              children: [
-                _StatCard(
-                  title: 'Total Requests',
-                  value: _stats?['total'] ?? 0,
-                  color: AppTheme.primary,
-                ),
-                _StatCard(
-                  title: 'Pending',
-                  value: _stats?['pending'] ?? 0,
-                  color: AppTheme.warning,
-                ),
-                _StatCard(
-                  title: 'Approved',
-                  value: _stats?['approved'] ?? 0,
-                  color: AppTheme.success,
-                ),
-                _StatCard(
-                  title: 'Rejected',
-                  value: _stats?['rejected'] ?? 0,
-                  color: AppTheme.error,
-                ),
-              ],
+              gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                maxCrossAxisExtent: 250,
+                crossAxisSpacing: 16,
+                mainAxisSpacing: 16,
+                mainAxisExtent: 120,
+              ),
+              itemCount: 4,
+              itemBuilder: (context, index) {
+                switch (index) {
+                  case 0:
+                    return _StatCard(
+                      title: 'Total Requests',
+                      value: _stats?['total'] ?? 0,
+                      color: AppTheme.primary,
+                    );
+                  case 1:
+                    return _StatCard(
+                      title: 'Pending',
+                      value: _stats?['pending'] ?? 0,
+                      color: AppTheme.warning,
+                    );
+                  case 2:
+                    return _StatCard(
+                      title: 'Approved',
+                      value: _stats?['approved'] ?? 0,
+                      color: AppTheme.success,
+                    );
+                  case 3:
+                    return _StatCard(
+                      title: 'Rejected',
+                      value: _stats?['rejected'] ?? 0,
+                      color: AppTheme.error,
+                    );
+                  default:
+                    return const SizedBox.shrink();
+                }
+              },
             ),
 
             const SizedBox(height: 32),
@@ -309,9 +321,19 @@ class _ActivityItem extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: Theme.of(context).textTheme.bodyLarge),
+                Text(
+                  title,
+                  style: Theme.of(context).textTheme.bodyLarge,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
                 const SizedBox(height: 4),
-                Text(subtitle, style: Theme.of(context).textTheme.bodySmall),
+                Text(
+                  subtitle,
+                  style: Theme.of(context).textTheme.bodySmall,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ],
             ),
           ),

@@ -1,7 +1,7 @@
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
-import 'package:flutter/services.dart' show rootBundle;
+import 'dart:convert';
 
 /// PDFService
 ///
@@ -157,11 +157,78 @@ class PDFService {
           child: pw.Column(
             crossAxisAlignment: pw.CrossAxisAlignment.start,
             children: requestData.entries.map((entry) {
+              final value = entry.value;
+
+              // Case 1: Student List (List of Maps)
+              if (value is List) {
+                return pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    pw.Padding(
+                      padding: const pw.EdgeInsets.only(top: 10, bottom: 5),
+                      child: pw.Text(
+                        '${_formatFieldName(entry.key)}:',
+                        style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
+                      ),
+                    ),
+                    pw.Table.fromTextArray(
+                      context: null,
+                      headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold),
+                      cellAlignment: pw.Alignment.centerLeft,
+                      headerDecoration: const pw.BoxDecoration(
+                        color: PdfColors.grey300,
+                      ),
+                      headers: ['UID', 'Name', 'Gender'],
+                      data: value.map((s) {
+                        if (s is Map) {
+                          return [
+                            s['mits_uid']?.toString() ?? '',
+                            s['name']?.toString() ?? '',
+                            s['gender']?.toString() ?? '',
+                          ];
+                        }
+                        return [s.toString(), '', ''];
+                      }).toList(),
+                    ),
+                    pw.SizedBox(height: 10),
+                  ],
+                );
+              }
+
+              // Case 2: Image/File Object
+              if (value is Map &&
+                  value.containsKey('url') &&
+                  value['url'].toString().startsWith('data:image')) {
+                try {
+                  final dataUrl = value['url'].toString();
+                  final base64Data = dataUrl.split(',')[1];
+                  final bytes = base64Decode(base64Data);
+                  return pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.start,
+                    children: [
+                      _buildInfoRow(
+                        '${_formatFieldName(entry.key)}:',
+                        value['name'] ?? 'Image',
+                      ),
+                      pw.SizedBox(height: 5),
+                      pw.Image(pw.MemoryImage(bytes), width: 200),
+                      pw.SizedBox(height: 10),
+                    ],
+                  );
+                } catch (e) {
+                  return _buildInfoRow(
+                    '${_formatFieldName(entry.key)}:',
+                    'Error loading image',
+                  );
+                }
+              }
+
+              // Default Case: String/Simple value
               return pw.Padding(
                 padding: const pw.EdgeInsets.only(bottom: 5),
                 child: _buildInfoRow(
                   '${_formatFieldName(entry.key)}:',
-                  entry.value.toString(),
+                  value.toString(),
                 ),
               );
             }).toList(),

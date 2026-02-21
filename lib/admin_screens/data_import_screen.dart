@@ -76,37 +76,48 @@ class _DataImportScreenState extends State<DataImportScreen> {
               children: [
                 _header(context),
                 const SizedBox(height: 32),
-                GridView.count(
+                GridView.builder(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
-                  crossAxisCount: MediaQuery.of(context).size.width > 900
-                      ? 3
-                      : (MediaQuery.of(context).size.width > 600 ? 2 : 1),
-                  crossAxisSpacing: 24,
-                  mainAxisSpacing: 24,
-                  children: [
-                    _importCard(
-                      title: 'Students',
-                      description: 'Bulk import student accounts and profiles.',
-                      icon: Icons.person,
-                      color: Colors.green,
-                      onTap: () => _importData('student'),
-                    ),
-                    _importCard(
-                      title: 'Faculty',
-                      description: 'Bulk import faculty accounts and profiles.',
-                      icon: Icons.supervisor_account,
-                      color: Colors.orange,
-                      onTap: () => _importData('faculty'),
-                    ),
-                    _importCard(
-                      title: 'Clubs & Roles',
-                      description: 'Import club data and role mappings.',
-                      icon: Icons.groups,
-                      color: Colors.purple,
-                      onTap: () => _importData('club'),
-                    ),
-                  ],
+                  gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                    maxCrossAxisExtent: 350,
+                    crossAxisSpacing: 24,
+                    mainAxisSpacing: 24,
+                    mainAxisExtent: 280,
+                  ),
+                  itemCount: 3,
+                  itemBuilder: (context, index) {
+                    switch (index) {
+                      case 0:
+                        return _importCard(
+                          title: 'Students',
+                          description:
+                              'Bulk import student accounts and profiles.',
+                          icon: Icons.person,
+                          color: Colors.green,
+                          onTap: () => _importData('student'),
+                        );
+                      case 1:
+                        return _importCard(
+                          title: 'Faculty',
+                          description:
+                              'Bulk import faculty accounts and profiles.',
+                          icon: Icons.supervisor_account,
+                          color: Colors.orange,
+                          onTap: () => _importData('faculty'),
+                        );
+                      case 2:
+                        return _importCard(
+                          title: 'Clubs & Roles',
+                          description: 'Import club data and role mappings.',
+                          icon: Icons.groups,
+                          color: Colors.purple,
+                          onTap: () => _importData('club'),
+                        );
+                      default:
+                        return const SizedBox.shrink();
+                    }
+                  },
                 ),
               ],
             ),

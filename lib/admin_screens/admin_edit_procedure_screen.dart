@@ -40,6 +40,7 @@ class _AdminEditProcedureScreenState extends State<AdminEditProcedureScreen> {
   final _formKey = GlobalKey<FormState>();
   final List<ApprovalLevelDraft> _approvalLevels = [];
   String? _selectedHook;
+  bool _isHosteller = false;
 
   bool _isLoading = true;
   String? _errorMessage;
@@ -90,6 +91,7 @@ class _AdminEditProcedureScreenState extends State<AdminEditProcedureScreen> {
             .toSet();
 
         _selectedHook = procedure.systemHook;
+        _isHosteller = procedure.isHosteller;
 
         // Parse form fields
         if (procedure.formFields.isNotEmpty) {
@@ -382,6 +384,7 @@ class _AdminEditProcedureScreenState extends State<AdminEditProcedureScreen> {
           .entries
           .map((e) => e.value.toJson(e.key + 1))
           .toList(),
+      "is_hosteller": _isHosteller,
     };
 
     try {
@@ -493,6 +496,51 @@ class _AdminEditProcedureScreenState extends State<AdminEditProcedureScreen> {
 
           const SizedBox(height: 24),
 
+          // ───────────────── Hosteller Toggle ─────────────────
+          IgnorePointer(
+            ignoring: widget.readOnly,
+            child: Opacity(
+              opacity: widget.readOnly ? 0.7 : 1.0,
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.orange.shade50,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.orange.shade200),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.hotel, color: Colors.orange),
+                    const SizedBox(width: 16),
+                    const Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Hosteller Permission Required?',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          Text(
+                            'Enable this if the procedure requires automated gender splitting for Wardens.',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: AppTheme.textLight,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Switch(
+                      value: _isHosteller,
+                      activeColor: Colors.orange,
+                      onChanged: (val) => setState(() => _isHosteller = val),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+
           // Visibility Section
           Container(
             margin: const EdgeInsets.only(bottom: 24),
@@ -511,48 +559,54 @@ class _AdminEditProcedureScreenState extends State<AdminEditProcedureScreen> {
                   ignoring: widget.readOnly,
                   child: Opacity(
                     opacity: widget.readOnly ? 0.7 : 1.0,
-                    child: ToggleButtons(
-                      isSelected: [
-                        ..._availableUserTypes.map(
-                          (t) =>
-                              _visibility.contains(t.userTypeTag.toLowerCase()),
-                        ),
-                        _visibility.contains('all'),
-                      ],
-                      onPressed: (index) {
-                        setState(() {
-                          if (index == _availableUserTypes.length) {
-                            // "All" button clicked
-                            if (_visibility.contains('all')) {
-                              _visibility.remove('all');
-                            } else {
-                              _visibility = {'all'};
-                            }
-                          } else {
-                            final tag = _availableUserTypes[index].userTypeTag
-                                .toLowerCase();
-                            _visibility.remove('all');
-                            if (_visibility.contains(tag)) {
-                              _visibility.remove(tag);
-                            } else {
-                              _visibility.add(tag);
-                            }
-                          }
-                        });
-                      },
-                      borderRadius: BorderRadius.circular(8),
-                      children: [
-                        ..._availableUserTypes.map(
-                          (t) => Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
-                            child: Text(t.userTypeTag),
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: ToggleButtons(
+                        isSelected: [
+                          ..._availableUserTypes.map(
+                            (t) => _visibility.contains(
+                              t.userTypeTag.toLowerCase(),
+                            ),
                           ),
-                        ),
-                        const Padding(
-                          padding: EdgeInsets.symmetric(horizontal: 16),
-                          child: Text('All'),
-                        ),
-                      ],
+                          _visibility.contains('all'),
+                        ],
+                        onPressed: (index) {
+                          setState(() {
+                            if (index == _availableUserTypes.length) {
+                              // "All" button clicked
+                              if (_visibility.contains('all')) {
+                                _visibility.remove('all');
+                              } else {
+                                _visibility = {'all'};
+                              }
+                            } else {
+                              final tag = _availableUserTypes[index].userTypeTag
+                                  .toLowerCase();
+                              _visibility.remove('all');
+                              if (_visibility.contains(tag)) {
+                                _visibility.remove(tag);
+                              } else {
+                                _visibility.add(tag);
+                              }
+                            }
+                          });
+                        },
+                        borderRadius: BorderRadius.circular(8),
+                        children: [
+                          ..._availableUserTypes.map(
+                            (t) => Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                              ),
+                              child: Text(t.userTypeTag),
+                            ),
+                          ),
+                          const Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 16),
+                            child: Text('All'),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),

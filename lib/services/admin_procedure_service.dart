@@ -193,6 +193,7 @@ class ProcedureDetail {
   final List<dynamic> approvalLevels;
   final List<String> visibility;
   final String? systemHook;
+  final bool isHosteller;
 
   ProcedureDetail({
     required this.procId,
@@ -202,6 +203,7 @@ class ProcedureDetail {
     required this.approvalLevels,
     required this.visibility,
     this.systemHook,
+    this.isHosteller = false,
   });
 
   factory ProcedureDetail.fromJson(Map<String, dynamic> json) {
@@ -213,6 +215,7 @@ class ProcedureDetail {
       approvalLevels: json['approvalLevels'] ?? [],
       visibility: List<String>.from(json['visibility'] ?? []),
       systemHook: json['system_hook'],
+      isHosteller: json['is_hosteller'] == true,
     );
   }
 }

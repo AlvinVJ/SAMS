@@ -391,15 +391,17 @@ class _FacultyDashboardScreenState extends State<FacultyDashboardScreen> {
       width: double.infinity,
       child: DataTable(
         columns: const [
-          DataColumn(label: Text("Request ID")),
+          DataColumn(label: Text("S.No")),
           DataColumn(label: Text("Subject")),
           DataColumn(label: Text("Date")),
           DataColumn(label: Text("Status")),
         ],
-        rows: pendingApprovals.map((p) {
+        rows: pendingApprovals.asMap().entries.map((entry) {
+          final index = entry.key;
+          final p = entry.value;
           return DataRow(
             cells: [
-              DataCell(Text(p["id"]!)),
+              DataCell(Text('${index + 1}')),
               DataCell(Text(p["subject"]!)),
               DataCell(Text(p["date"]!)),
               DataCell(
