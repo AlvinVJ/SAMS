@@ -496,48 +496,53 @@ class _AdminCreateProcedureScreenState
                 ),
                 const SizedBox(height: 12),
 
-                ToggleButtons(
-                  isSelected: [
-                    ..._availableUserTypes.map(
-                      (t) => _visibility.contains(t.userTypeTag.toLowerCase()),
-                    ),
-                    _visibility.contains('all'),
-                  ],
-                  onPressed: (index) {
-                    setState(() {
-                      if (index == _availableUserTypes.length) {
-                        // "All" button clicked
-                        if (_visibility.contains('all')) {
-                          _visibility.remove('all');
-                        } else {
-                          _visibility = {'all'};
-                        }
-                      } else {
-                        final tag = _availableUserTypes[index].userTypeTag
-                            .toLowerCase();
-                        _visibility.remove('all');
-                        if (_visibility.contains(tag)) {
-                          _visibility.remove(tag);
-                        } else {
-                          _visibility.add(tag);
-                        }
-                      }
-                    });
-                  },
-                  borderRadius: BorderRadius.circular(8),
-                  children: [
-                    ..._availableUserTypes.map(
-                      (t) => Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: Text(t.userTypeTag),
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: ToggleButtons(
+                    isSelected: [
+                      ..._availableUserTypes.map(
+                        (t) =>
+                            _visibility.contains(t.userTypeTag.toLowerCase()),
                       ),
-                    ),
-                    const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 16),
-                      child: Text('All'),
-                    ),
-                  ],
+                      _visibility.contains('all'),
+                    ],
+                    onPressed: (index) {
+                      setState(() {
+                        if (index == _availableUserTypes.length) {
+                          // "All" button clicked
+                          if (_visibility.contains('all')) {
+                            _visibility.remove('all');
+                          } else {
+                            _visibility = {'all'};
+                          }
+                        } else {
+                          final tag = _availableUserTypes[index].userTypeTag
+                              .toLowerCase();
+                          _visibility.remove('all');
+                          if (_visibility.contains(tag)) {
+                            _visibility.remove(tag);
+                          } else {
+                            _visibility.add(tag);
+                          }
+                        }
+                      });
+                    },
+                    borderRadius: BorderRadius.circular(8),
+                    children: [
+                      ..._availableUserTypes.map(
+                        (t) => Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: Text(t.userTypeTag),
+                        ),
+                      ),
+                      const Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 16),
+                        child: Text('All'),
+                      ),
+                    ],
+                  ),
                 ),
+                const SizedBox(height: 12),
               ],
             ),
           ),

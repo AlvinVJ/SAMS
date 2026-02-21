@@ -269,7 +269,7 @@ class _AdminRequestsScreenState extends State<AdminRequestsScreen> {
                               columns: const [
                                 DataColumn(
                                   label: Text(
-                                    'Request ID',
+                                    'S.No',
                                     style: TextStyle(
                                       fontWeight: FontWeight.bold,
                                     ),
@@ -317,7 +317,15 @@ class _AdminRequestsScreenState extends State<AdminRequestsScreen> {
                                 ),
                               ],
                               rows: _filteredRequests
-                                  .map((r) => _buildRow(context, r))
+                                  .asMap()
+                                  .entries
+                                  .map(
+                                    (entry) => _buildRow(
+                                      context,
+                                      entry.value,
+                                      entry.key,
+                                    ),
+                                  )
                                   .toList(),
                             ),
                           ),
@@ -372,7 +380,7 @@ class _AdminRequestsScreenState extends State<AdminRequestsScreen> {
     );
   }
 
-  static DataRow _buildRow(BuildContext context, dynamic r) {
+  static DataRow _buildRow(BuildContext context, dynamic r, int index) {
     // Parse color
     Color statusColor = AppTheme.warning;
     final colorStr = r['color']?.toString().toLowerCase();
@@ -385,7 +393,7 @@ class _AdminRequestsScreenState extends State<AdminRequestsScreen> {
       cells: [
         DataCell(
           Text(
-            r['req_id'] ?? '',
+            '${index + 1}',
             style: const TextStyle(fontWeight: FontWeight.w500),
           ),
         ),

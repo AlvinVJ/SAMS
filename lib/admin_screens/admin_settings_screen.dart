@@ -68,10 +68,9 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
         const SizedBox(height: 6),
         Text(
           'Advanced configuration and workflow controls',
-          style: Theme.of(context)
-              .textTheme
-              .bodyLarge
-              ?.copyWith(color: AppTheme.textLight),
+          style: Theme.of(
+            context,
+          ).textTheme.bodyLarge?.copyWith(color: AppTheme.textLight),
         ),
       ],
     );
@@ -169,8 +168,7 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
                 max: 72,
                 divisions: 71,
                 value: reminderHours,
-                onChanged: (v) =>
-                    setState(() => reminderHours = v),
+                onChanged: (v) => setState(() => reminderHours = v),
               ),
             ],
           ),
@@ -250,16 +248,26 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
                 child: Icon(icon, color: iconColor),
               ),
               const SizedBox(width: 12),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(title,
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
                       style: const TextStyle(
-                          fontSize: 16, fontWeight: FontWeight.bold)),
-                  Text(subtitle,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Text(
+                      subtitle,
                       style: const TextStyle(
-                          fontSize: 13, color: AppTheme.textLight)),
-                ],
+                        fontSize: 13,
+                        color: AppTheme.textLight,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),

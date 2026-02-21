@@ -588,7 +588,7 @@ class _RequestCardState extends State<_RequestCard> {
           ),
           const SizedBox(height: 2),
           Text(
-            'ID: ${request.studentId} • ${request.department}',
+            request.department,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: const TextStyle(fontSize: 12, color: AppTheme.textLight),

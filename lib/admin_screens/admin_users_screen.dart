@@ -420,20 +420,22 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Users', style: Theme.of(context).textTheme.headlineMedium),
-            const SizedBox(height: 4),
-            const Text(
-              'Manage system users, roles, and access permissions.',
-              style: TextStyle(
-                fontSize: 14,
-                height: 1.4,
-                color: AppTheme.textLight,
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Users', style: Theme.of(context).textTheme.headlineMedium),
+              const SizedBox(height: 4),
+              const Text(
+                'Manage system users, roles, and access permissions.',
+                style: TextStyle(
+                  fontSize: 14,
+                  height: 1.4,
+                  color: AppTheme.textLight,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
         ElevatedButton.icon(
           onPressed: _showAddUserDialog,
@@ -574,6 +576,8 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
                     ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                   _status(isActive),
                 ],
@@ -689,6 +693,8 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
     return Text(
       text,
       style: const TextStyle(fontSize: 13, color: AppTheme.textLight),
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
     );
   }
 

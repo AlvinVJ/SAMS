@@ -121,7 +121,6 @@ class _AcademicStructureScreenState extends State<AcademicStructureScreen> {
                 ),
               ),
               const SizedBox(width: 8),
-
             ],
           ),
           ElevatedButton.icon(
@@ -222,8 +221,8 @@ class _AcademicStructureScreenState extends State<AcademicStructureScreen> {
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 4,
+      gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+        maxCrossAxisExtent: 350,
         crossAxisSpacing: 16,
         mainAxisSpacing: 16,
         childAspectRatio: 3,
@@ -235,8 +234,11 @@ class _AcademicStructureScreenState extends State<AcademicStructureScreen> {
           onTap: type == 'department'
               ? () => _showDepartmentFacultyDialog(item)
               : type == 'batch'
-                  ? () => _showBatchClassesDialog(item)
-                  : () => _showEditDialog(item, type), // Roles can be edited by tap or icon
+              ? () => _showBatchClassesDialog(item)
+              : () => _showEditDialog(
+                  item,
+                  type,
+                ), // Roles can be edited by tap or icon
           borderRadius: BorderRadius.circular(12),
           child: Container(
             padding: const EdgeInsets.all(12),
@@ -289,7 +291,11 @@ class _AcademicStructureScreenState extends State<AcademicStructureScreen> {
                 const SizedBox(width: 4),
                 // Delete Icon
                 IconButton(
-                  icon: const Icon(Icons.delete_outline, size: 16, color: Colors.red),
+                  icon: const Icon(
+                    Icons.delete_outline,
+                    size: 16,
+                    color: Colors.red,
+                  ),
                   onPressed: () => _handleDelete(item, type),
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(),
@@ -393,8 +399,8 @@ class _AcademicStructureScreenState extends State<AcademicStructureScreen> {
       text: type == 'department'
           ? item['dept_name']
           : type == 'batch'
-              ? item['batch']
-              : item['role_tag'],
+          ? item['batch']
+          : item['role_tag'],
     );
     final descController = TextEditingController(
       text: type == 'role' ? item['role_desc'] ?? '' : '',
@@ -415,8 +421,8 @@ class _AcademicStructureScreenState extends State<AcademicStructureScreen> {
                   labelText: type == 'department'
                       ? 'Department Name'
                       : type == 'batch'
-                          ? 'Batch Year'
-                          : 'Role Tag',
+                      ? 'Batch Year'
+                      : 'Role Tag',
                 ),
               ),
               if (type == 'role') ...[
@@ -467,9 +473,9 @@ class _AcademicStructureScreenState extends State<AcademicStructureScreen> {
                     _fetchData();
                   }
                 } catch (e) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Error: $e')),
-                  );
+                  ScaffoldMessenger.of(
+                    context,
+                  ).showSnackBar(SnackBar(content: Text('Error: $e')));
                 }
               },
               child: const Text('Save'),
@@ -506,9 +512,9 @@ class _AcademicStructureScreenState extends State<AcademicStructureScreen> {
                   _fetchData();
                 }
               } catch (e) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Error: $e')),
-                );
+                ScaffoldMessenger.of(
+                  context,
+                ).showSnackBar(SnackBar(content: Text('Error: $e')));
               }
             },
             style: TextButton.styleFrom(foregroundColor: Colors.red),

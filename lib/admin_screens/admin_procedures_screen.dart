@@ -296,11 +296,11 @@ class _AdminProceduresScreenState extends State<AdminProceduresScreen> {
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               itemCount: _filteredProcedures.length,
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 3,
+              gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                maxCrossAxisExtent: 400,
                 mainAxisSpacing: 20,
                 crossAxisSpacing: 20,
-                childAspectRatio: 1.25,
+                childAspectRatio: 1.1,
               ),
               itemBuilder: (context, index) {
                 return _ProcedureCard(

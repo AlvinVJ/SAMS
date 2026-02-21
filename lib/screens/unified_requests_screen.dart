@@ -294,7 +294,7 @@ class _UnifiedRequestsScreenState extends State<UnifiedRequestsScreen> {
               columns: const [
                 DataColumn(
                   label: Text(
-                    'Request ID',
+                    'S.No',
                     style: TextStyle(fontWeight: FontWeight.bold),
                   ),
                 ),
@@ -329,7 +329,11 @@ class _UnifiedRequestsScreenState extends State<UnifiedRequestsScreen> {
                   ),
                 ),
               ],
-              rows: requests.map((req) => _buildRow(req)).toList(),
+              rows: requests
+                  .asMap()
+                  .entries
+                  .map((entry) => _buildRow(entry.value, entry.key))
+                  .toList(),
             ),
           ),
         );
@@ -337,11 +341,14 @@ class _UnifiedRequestsScreenState extends State<UnifiedRequestsScreen> {
     );
   }
 
-  DataRow _buildRow(UserRequest req) {
+  DataRow _buildRow(UserRequest req, int index) {
     return DataRow(
       cells: [
         DataCell(
-          Text(req.id, style: const TextStyle(fontWeight: FontWeight.w500)),
+          Text(
+            '${index + 1}',
+            style: const TextStyle(fontWeight: FontWeight.w500),
+          ),
         ),
         DataCell(Text(req.title)),
         DataCell(Text(req.date)),
@@ -428,7 +435,7 @@ class _UnifiedRequestsScreenState extends State<UnifiedRequestsScreen> {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            'ID: ${req.id} • Submitted on ${req.date}',
+                            'Submitted on ${req.date}',
                             style: const TextStyle(color: AppTheme.textLight),
                           ),
                         ],
