@@ -243,56 +243,74 @@ class _RequestFormScreenState extends State<RequestFormScreen> {
 
         FormFieldType.multipleChoice => _buildMultiChoice(field, label),
 
-        FormFieldType.file => Builder(
-          builder: (context) {
-            final isStudentList = field.label.toLowerCase().contains('student');
-            final buttonLabel = _values[field.fieldId] == null
-                ? (isStudentList ? "Upload Student List (CSV)" : "Upload File")
-                : "Change File";
-
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _sectionLabel(label),
-                ElevatedButton.icon(
-                  icon: _isUploading
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Icon(Icons.upload_file),
-                  label: Text(buttonLabel),
-                  onPressed: _isUploading
-                      ? null
-                      : () => isStudentList
-                            ? _pickAndParseCSV(field)
-                            : _pickGenericFile(field),
-                ),
-                if (_values[field.fieldId] != null)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 8.0),
-                    child: Text(
-                      _controllers[field.fieldId]?.text ?? "File selected",
-                      style: const TextStyle(
-                        color: Colors.green,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                if (field.required && _values[field.fieldId] == null)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 4.0),
-                    child: Text(
-                      "Required *",
-                      style: TextStyle(color: Colors.red, fontSize: 12),
-                    ),
-                  ),
-              ],
-            );
-          },
-        ),
+        FormFieldType.file => _buildGenericFileField(field, label),
+        FormFieldType.csv => _buildCSVFileField(field, label),
       },
+    );
+  }
+
+  Widget _buildGenericFileField(FormFieldDraft field, String label) {
+    final buttonLabel = _values[field.fieldId] == null
+        ? "Upload File"
+        : "Change File";
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _sectionLabel(label),
+        ElevatedButton.icon(
+          icon: _isUploading
+              ? const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Icon(Icons.upload_file),
+          label: Text(buttonLabel),
+          onPressed: _isUploading ? null : () => _pickGenericFile(field),
+        ),
+        if (_values[field.fieldId] != null) _fileSelectedText(field.fieldId),
+        if (field.required && _values[field.fieldId] == null)
+          _errorText("Required *"),
+      ],
+    );
+  }
+
+  Widget _buildCSVFileField(FormFieldDraft field, String label) {
+    final buttonLabel = _values[field.fieldId] == null
+        ? "Upload Student List (CSV)"
+        : "Change CSV";
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _sectionLabel(label),
+        ElevatedButton.icon(
+          icon: _isUploading
+              ? const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Icon(Icons.table_chart_outlined),
+          label: Text(buttonLabel),
+          onPressed: _isUploading ? null : () => _pickAndParseCSV(field),
+        ),
+        if (_values[field.fieldId] != null) _fileSelectedText(field.fieldId),
+        if (field.required && _values[field.fieldId] == null)
+          _errorText("Required *"),
+      ],
+    );
+  }
+
+  Widget _fileSelectedText(String fieldId) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 8.0),
+      child: Text(
+        _controllers[fieldId]?.text ?? "File selected",
+        style: const TextStyle(
+          color: Colors.green,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
     );
   }
 

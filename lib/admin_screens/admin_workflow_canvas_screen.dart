@@ -38,8 +38,8 @@ class _AdminCreateProcedureScreenState
   // System Hook (Plugin)
   String? _selectedHook;
 
-  // Local UI state for form builder
   bool _hasForm = false;
+  bool _isHosteller = false;
   final List<FormFieldDraft> _formFields = [];
   final _formKey = GlobalKey<FormState>();
 
@@ -359,6 +359,7 @@ class _AdminCreateProcedureScreenState
       }).toList(),
       visibility: _visibility.contains("all") ? {"all"} : _visibility,
       systemHook: _selectedHook,
+      isHosteller: _isHosteller,
     );
 
     try {
@@ -436,6 +437,47 @@ class _AdminCreateProcedureScreenState
             style: Theme.of(
               context,
             ).textTheme.bodyLarge?.copyWith(color: AppTheme.textLight),
+          ),
+
+          const SizedBox(height: 24),
+
+          // ───────────────── Hosteller Toggle ─────────────────
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.orange.shade50,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.orange.shade200),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.hotel, color: Colors.orange),
+                const SizedBox(width: 16),
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Hosteller Permission Required?',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      Text(
+                        'Enable this if the procedure requires automated gender splitting for Wardens.',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: AppTheme.textLight,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Switch(
+                  value: _isHosteller,
+                  activeColor: Colors.orange,
+                  onChanged: (val) => setState(() => _isHosteller = val),
+                ),
+              ],
+            ),
           ),
 
           const SizedBox(height: 24),
@@ -850,6 +892,10 @@ class FormBuilderSection extends StatelessWidget {
                             DropdownMenuItem(
                               value: FormFieldType.date,
                               child: Text('Date'),
+                            ),
+                            DropdownMenuItem(
+                              value: FormFieldType.csv,
+                              child: Text('Student List (CSV)'),
                             ),
                           ],
 

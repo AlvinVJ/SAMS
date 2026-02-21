@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
+import 'dart:convert';
 import '../services/user_request_service.dart';
 import '../widgets/app_header.dart';
 import '../widgets/faculty_sidebar.dart';
@@ -132,16 +133,77 @@ class _RequestPdfViewScreenState extends State<RequestPdfViewScreen> {
     final List<pw.Widget> formFields = [];
     if (combinedData.isNotEmpty) {
       combinedData.forEach((key, value) {
-        // Skip keys that might contain large data or be irrelevant for PDF
-        if (key.toLowerCase().contains('student_list') || key == 'students') {
-          if (value is List) {
+        // Case 1: Student List (List of Maps)
+        if (value is List) {
+          formFields.add(
+            pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                pw.Padding(
+                  padding: const pw.EdgeInsets.symmetric(vertical: 8),
+                  child: pw.Text(
+                    '${key.replaceAll('_', ' ').toUpperCase()}:',
+                    style: pw.TextStyle(
+                      fontWeight: pw.FontWeight.bold,
+                      fontSize: 11,
+                    ),
+                  ),
+                ),
+                pw.Table.fromTextArray(
+                  context: null,
+                  headerStyle: pw.TextStyle(
+                    fontWeight: pw.FontWeight.bold,
+                    fontSize: 10,
+                  ),
+                  cellStyle: const pw.TextStyle(fontSize: 9),
+                  headerDecoration: const pw.BoxDecoration(
+                    color: PdfColors.grey300,
+                  ),
+                  headers: ['UID', 'Name', 'Gender'],
+                  data: value.map((s) {
+                    if (s is Map) {
+                      return [
+                        s['mits_uid']?.toString() ?? '',
+                        s['name']?.toString() ?? '',
+                        s['gender']?.toString() ?? '',
+                      ];
+                    }
+                    return [s.toString(), '', ''];
+                  }).toList(),
+                ),
+                pw.SizedBox(height: 12),
+              ],
+            ),
+          );
+          return;
+        }
+
+        // Case 2: Image/File Object
+        if (value is Map &&
+            value.containsKey('url') &&
+            value['url'].toString().startsWith('data:image')) {
+          try {
+            final dataUrl = value['url'].toString();
+            final base64Data = dataUrl.split(',')[1];
+            final bytes = base64Decode(base64Data);
             formFields.add(
-              _buildPdfField('TOTAL STUDENTS', value.length.toString()),
+              pw.Column(
+                crossAxisAlignment: pw.CrossAxisAlignment.start,
+                children: [
+                  _buildPdfField(key, value['name'] ?? 'Image Attachment'),
+                  pw.SizedBox(height: 5),
+                  pw.Image(pw.MemoryImage(bytes), width: 150),
+                  pw.SizedBox(height: 10),
+                ],
+              ),
             );
+          } catch (e) {
+            formFields.add(_buildPdfField(key, 'Error rendering image'));
           }
           return;
         }
 
+        // Default Case
         if (value is Map && value.containsKey('name')) {
           formFields.add(_buildPdfField(key, value['name'].toString()));
         } else {

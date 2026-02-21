@@ -554,14 +554,20 @@ class _RequestCardState extends State<_RequestCard> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Chip(
-                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                padding: EdgeInsets.zero,
-                label: Text(request.type, style: const TextStyle(fontSize: 12)),
-                backgroundColor: request.color.withOpacity(0.1),
-                labelStyle: TextStyle(
-                  color: request.color,
-                  fontWeight: FontWeight.w600,
+              Flexible(
+                child: Chip(
+                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  padding: EdgeInsets.zero,
+                  label: Text(
+                    request.type,
+                    style: const TextStyle(fontSize: 12),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  backgroundColor: request.color.withOpacity(0.1),
+                  labelStyle: TextStyle(
+                    color: request.color,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
               Text(
@@ -576,11 +582,15 @@ class _RequestCardState extends State<_RequestCard> {
           /// NAME + META
           Text(
             request.studentName,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 2),
           Text(
             'ID: ${request.studentId} • ${request.department}',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             style: const TextStyle(fontSize: 12, color: AppTheme.textLight),
           ),
 
