@@ -252,6 +252,34 @@ class UserRequestService {
       rethrow;
     }
   }
+
+  Future<List<Map<String, dynamic>>> searchFaculty(String query) async {
+    try {
+      final user = AuthService().currentUser;
+      if (user == null) throw Exception('User not authenticated');
+
+      final idToken = await user.getIdToken();
+      final response = await http.post(
+        Uri.parse('$baseUrl/api/common/search_faculty'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $idToken',
+        },
+        body: jsonEncode({'query': query}),
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final List<dynamic> faculty = data['data']['faculty'];
+        return faculty.cast<Map<String, dynamic>>();
+      } else {
+        throw Exception('Failed to search faculty');
+      }
+    } catch (e) {
+      print('Error searching faculty: $e');
+      rethrow;
+    }
+  }
 }
 
 class ApprovalAction {
