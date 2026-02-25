@@ -6,6 +6,8 @@ import 'dart:convert';
 import '../services/user_request_service.dart';
 import '../widgets/app_header.dart';
 import '../widgets/faculty_sidebar.dart';
+import '../widgets/app_sidebar.dart';
+import '../services/auth_service.dart';
 import '../styles/app_theme.dart';
 
 /// Screen to view request details as PDF
@@ -25,13 +27,21 @@ class RequestPdfViewScreen extends StatefulWidget {
 }
 
 class _RequestPdfViewScreenState extends State<RequestPdfViewScreen> {
+  Widget _buildSidebar() {
+    final profile = AuthService().userProfile;
+    if (profile?.role == 'student') {
+      return const AppSidebar(activeRoute: '/requests');
+    }
+    return const FacultySidebar(activeRoute: '/faculty/requests');
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppTheme.backgroundLight,
       body: Row(
         children: [
-          const FacultySidebar(activeRoute: '/faculty/requests'),
+          _buildSidebar(),
           Expanded(
             child: Column(
               children: [

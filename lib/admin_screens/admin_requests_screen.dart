@@ -104,21 +104,23 @@ class _AdminRequestsScreenState extends State<AdminRequestsScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Requests',
-                      style: Theme.of(context).textTheme.headlineLarge,
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Manage and track all approval requests across the organization.',
-                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        color: AppTheme.textLight,
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Requests',
+                        style: Theme.of(context).textTheme.headlineLarge,
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: 4),
+                      Text(
+                        'Manage and track all approval requests across the organization.',
+                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                          color: AppTheme.textLight,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
                 ElevatedButton.icon(
                   onPressed: _fetchRequests,
@@ -154,71 +156,80 @@ class _AdminRequestsScreenState extends State<AdminRequestsScreen> {
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: Colors.grey.shade200),
               ),
-              child: Row(
-                children: [
-                  Expanded(
-                    flex: 2,
-                    child: TextField(
-                      onChanged: (val) {
-                        _searchQuery = val;
-                        _applyFilters();
-                      },
-                      decoration: InputDecoration(
-                        hintText: 'Search requests, students...',
-                        prefixIcon: const Icon(Icons.search),
-                        filled: true,
-                        fillColor: AppTheme.backgroundLight,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: BorderSide.none,
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final isNarrow = constraints.maxWidth < 600;
+                  return Flex(
+                    direction: isNarrow ? Axis.vertical : Axis.horizontal,
+                    crossAxisAlignment: isNarrow ? CrossAxisAlignment.stretch : CrossAxisAlignment.center,
+                    children: [
+                      Flexible(
+                        flex: isNarrow ? 0 : 2,
+                        child: TextField(
+                          onChanged: (val) {
+                            _searchQuery = val;
+                            _applyFilters();
+                          },
+                          decoration: InputDecoration(
+                            hintText: 'Search requests, students...',
+                            prefixIcon: const Icon(Icons.search),
+                            filled: true,
+                            fillColor: AppTheme.backgroundLight,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: BorderSide.none,
+                            ),
+                          ),
                         ),
                       ),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: DropdownButtonFormField<String>(
-                      value: _statusFilter,
-                      items:
-                          const [
-                                'All Statuses',
-                                'Pending',
-                                'Approved',
-                                'Rejected',
-                              ]
-                              .map(
-                                (s) =>
-                                    DropdownMenuItem(value: s, child: Text(s)),
-                              )
-                              .toList(),
-                      onChanged: (val) {
-                        if (val != null) {
-                          _statusFilter = val;
-                          _applyFilters();
-                        }
-                      },
-                      decoration: _dropdownDecoration(),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: DropdownButtonFormField<String>(
-                      value: _procedureFilter,
-                      items: _getUniqueProcedures()
-                          .map(
-                            (p) => DropdownMenuItem(value: p, child: Text(p)),
-                          )
-                          .toList(),
-                      onChanged: (val) {
-                        if (val != null) {
-                          _procedureFilter = val;
-                          _applyFilters();
-                        }
-                      },
-                      decoration: _dropdownDecoration(),
-                    ),
-                  ),
-                ],
+                      if (isNarrow) const SizedBox(height: 12) else const SizedBox(width: 16),
+                      Flexible(
+                        flex: isNarrow ? 0 : 1,
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: DropdownButtonFormField<String>(
+                                value: _statusFilter,
+                                items: const ['All Statuses', 'Pending', 'Approved', 'Rejected']
+                                    .map((s) => DropdownMenuItem(
+                                          value: s,
+                                          child: Text(s, style: TextStyle(fontSize: isNarrow ? 13 : 14)),
+                                        ))
+                                    .toList(),
+                                onChanged: (val) {
+                                  if (val != null) {
+                                    _statusFilter = val;
+                                    _applyFilters();
+                                  }
+                                },
+                                decoration: _dropdownDecoration(),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: DropdownButtonFormField<String>(
+                                value: _procedureFilter,
+                                items: _getUniqueProcedures()
+                                    .map((p) => DropdownMenuItem(
+                                          value: p,
+                                          child: Text(p, style: TextStyle(fontSize: isNarrow ? 13 : 14)),
+                                        ))
+                                    .toList(),
+                                onChanged: (val) {
+                                  if (val != null) {
+                                    _procedureFilter = val;
+                                    _applyFilters();
+                                  }
+                                },
+                                decoration: _dropdownDecoration(),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  );
+                },
               ),
             ),
 
