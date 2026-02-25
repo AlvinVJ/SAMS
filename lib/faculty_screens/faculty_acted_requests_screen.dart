@@ -141,18 +141,23 @@ class _FacultyActedRequestsScreenState
                                         ),
                                       )
                                     else
-                                      ..._requests.map(
-                                        (req) => _tableRow(
-                                          requestId: req.id,
-                                          type: req.title,
-                                          requestedBy: 'Student',
-                                          status: req.status,
-                                          date: req.date,
-                                          color: req.statusColor,
-                                          levelText:
-                                              'Level ${req.currentLevel} of ${req.totalLevels}',
-                                          request: req,
-                                        ),
+                                      ..._requests.asMap().entries.map(
+                                        (entry) {
+                                          final index = entry.key;
+                                          final req = entry.value;
+                                          return _tableRow(
+                                            index: index,
+                                            requestId: req.id,
+                                            type: req.title,
+                                            requestedBy: 'Student',
+                                            status: req.status,
+                                            date: req.date,
+                                            color: req.statusColor,
+                                            levelText:
+                                                'Level ${req.currentLevel} of ${req.totalLevels}',
+                                            request: req,
+                                          );
+                                        },
                                       ),
                                   ],
                                 ),
@@ -177,7 +182,7 @@ class _FacultyActedRequestsScreenState
       color: Colors.grey.shade50,
       child: Row(
         children: const [
-          _Header('Request ID'),
+          _Header('S.No'),
           _Header('Request Type'),
           _Header('Submission Date'),
           _Header('Current Progress'),
@@ -191,6 +196,7 @@ class _FacultyActedRequestsScreenState
   // ================= TABLE ROW =================
 
   Widget _tableRow({
+    required int index,
     required String requestId,
     required String type,
     required String requestedBy,
@@ -204,7 +210,7 @@ class _FacultyActedRequestsScreenState
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       child: Row(
         children: [
-          _Cell(requestId, primary: true),
+          _Cell('${index + 1}', primary: true),
           _Cell(type),
           _Cell(date),
           _Cell(levelText),

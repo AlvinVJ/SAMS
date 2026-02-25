@@ -111,21 +111,23 @@ class _UnifiedRequestsScreenState extends State<UnifiedRequestsScreen> {
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'My Requests',
-              style: Theme.of(context).textTheme.headlineLarge,
-            ),
-            const SizedBox(height: 4),
-            Text(
-              'Track and manage your submitted applications and approvals.',
-              style: Theme.of(
-                context,
-              ).textTheme.bodyLarge?.copyWith(color: AppTheme.textLight),
-            ),
-          ],
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'My Requests',
+                style: Theme.of(context).textTheme.headlineLarge,
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Track and manage your submitted applications and approvals.',
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyLarge?.copyWith(color: AppTheme.textLight),
+              ),
+            ],
+          ),
         ),
         ElevatedButton.icon(
           onPressed: () {
@@ -234,6 +236,47 @@ class _UnifiedRequestsScreenState extends State<UnifiedRequestsScreen> {
       ),
       child: _buildTableContent(),
     );
+  }
+
+  Future<void> _handleWithdraw(UserRequest req) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Withdraw Request'),
+        content: Text('Are you sure you want to withdraw "${req.title}"? This action cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.error, foregroundColor: Colors.white),
+            child: const Text('Withdraw'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      _fetchRequests(); // Start refresh immediately to show loading if needed, or we can wait for result
+      try {
+        await _requestService.withdrawRequest(req.id);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Request withdrawn successfully'), backgroundColor: AppTheme.success),
+          );
+          _fetchRequests(); // Refresh list
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error: ${e.toString()}'), backgroundColor: AppTheme.error),
+          );
+          _fetchRequests(); // Refresh to ensure UI matches state
+        }
+      }
+    }
   }
 
   Widget _buildTableContent() {
@@ -385,9 +428,27 @@ class _UnifiedRequestsScreenState extends State<UnifiedRequestsScreen> {
           ),
         ),
         DataCell(
-          TextButton(
-            onPressed: () => _showRequestDetails(req),
-            child: Text('View Details (${req.approvalHistory.length})'),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextButton(
+                onPressed: () => _showRequestDetails(req),
+                child: Text('Details (${req.approvalHistory.length})'),
+              ),
+              Builder(
+                builder: (context) {
+                  final status = req.status.trim().toLowerCase();
+                  if (widget.userRole == 'student' && (status == 'pending' || status.contains('pending'))) {
+                    return IconButton(
+                      icon: const Icon(Icons.delete_outline, color: AppTheme.error, size: 20),
+                      onPressed: () => _handleWithdraw(req),
+                      tooltip: 'Withdraw Request',
+                    );
+                  }
+                  return const SizedBox.shrink();
+                }
+              ),
+            ],
           ),
         ),
       ],
@@ -447,6 +508,22 @@ class _UnifiedRequestsScreenState extends State<UnifiedRequestsScreen> {
                     ),
                   ],
                 ),
+                if (widget.userRole == 'student' && req.status.trim().toLowerCase().contains('pending')) ...[
+                  const SizedBox(height: 16),
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      Navigator.pop(context); // Close dialog
+                      _handleWithdraw(req);
+                    },
+                    icon: const Icon(Icons.delete_outline),
+                    label: const Text('Withdraw This Request'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppTheme.error.withOpacity(0.1),
+                      foregroundColor: AppTheme.error,
+                      elevation: 0,
+                    ),
+                  ),
+                ],
                 const Divider(height: 40),
 
                 // Feedback section

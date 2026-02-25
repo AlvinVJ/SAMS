@@ -121,19 +121,21 @@ class _FacultyDashboardScreenState extends State<FacultyDashboardScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    "Welcome back, $_facultyName!",
-                    style: Theme.of(context).textTheme.headlineLarge,
-                  ),
-                  const SizedBox(height: 4),
-                  const Text(
-                    "Here's an overview of your faculty requests and approvals for today.",
-                    style: TextStyle(color: AppTheme.textLight),
-                  ),
-                ],
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      "Welcome back, $_facultyName!",
+                      style: Theme.of(context).textTheme.headlineLarge,
+                    ),
+                    const SizedBox(height: 4),
+                    const Text(
+                      "Here's an overview of your faculty requests and approvals for today.",
+                      style: TextStyle(color: AppTheme.textLight),
+                    ),
+                  ],
+                ),
               ),
               Container(
                 padding: const EdgeInsets.symmetric(

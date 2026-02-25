@@ -252,6 +252,27 @@ class UserRequestService {
       rethrow;
     }
   }
+
+  Future<void> withdrawRequest(String requestId) async {
+    try {
+      final user = AuthService().currentUser;
+      if (user == null) throw Exception('User not authenticated');
+
+      final idToken = await user.getIdToken();
+      final response = await http.delete(
+        Uri.parse('$baseUrl/api/requests/withdraw/$requestId'),
+        headers: {'Authorization': 'Bearer $idToken'},
+      );
+
+      if (response.statusCode != 200) {
+        final data = json.decode(response.body);
+        throw Exception(data['message'] ?? 'Failed to withdraw request');
+      }
+    } catch (e) {
+      print('Error withdrawing request: $e');
+      rethrow;
+    }
+  }
 }
 
 class ApprovalAction {
