@@ -21,6 +21,8 @@ class UserRequest {
   final String roleTag;
   final String lastLevelRoleTag;
 
+  final bool isResolved;
+
   UserRequest({
     required this.id,
     required this.title,
@@ -37,6 +39,7 @@ class UserRequest {
     this.department = '',
     this.roleTag = 'Approver',
     this.lastLevelRoleTag = 'Principal',
+    this.isResolved = false,
   });
 
   PendingApproval toPendingApproval() {
@@ -74,16 +77,18 @@ class UserRequest {
     }
 
     final historyJson = json['approvalHistory'] as List? ?? [];
-    debugPrint(
-      '[MODEL-DEBUG] Parsing request ${json['req_id']} | History items in JSON: ${historyJson.length}',
-    );
+    final isResolved = json['is_resolved'] ?? false;
 
     return UserRequest(
       id: json['req_id'] ?? '',
       title: json['procedure_title'] ?? 'Unknown Request',
       date: json['created_at']?.toString().split('T')[0] ?? '',
-      level: 'Level ${json['current_level'] ?? 1}',
-      status: json['status_text'] ?? 'Pending',
+      level: isResolved ? 'Level ${json['current_level'] ?? 1}' : 'Loading...',
+      status:
+          json['status_text'] ??
+          (json['status'] == 1
+              ? "Approved"
+              : (json['status'] == 2 ? "Rejected" : "Pending")),
       statusColor: parseStatusColor(json['color']),
       currentLevel: json['current_level'] ?? 1,
       totalLevels: json['total_levels'] ?? 1,
@@ -96,6 +101,7 @@ class UserRequest {
       department: json['department'] ?? '',
       roleTag: json['roleTag'] ?? 'Approver',
       lastLevelRoleTag: json['lastLevelRoleTag'] ?? 'Principal',
+      isResolved: isResolved,
     );
   }
 
@@ -277,6 +283,29 @@ class UserRequestService {
       }
     } catch (e) {
       print('Error searching faculty: $e');
+      rethrow;
+    }
+  }
+
+  Future<UserRequest> fetchRequestDetails(String requestId) async {
+    try {
+      final user = AuthService().currentUser;
+      if (user == null) throw Exception('User not authenticated');
+
+      final idToken = await user.getIdToken();
+      final response = await http.get(
+        Uri.parse('$baseUrl/api/requests/details/$requestId'),
+        headers: {'Authorization': 'Bearer $idToken'},
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        return UserRequest.fromJson(data['data']);
+      } else {
+        throw Exception('Failed to load request details');
+      }
+    } catch (e) {
+      print('Error fetching request details: $e');
       rethrow;
     }
   }

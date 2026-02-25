@@ -312,12 +312,6 @@ class _UnifiedRequestsScreenState extends State<UnifiedRequestsScreen> {
                 ),
                 DataColumn(
                   label: Text(
-                    'Current Level',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                ),
-                DataColumn(
-                  label: Text(
                     'Status',
                     style: TextStyle(fontWeight: FontWeight.bold),
                   ),
@@ -352,7 +346,6 @@ class _UnifiedRequestsScreenState extends State<UnifiedRequestsScreen> {
         ),
         DataCell(Text(req.title)),
         DataCell(Text(req.date)),
-        DataCell(Text(req.level)),
         DataCell(
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -386,12 +379,51 @@ class _UnifiedRequestsScreenState extends State<UnifiedRequestsScreen> {
         ),
         DataCell(
           TextButton(
-            onPressed: () => _showRequestDetails(req),
-            child: Text('View Details (${req.approvalHistory.length})'),
+            onPressed: () => _handleViewDetails(req),
+            child: Text(
+              req.isResolved
+                  ? 'View Details (${req.approvalHistory.length})'
+                  : 'View Details',
+            ),
           ),
         ),
       ],
     );
+  }
+
+  Future<void> _handleViewDetails(UserRequest req) async {
+    if (!req.isResolved) {
+      // Show loading indicator
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(child: CircularProgressIndicator()),
+      );
+
+      try {
+        final resolvedReq = await _requestService.fetchRequestDetails(req.id);
+        if (mounted) {
+          Navigator.pop(context); // Close loading indicator
+          setState(() {
+            final index = _allRequests.indexWhere((r) => r.id == req.id);
+            if (index != -1) {
+              _allRequests[index] = resolvedReq;
+              _updateFilteredList();
+            }
+          });
+          _showRequestDetails(resolvedReq);
+        }
+      } catch (e) {
+        if (mounted) {
+          Navigator.pop(context); // Close loading indicator
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Failed to load details: $e')));
+        }
+      }
+    } else {
+      _showRequestDetails(req);
+    }
   }
 
   void _showRequestDetails(UserRequest req) {
@@ -435,7 +467,7 @@ class _UnifiedRequestsScreenState extends State<UnifiedRequestsScreen> {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            'Submitted on ${req.date}',
+                            'Submitted on ${req.date} | ${req.level} of ${req.totalLevels}',
                             style: const TextStyle(color: AppTheme.textLight),
                           ),
                         ],
