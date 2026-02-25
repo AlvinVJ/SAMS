@@ -3,9 +3,11 @@ import 'package:http/http.dart' as http;
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/user_type.dart';
 
+import '../config/environment.dart';
+
 /// Service for admin procedure management operations
 class AdminProcedureService {
-  final String baseUrl = 'http://localhost:3000';
+  final String baseUrl = Environment.apiUrl;
 
   /// Fetch all active procedures
   Future<List<ProcedureSummary>> fetchProcedures() async {

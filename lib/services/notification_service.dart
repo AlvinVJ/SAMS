@@ -3,8 +3,10 @@ import 'package:http/http.dart' as http;
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/notification.dart';
 
+import '../config/environment.dart';
+
 class NotificationService {
-  final String baseUrl = 'http://localhost:3000/api/student';
+  final String baseUrl = '${Environment.apiUrl}/api/student';
 
   Future<List<SAMSNotification>> fetchNotifications() async {
     try {

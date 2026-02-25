@@ -6,6 +6,7 @@ import '../widgets/dashboard_layout.dart';
 import '../styles/app_theme.dart';
 import '../data/firebase_procedure_repository.dart';
 import '../state/in_memory_procedures.dart';
+import '../config/environment.dart';
 
 class RequestFormScreen extends StatefulWidget {
   final String title;
@@ -34,7 +35,7 @@ class _RequestFormScreenState extends State<RequestFormScreen> {
   final Map<String, String?> _multiChoiceErrors = {};
 
   final ApiProcedureRepository _requestRepo = ApiProcedureRepository(
-    "http://localhost:3000",
+    Environment.apiUrl,
   );
 
   bool _isUploading = false;

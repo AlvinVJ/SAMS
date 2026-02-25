@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'auth_service.dart';
+import '../config/environment.dart';
 
 /// StudentProfileService
 ///
@@ -101,7 +102,7 @@ class StudentProfileService {
 
       final token = await user.getIdToken();
       final response = await http.get(
-        Uri.parse('http://localhost:3000/api/student/profile'),
+        Uri.parse('${Environment.apiUrl}/api/student/profile'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
