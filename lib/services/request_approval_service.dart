@@ -23,6 +23,7 @@ class RequestApprovalService {
     required String requestId,
     required String role,
     String? comments,
+    String? nextApproverUid,
   }) async {
     try {
       final user = AuthService().currentUser;
@@ -39,6 +40,7 @@ class RequestApprovalService {
           'requestId': requestId,
           'role': role,
           'comments': comments,
+          if (nextApproverUid != null) 'nextApproverUid': nextApproverUid,
         }),
       );
 
