@@ -8,6 +8,7 @@ import '../models/user_type.dart';
 import '../data/firebase_procedure_repository.dart';
 import '../services/admin_procedure_service.dart';
 import 'admin_workflow_canvas_screen.dart';
+import '../config/environment.dart';
 
 class AdminEditProcedureScreen extends StatefulWidget {
   final String procedureId;
@@ -29,7 +30,7 @@ class _AdminEditProcedureScreenState extends State<AdminEditProcedureScreen> {
   final TextEditingController _descriptionController = TextEditingController();
 
   final ApiProcedureRepository _procedureRepo = ApiProcedureRepository(
-    "http://localhost:3000",
+    Environment.apiUrl,
   );
   final AdminProcedureService _adminService = AdminProcedureService();
 
