@@ -71,6 +71,10 @@ class UserRequest {
           return AppTheme.error;
         case 'warning':
         case 'pending':
+          return AppTheme.warning;
+        case 'withdrawn':
+        case 'info':
+          return AppTheme.textLight;
         default:
           return AppTheme.warning;
       }
@@ -88,7 +92,9 @@ class UserRequest {
           json['status_text'] ??
           (json['status'] == 1
               ? "Approved"
-              : (json['status'] == 2 ? "Rejected" : "Pending")),
+              : (json['status'] == 2
+                  ? "Rejected"
+                  : (json['status'] == 3 ? "Withdrawn" : "Unknown"))),
       statusColor: parseStatusColor(json['color']),
       currentLevel: json['current_level'] ?? 1,
       totalLevels: json['total_levels'] ?? 1,
