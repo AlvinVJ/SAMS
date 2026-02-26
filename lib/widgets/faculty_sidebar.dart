@@ -4,13 +4,20 @@ import '../styles/app_theme.dart';
 
 class FacultySidebar extends StatelessWidget {
   final String? activeRoute;
+  final bool isCollapsed;
 
-  const FacultySidebar({super.key, required this.activeRoute});
+  const FacultySidebar({
+    super.key,
+    required this.activeRoute,
+    this.isCollapsed = false,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 260,
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+      width: isCollapsed ? 80 : 260,
       color: Colors.white,
       child: Column(
         children: [
@@ -18,6 +25,9 @@ class FacultySidebar extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.all(24),
             child: Row(
+              mainAxisAlignment: isCollapsed
+                  ? MainAxisAlignment.center
+                  : MainAxisAlignment.start,
               children: [
                 Container(
                   width: 40,
@@ -28,33 +38,39 @@ class FacultySidebar extends StatelessWidget {
                   ),
                   child: const Icon(Icons.school, color: Colors.white),
                 ),
-                const SizedBox(width: 12),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: const [
-                    Text(
-                      'SAMS',
-                      style: TextStyle(
-                        fontFamily: 'Inter',
-                        fontWeight: FontWeight.w700,
-                        fontSize: 18,
-                        letterSpacing: -0.3,
-                        color: AppTheme.textDark,
-                      ),
+                if (!isCollapsed) ...[
+                  const SizedBox(width: 12),
+                  Flexible(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: const [
+                        Text(
+                          'SAMS',
+                          style: TextStyle(
+                            fontFamily: 'Inter',
+                            fontWeight: FontWeight.w700,
+                            fontSize: 18,
+                            letterSpacing: -0.3,
+                            color: AppTheme.textDark,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        SizedBox(height: 2),
+                        Text(
+                          'Faculty Portal',
+                          style: TextStyle(
+                            fontFamily: 'Inter',
+                            fontSize: 11,
+                            fontWeight: FontWeight.w500,
+                            letterSpacing: 0.8,
+                            color: AppTheme.textLight,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
                     ),
-                    SizedBox(height: 2),
-                    Text(
-                      'Faculty Portal',
-                      style: TextStyle(
-                        fontFamily: 'Inter',
-                        fontSize: 11,
-                        fontWeight: FontWeight.w500,
-                        letterSpacing: 0.8,
-                        color: AppTheme.textLight,
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ],
             ),
           ),
@@ -62,7 +78,7 @@ class FacultySidebar extends StatelessWidget {
           // ===== MENU =====
           Expanded(
             child: ListView(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
+              padding: EdgeInsets.symmetric(horizontal: isCollapsed ? 8 : 12),
               children: [
                 _menuItem(
                   context: context,
@@ -107,26 +123,34 @@ class FacultySidebar extends StatelessWidget {
           // ===== LOGOUT =====
           Padding(
             padding: const EdgeInsets.all(16),
-            child: ListTile(
-              leading: const Icon(Icons.logout, color: Colors.red),
-              title: const Text(
-                'Logout',
-                style: TextStyle(
-                  fontFamily: 'Inter',
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  color: Color(0xFF64748B),
+            child: Tooltip(
+              message: isCollapsed ? 'Logout' : '',
+              child: ListTile(
+                leading: const Icon(Icons.logout, color: Colors.red),
+                title: isCollapsed
+                    ? null
+                    : const Text(
+                        'Logout',
+                        style: TextStyle(
+                          fontFamily: 'Inter',
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: Color(0xFF64748B),
+                        ),
+                      ),
+                contentPadding: EdgeInsets.symmetric(
+                  horizontal: isCollapsed ? 12 : 18,
                 ),
+                onTap: () async {
+                  await AuthService().signOut();
+                  if (!context.mounted) return;
+                  Navigator.pushNamedAndRemoveUntil(
+                    context,
+                    '/',
+                    (route) => false,
+                  );
+                },
               ),
-              onTap: () async {
-                await AuthService().signOut();
-                if (!context.mounted) return;
-                Navigator.pushNamedAndRemoveUntil(
-                  context,
-                  '/',
-                  (route) => false,
-                );
-              },
             ),
           ),
         ],
@@ -149,30 +173,41 @@ class FacultySidebar extends StatelessWidget {
         color: active ? AppTheme.primary : Colors.transparent,
         borderRadius: BorderRadius.circular(12),
       ),
-      child: ListTile(
-        horizontalTitleGap: 10,
-        dense: true,
-        leading: Icon(
-          icon,
-          size: 20,
-          color: active ? Colors.white : const Color(0xFF64748B),
-        ),
-        title: Text(
-          label,
-          style: TextStyle(
-            fontFamily: 'Inter',
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
+      child: Tooltip(
+        message: isCollapsed ? label : '',
+        child: ListTile(
+          horizontalTitleGap: isCollapsed ? 0 : 10,
+          dense: true,
+          leading: Icon(
+            icon,
+            size: 20,
             color: active ? Colors.white : const Color(0xFF64748B),
           ),
+          title: isCollapsed
+              ? null
+              : Text(
+                  label,
+                  style: TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: active ? Colors.white : const Color(0xFF64748B),
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+          contentPadding: EdgeInsets.symmetric(
+            horizontal: isCollapsed ? 12 : 18,
+            vertical: 6,
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          onTap: () {
+            if (!active) {
+              Navigator.pushReplacementNamed(context, route);
+            }
+          },
         ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 6),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        onTap: () {
-          if (!active) {
-            Navigator.pushReplacementNamed(context, route);
-          }
-        },
       ),
     );
   }

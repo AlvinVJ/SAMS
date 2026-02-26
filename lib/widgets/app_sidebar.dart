@@ -4,12 +4,19 @@ import '../styles/app_theme.dart';
 
 class AppSidebar extends StatelessWidget {
   final String? activeRoute;
-  const AppSidebar({super.key, required this.activeRoute});
+  final bool isCollapsed;
+  const AppSidebar({
+    super.key,
+    required this.activeRoute,
+    this.isCollapsed = false,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 280,
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+      width: isCollapsed ? 80 : 280,
       color: Colors.white,
       child: Column(
         children: [
@@ -17,6 +24,9 @@ class AppSidebar extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.all(24.0),
             child: Row(
+              mainAxisAlignment: isCollapsed
+                  ? MainAxisAlignment.center
+                  : MainAxisAlignment.start,
               children: [
                 Container(
                   width: 40,
@@ -27,22 +37,27 @@ class AppSidebar extends StatelessWidget {
                   ),
                   child: const Icon(Icons.school, color: Colors.white),
                 ),
-                const SizedBox(width: 16),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'SAMS',
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                if (!isCollapsed) ...[
+                  const SizedBox(width: 16),
+                  Flexible(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'SAMS',
+                          style: Theme.of(context).textTheme.titleLarge
+                              ?.copyWith(fontWeight: FontWeight.bold),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        Text(
+                          'Student Portal',
+                          style: Theme.of(context).textTheme.bodySmall,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
                     ),
-                    Text(
-                      'Student Portal',
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ],
             ),
           ),
@@ -50,18 +65,20 @@ class AppSidebar extends StatelessWidget {
           // Navigation Links
           Expanded(
             child: ListView(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+              padding: EdgeInsets.symmetric(horizontal: isCollapsed ? 8 : 16),
               children: [
                 _NavItem(
                   icon: Icons.grid_view_rounded,
                   label: 'Dashboard',
                   isActive: activeRoute == '/',
+                  isCollapsed: isCollapsed,
                   onTap: () => Navigator.pushReplacementNamed(context, '/'),
                 ),
                 _NavItem(
                   icon: Icons.format_list_bulleted,
                   label: 'My Requests',
                   isActive: activeRoute == '/requests',
+                  isCollapsed: isCollapsed,
                   onTap: () =>
                       Navigator.pushReplacementNamed(context, '/requests'),
                 ),
@@ -69,6 +86,7 @@ class AppSidebar extends StatelessWidget {
                   icon: Icons.add_circle_outline,
                   label: 'Create Request',
                   isActive: activeRoute == '/create-request',
+                  isCollapsed: isCollapsed,
                   onTap: () => Navigator.pushReplacementNamed(
                     context,
                     '/create-request',
@@ -78,6 +96,7 @@ class AppSidebar extends StatelessWidget {
                   icon: Icons.notifications_none,
                   label: 'Notifications',
                   isActive: activeRoute == '/notifications',
+                  isCollapsed: isCollapsed,
                   onTap: () =>
                       Navigator.pushReplacementNamed(context, '/notifications'),
                 ),
@@ -85,6 +104,7 @@ class AppSidebar extends StatelessWidget {
                   icon: Icons.settings_outlined,
                   label: 'Settings',
                   isActive: activeRoute == '/settings',
+                  isCollapsed: isCollapsed,
                   onTap: () =>
                       Navigator.pushReplacementNamed(context, '/settings'),
                 ),
@@ -98,6 +118,7 @@ class AppSidebar extends StatelessWidget {
             child: _NavItem(
               icon: Icons.logout,
               label: 'Logout',
+              isCollapsed: isCollapsed,
               onTap: () async {
                 await AuthService().signOut();
                 if (!context.mounted) return;
@@ -119,12 +140,14 @@ class _NavItem extends StatelessWidget {
   final IconData icon;
   final String label;
   final bool isActive;
+  final bool isCollapsed;
   final VoidCallback? onTap;
 
   const _NavItem({
     required this.icon,
     required this.label,
     this.isActive = false,
+    this.isCollapsed = false,
     this.onTap,
   });
 
@@ -138,24 +161,38 @@ class _NavItem extends StatelessWidget {
         child: InkWell(
           borderRadius: BorderRadius.circular(30),
           onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            child: Row(
-              children: [
-                Icon(
-                  icon,
-                  color: isActive ? Colors.white : AppTheme.textLight,
-                  size: 20,
-                ),
-                const SizedBox(width: 12),
-                Text(
-                  label,
-                  style: TextStyle(
+          child: Tooltip(
+            message: isCollapsed ? label : '',
+            child: Padding(
+              padding: EdgeInsets.symmetric(
+                horizontal: isCollapsed ? 0 : 16,
+                vertical: 12,
+              ),
+              child: Row(
+                mainAxisAlignment: isCollapsed
+                    ? MainAxisAlignment.center
+                    : MainAxisAlignment.start,
+                children: [
+                  Icon(
+                    icon,
                     color: isActive ? Colors.white : AppTheme.textLight,
-                    fontWeight: FontWeight.w500,
+                    size: 20,
                   ),
-                ),
-              ],
+                  if (!isCollapsed) ...[
+                    const SizedBox(width: 12),
+                    Flexible(
+                      child: Text(
+                        label,
+                        style: TextStyle(
+                          color: isActive ? Colors.white : AppTheme.textLight,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
             ),
           ),
         ),
