@@ -142,6 +142,7 @@ class AdminSidebar extends StatelessWidget {
             child: _NavItem(
               icon: Icons.logout,
               label: 'Logout',
+              iconColor: AppTheme.error,
               isCollapsed: isCollapsed,
               onTap: () async {
                 await AuthService().signOut();
@@ -165,6 +166,7 @@ class _NavItem extends StatelessWidget {
   final String label;
   final bool isActive;
   final bool isCollapsed;
+  final Color? iconColor;
   final VoidCallback? onTap;
 
   const _NavItem({
@@ -172,6 +174,7 @@ class _NavItem extends StatelessWidget {
     required this.label,
     this.isActive = false,
     this.isCollapsed = false,
+    this.iconColor,
     this.onTap,
   });
 
@@ -199,7 +202,9 @@ class _NavItem extends StatelessWidget {
                 children: [
                   Icon(
                     icon,
-                    color: isActive ? Colors.white : AppTheme.textLight,
+                    color: isActive
+                        ? Colors.white
+                        : (iconColor ?? AppTheme.textLight),
                     size: 20,
                   ),
                   if (!isCollapsed) ...[

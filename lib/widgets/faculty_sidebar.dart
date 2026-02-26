@@ -123,33 +123,48 @@ class FacultySidebar extends StatelessWidget {
           // ===== LOGOUT =====
           Padding(
             padding: const EdgeInsets.all(16),
-            child: Tooltip(
-              message: isCollapsed ? 'Logout' : '',
-              child: ListTile(
-                leading: const Icon(Icons.logout, color: Colors.red),
-                title: isCollapsed
-                    ? null
-                    : const Text(
-                        'Logout',
-                        style: TextStyle(
-                          fontFamily: 'Inter',
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                          color: Color(0xFF64748B),
+            child: InkWell(
+              onTap: () async {
+                await AuthService().signOut();
+                if (!context.mounted) return;
+                Navigator.pushNamedAndRemoveUntil(
+                  context,
+                  '/',
+                  (route) => false,
+                );
+              },
+              borderRadius: BorderRadius.circular(12),
+              child: Tooltip(
+                message: isCollapsed ? 'Logout' : '',
+                child: Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: isCollapsed ? 0 : 18,
+                    vertical: 12,
+                  ),
+                  child: Row(
+                    mainAxisAlignment: isCollapsed
+                        ? MainAxisAlignment.center
+                        : MainAxisAlignment.start,
+                    children: [
+                      const Icon(Icons.logout, color: Colors.red, size: 20),
+                      if (!isCollapsed) ...[
+                        const SizedBox(width: 10),
+                        Flexible(
+                          child: const Text(
+                            'Logout',
+                            style: TextStyle(
+                              fontFamily: 'Inter',
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                              color: Color(0xFF64748B),
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
-                      ),
-                contentPadding: EdgeInsets.symmetric(
-                  horizontal: isCollapsed ? 12 : 18,
+                      ],
+                    ],
+                  ),
                 ),
-                onTap: () async {
-                  await AuthService().signOut();
-                  if (!context.mounted) return;
-                  Navigator.pushNamedAndRemoveUntil(
-                    context,
-                    '/',
-                    (route) => false,
-                  );
-                },
               ),
             ),
           ),
@@ -169,44 +184,54 @@ class FacultySidebar extends StatelessWidget {
 
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 4),
-      decoration: BoxDecoration(
+      child: Material(
         color: active ? AppTheme.primary : Colors.transparent,
         borderRadius: BorderRadius.circular(12),
-      ),
-      child: Tooltip(
-        message: isCollapsed ? label : '',
-        child: ListTile(
-          horizontalTitleGap: isCollapsed ? 0 : 10,
-          dense: true,
-          leading: Icon(
-            icon,
-            size: 20,
-            color: active ? Colors.white : const Color(0xFF64748B),
-          ),
-          title: isCollapsed
-              ? null
-              : Text(
-                  label,
-                  style: TextStyle(
-                    fontFamily: 'Inter',
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    color: active ? Colors.white : const Color(0xFF64748B),
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-          contentPadding: EdgeInsets.symmetric(
-            horizontal: isCollapsed ? 12 : 18,
-            vertical: 6,
-          ),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
           onTap: () {
             if (!active) {
               Navigator.pushReplacementNamed(context, route);
             }
           },
+          child: Tooltip(
+            message: isCollapsed ? label : '',
+            child: Padding(
+              padding: EdgeInsets.symmetric(
+                horizontal: isCollapsed ? 0 : 18,
+                vertical: 12,
+              ),
+              child: Row(
+                mainAxisAlignment: isCollapsed
+                    ? MainAxisAlignment.center
+                    : MainAxisAlignment.start,
+                children: [
+                  Icon(
+                    icon,
+                    size: 20,
+                    color: active ? Colors.white : const Color(0xFF64748B),
+                  ),
+                  if (!isCollapsed) ...[
+                    const SizedBox(width: 10),
+                    Flexible(
+                      child: Text(
+                        label,
+                        style: TextStyle(
+                          fontFamily: 'Inter',
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: active
+                              ? Colors.white
+                              : const Color(0xFF64748B),
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
         ),
       ),
     );
