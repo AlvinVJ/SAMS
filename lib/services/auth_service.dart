@@ -51,7 +51,7 @@ class AuthService {
           .get();
       //print("ResolveUser: Profile Exists? ${profileDoc.exists}");
 
-      final backendBaseUrl = 'http://localhost:3000';
+      final backendBaseUrl = Environment.apiUrl;
       final backendData = await sendUserProfileToBackend(
         baseUrl: backendBaseUrl,
       );
