@@ -51,17 +51,34 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                   ),
                 ],
               ),
-              TextButton(
-                onPressed: () {
-                  setState(() {
-                    _notificationsFuture = _notificationService
-                        .fetchNotifications();
-                  });
-                },
-                child: const Text(
-                  'Refresh',
-                  style: TextStyle(fontWeight: FontWeight.w500),
-                ),
+              Row(
+                children: [
+                  TextButton(
+                    onPressed: () async {
+                      await _notificationService.markAllAsRead();
+                      setState(() {
+                        _notificationsFuture = _notificationService.fetchNotifications();
+                      });
+                    },
+                    child: const Text(
+                      'Mark All Read',
+                      style: TextStyle(fontWeight: FontWeight.w500),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  TextButton(
+                    onPressed: () {
+                      setState(() {
+                        _notificationsFuture = _notificationService
+                            .fetchNotifications();
+                      });
+                    },
+                    child: const Text(
+                      'Refresh',
+                      style: TextStyle(fontWeight: FontWeight.w500),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -109,12 +126,67 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                     const SizedBox(height: 12),
                 itemBuilder: (context, index) {
                   final notification = notifications[index];
-                  return _buildNotificationItem(
-                    isUnread: notification.isUnread,
-                    title: notification.title,
-                    time: notification.timeAgo,
-                    description: notification.description,
-                    color: notification.color,
+                  return GestureDetector(
+                    onTap: () {
+                      showDialog(
+                        context: context,
+                        builder: (BuildContext dialogContext) {
+                          return AlertDialog(
+                            title: Row(
+                              children: [
+                                Icon(Icons.notifications_active, color: notification.color),
+                                const SizedBox(width: 8),
+                                Expanded(child: Text(notification.title)),
+                              ],
+                            ),
+                            content: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('${notification.time.day}/${notification.time.month}/${notification.time.year} at ${notification.time.hour}:${notification.time.minute.toString().padLeft(2, '0')}'),
+                                const SizedBox(height: 16),
+                                Text(
+                                  notification.description,
+                                  style: Theme.of(context).textTheme.bodyLarge,
+                                ),
+                              ],
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () {
+                                  Navigator.of(dialogContext).pop();
+                                },
+                                child: const Text('Close'),
+                              ),
+                              ElevatedButton(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppTheme.primary,
+                                  foregroundColor: Colors.white,
+                                ),
+                                onPressed: () async {
+                                  // Close dialog first
+                                  Navigator.of(dialogContext).pop();
+                                  // Mark as read (which physically deletes the document)
+                                  await _notificationService.markAsRead(notification.id);
+                                  // Refresh the UI list
+                                  setState(() {
+                                    _notificationsFuture = _notificationService.fetchNotifications();
+                                  });
+                                },
+                                child: const Text('Mark as Read & Clear'),
+                              ),
+                            ],
+                          );
+                        },
+                      );
+                    },
+                    child: _buildNotificationItem(
+                      isUnread: notification.isUnread,
+                      title: notification.title,
+                      time: notification.timeAgo,
+                      description: notification.description,
+                      color: notification.color,
+                    ),
                   );
                 },
               );
