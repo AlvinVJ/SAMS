@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
+import 'package:sams_final/config/environment.dart';
 import '../styles/app_theme.dart';
 import 'auth_service.dart';
 
@@ -136,7 +137,7 @@ class UserRequest {
 }
 
 class UserRequestService {
-  final String baseUrl = 'http://localhost:3000';
+  final String baseUrl = Environment.apiUrl;
 
   Future<DashboardData> fetchDashboardData() async {
     try {

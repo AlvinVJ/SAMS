@@ -25,7 +25,6 @@ class ProcedureSummary {
 }
 
 class ProcedureService {
-  // TODO: Replace with your actual backend URL or env variable
   final String baseUrl = Environment.apiUrl;
 
   Future<List<ProcedureSummary>> fetchProcedures() async {
