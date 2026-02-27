@@ -111,21 +111,23 @@ class _UnifiedRequestsScreenState extends State<UnifiedRequestsScreen> {
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'My Requests',
-              style: Theme.of(context).textTheme.headlineLarge,
-            ),
-            const SizedBox(height: 4),
-            Text(
-              'Track and manage your submitted applications and approvals.',
-              style: Theme.of(
-                context,
-              ).textTheme.bodyLarge?.copyWith(color: AppTheme.textLight),
-            ),
-          ],
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'My Requests',
+                style: Theme.of(context).textTheme.headlineLarge,
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Track and manage your submitted applications and approvals.',
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyLarge?.copyWith(color: AppTheme.textLight),
+              ),
+            ],
+          ),
         ),
         ElevatedButton.icon(
           onPressed: () {
@@ -236,6 +238,47 @@ class _UnifiedRequestsScreenState extends State<UnifiedRequestsScreen> {
     );
   }
 
+  Future<void> _handleWithdraw(UserRequest req) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Withdraw Request'),
+        content: Text('Are you sure you want to withdraw "${req.title}"? This action cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.error, foregroundColor: Colors.white),
+            child: const Text('Withdraw'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      _fetchRequests(); // Start refresh immediately to show loading if needed, or we can wait for result
+      try {
+        await _requestService.withdrawRequest(req.id);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Request withdrawn successfully'), backgroundColor: AppTheme.success),
+          );
+          _fetchRequests(); // Refresh list
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error: ${e.toString()}'), backgroundColor: AppTheme.error),
+          );
+          _fetchRequests(); // Refresh to ensure UI matches state
+        }
+      }
+    }
+  }
+
   Widget _buildTableContent() {
     if (_isLoading) {
       return const Center(
@@ -312,12 +355,6 @@ class _UnifiedRequestsScreenState extends State<UnifiedRequestsScreen> {
                 ),
                 DataColumn(
                   label: Text(
-                    'Current Level',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                ),
-                DataColumn(
-                  label: Text(
                     'Status',
                     style: TextStyle(fontWeight: FontWeight.bold),
                   ),
@@ -352,7 +389,6 @@ class _UnifiedRequestsScreenState extends State<UnifiedRequestsScreen> {
         ),
         DataCell(Text(req.title)),
         DataCell(Text(req.date)),
-        DataCell(Text(req.level)),
         DataCell(
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -385,13 +421,70 @@ class _UnifiedRequestsScreenState extends State<UnifiedRequestsScreen> {
           ),
         ),
         DataCell(
-          TextButton(
-            onPressed: () => _showRequestDetails(req),
-            child: Text('View Details (${req.approvalHistory.length})'),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextButton(
+                onPressed: () => _handleViewDetails(req),
+                child: Text(
+              req.isResolved
+                  ? 'Details (${req.approvalHistory.length})'
+                  : 'View Details',
+            ),
+              ),
+              Builder(
+                builder: (context) {
+                  final status = req.status.trim().toLowerCase();
+                  if (widget.userRole == 'student' && (status == 'pending' || status.contains('pending'))) {
+                    return IconButton(
+                      icon: const Icon(Icons.delete_outline, color: AppTheme.error, size: 20),
+                      onPressed: () => _handleWithdraw(req),
+                      tooltip: 'Withdraw Request',
+                    );
+                  }
+                  return const SizedBox.shrink();
+                }
+              ),
+            ],
           ),
         ),
       ],
     );
+  }
+
+  Future<void> _handleViewDetails(UserRequest req) async {
+    if (!req.isResolved) {
+      // Show loading indicator
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(child: CircularProgressIndicator()),
+      );
+
+      try {
+        final resolvedReq = await _requestService.fetchRequestDetails(req.id);
+        if (mounted) {
+          Navigator.pop(context); // Close loading indicator
+          setState(() {
+            final index = _allRequests.indexWhere((r) => r.id == req.id);
+            if (index != -1) {
+              _allRequests[index] = resolvedReq;
+              _updateFilteredList();
+            }
+          });
+          _showRequestDetails(resolvedReq);
+        }
+      } catch (e) {
+        if (mounted) {
+          Navigator.pop(context); // Close loading indicator
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Failed to load details: $e')));
+        }
+      }
+    } else {
+      _showRequestDetails(req);
+    }
   }
 
   void _showRequestDetails(UserRequest req) {
@@ -435,7 +528,7 @@ class _UnifiedRequestsScreenState extends State<UnifiedRequestsScreen> {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            'Submitted on ${req.date}',
+                            'Submitted on ${req.date} | ${req.level} of ${req.totalLevels}',
                             style: const TextStyle(color: AppTheme.textLight),
                           ),
                         ],
@@ -447,6 +540,22 @@ class _UnifiedRequestsScreenState extends State<UnifiedRequestsScreen> {
                     ),
                   ],
                 ),
+                if (widget.userRole == 'student' && req.status.trim().toLowerCase().contains('pending')) ...[
+                  const SizedBox(height: 16),
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      Navigator.pop(context); // Close dialog
+                      _handleWithdraw(req);
+                    },
+                    icon: const Icon(Icons.delete_outline),
+                    label: const Text('Withdraw This Request'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppTheme.error.withOpacity(0.1),
+                      foregroundColor: AppTheme.error,
+                      elevation: 0,
+                    ),
+                  ),
+                ],
                 const Divider(height: 40),
 
                 // Feedback section

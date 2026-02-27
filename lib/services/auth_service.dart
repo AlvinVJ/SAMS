@@ -7,6 +7,7 @@ import '../state/auth_resolution.dart';
 import '../models/user_profile.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import '../config/environment.dart';
 import '../screens/login_screen.dart';
 
 class AuthService {
@@ -51,7 +52,7 @@ class AuthService {
           .get();
       //print("ResolveUser: Profile Exists? ${profileDoc.exists}");
 
-      final backendBaseUrl = 'http://localhost:3000';
+      final backendBaseUrl = Environment.apiUrl;
       final backendData = await sendUserProfileToBackend(
         baseUrl: backendBaseUrl,
       );
@@ -244,7 +245,7 @@ Future<Map<String, dynamic>> sendUserProfileToBackend({
   final authToken = await user.getIdToken();
 
   final response = await http.post(
-    Uri.parse('$baseUrl/api/common/signup'),
+    Uri.parse('${Environment.apiUrl}/api/common/signup'),
     headers: {
       'Content-Type': 'application/json',
       'Authorization': 'Bearer $authToken',
@@ -284,7 +285,7 @@ Future<List<String>> fetchRoleTags() async {
     throw Exception('User not authenticated');
   }
   final authToken = await user.getIdToken();
-  final url = Uri.parse('http://localhost:3000/api/common/get_role_tags');
+  final url = Uri.parse('${Environment.apiUrl}/api/common/get_role_tags');
 
   final response = await http.get(
     url,

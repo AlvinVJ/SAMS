@@ -112,34 +112,44 @@ class _AppHeaderState extends State<AppHeader> {
               const SizedBox(width: 24),
 
               // Profile
-              Row(
-                children: [
-                  Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Text(
-                        _displayName,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: AppTheme.textDark,
-                          fontSize: 14,
-                        ),
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 250),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Text(
+                            _displayName,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: AppTheme.textDark,
+                              fontSize: 14,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
+                          ),
+                          Text(
+                            _displayRole,
+                            style: Theme.of(context).textTheme.bodySmall,
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
+                          ),
+                        ],
                       ),
-                      Text(
-                        _displayRole,
-                        style: Theme.of(context).textTheme.bodySmall,
-                      ),
-                    ],
-                  ),
-                  const SizedBox(width: 12),
-                  const CircleAvatar(
-                    backgroundImage: NetworkImage(
-                      'https://lh3.googleusercontent.com/aida-public/AB6AXuBr2Jw3vi1PK-vAwuXMFVY6e3-PWBR9KZhbFlwNR9D9I2XRFGneeD_K6J3AFhL1YQT5r5oC7HEtbir0NfP2kLJ7GvWwCgwlUiyDt_dgnU6uezBHqo9F3oI2LCE7TOeab4eS4GivjcsukvljrA_ih-Joz03vRd2Qd_jpJ2NgAaUm6wDytnHmG4VUv1TXGDlRoirE1Tj-VfJcEIbCmvTivKrrWKV47IbcJwa7X7W7uYqFEFj04bA_Gf7GdZZat5GsshkzW0dX1r8NaoTq',
                     ),
-                    radius: 20,
-                  ),
-                ],
+                    const SizedBox(width: 12),
+                    const CircleAvatar(
+                      backgroundImage: NetworkImage(
+                        'https://lh3.googleusercontent.com/aida-public/AB6AXuBr2Jw3vi1PK-vAwuXMFVY6e3-PWBR9KZhbFlwNR9D9I2XRFGneeD_K6J3AFhL1YQT5r5oC7HEtbir0NfP2kLJ7GvWwCgwlUiyDt_dgnU6uezBHqo9F3oI2LCE7TOeab4eS4GivjcsukvljrA_ih-Joz03vRd2Qd_jpJ2NgAaUm6wDytnHmG4VUv1TXGDlRoirE1Tj-VfJcEIbCmvTivKrrWKV47IbcJwa7X7W7uYqFEFj04bA_Gf7GdZZat5GsshkzW0dX1r8NaoTq',
+                      ),
+                      radius: 20,
+                    ),
+                  ],
+                ),
               ),
             ],
           ),

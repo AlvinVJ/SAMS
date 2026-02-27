@@ -7,6 +7,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../data/firebase_procedure_repository.dart';
 import '../services/admin_procedure_service.dart';
 import '../models/user_type.dart';
+import '../config/environment.dart';
 
 class AdminCreateProcedureScreen extends StatefulWidget {
   const AdminCreateProcedureScreen({super.key});
@@ -27,7 +28,7 @@ class _AdminCreateProcedureScreenState
 
   // api call variable
   final ApiProcedureRepository _procedureRepo = ApiProcedureRepository(
-    "http://localhost:3000",
+    Environment.apiUrl,
   );
   final AdminProcedureService _adminService = AdminProcedureService();
 

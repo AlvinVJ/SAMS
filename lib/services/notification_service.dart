@@ -1,9 +1,12 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/notification.dart';
+
+import '../config/environment.dart';
 import 'auth_service.dart';
 
 class NotificationService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final String baseUrl = '${Environment.apiUrl}/api/student';
 
   Future<List<SAMSNotification>> fetchNotifications() async {
     try {

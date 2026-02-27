@@ -6,8 +6,10 @@ import '../models/faculty_profile.dart';
 import '../models/notification.dart';
 import 'auth_service.dart';
 
+import '../config/environment.dart';
+
 class FacultyService {
-  final String _baseUrl = "http://localhost:3000";
+  final String _baseUrl = Environment.apiUrl;
 
   Future<FacultyProfile> getFacultyProfile() async {
     final user = FirebaseAuth.instance.currentUser;

@@ -1,9 +1,10 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:firebase_auth/firebase_auth.dart';
+import '../config/environment.dart';
 
 class AdminService {
-  final String _baseUrl = "http://localhost:3000";
+  final String _baseUrl = Environment.apiUrl;
 
   Future<String?> _getToken() async {
     final user = FirebaseAuth.instance.currentUser;
@@ -48,7 +49,8 @@ class AdminService {
       headers: _headers(token!),
       body: json.encode(payload),
     );
-    if (response.statusCode != 200) throw Exception("Failed to update department");
+    if (response.statusCode != 200)
+      throw Exception("Failed to update department");
   }
 
   Future<void> deleteDepartment(int id) async {
@@ -57,7 +59,8 @@ class AdminService {
       Uri.parse("$_baseUrl/api/admin/department/$id"),
       headers: _headers(token!),
     );
-    if (response.statusCode != 200) throw Exception("Failed to delete department");
+    if (response.statusCode != 200)
+      throw Exception("Failed to delete department");
   }
 
   // ================= BATCHES =================
@@ -112,10 +115,7 @@ class AdminService {
     if (batchId != null) {
       url += "?batch_id=$batchId";
     }
-    final response = await http.get(
-      Uri.parse(url),
-      headers: _headers(token!),
-    );
+    final response = await http.get(Uri.parse(url), headers: _headers(token!));
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
       return data['data'];
@@ -408,7 +408,11 @@ class AdminService {
       throw Exception("Failed to assign class role");
   }
 
-  Future<void> removeClassRole(int classId, String mitsUid, String roleTag) async {
+  Future<void> removeClassRole(
+    int classId,
+    String mitsUid,
+    String roleTag,
+  ) async {
     final token = await _getToken();
     final response = await http.delete(
       Uri.parse("$_baseUrl/api/admin/class/faculty/$classId/$mitsUid/$roleTag"),

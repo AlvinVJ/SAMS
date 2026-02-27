@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:http/http.dart' as http;
+import '../config/environment.dart';
 
 class ProcedureSummary {
   final String id;
@@ -24,8 +25,7 @@ class ProcedureSummary {
 }
 
 class ProcedureService {
-  // TODO: Replace with your actual backend URL or env variable
-  final String baseUrl = 'http://localhost:3000';
+  final String baseUrl = Environment.apiUrl;
 
   Future<List<ProcedureSummary>> fetchProcedures() async {
     final authToken = await FirebaseAuth.instance.currentUser!.getIdToken();

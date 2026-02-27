@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'auth_service.dart';
+import '../config/environment.dart';
 
 /// RequestApprovalService
 ///
@@ -9,7 +10,7 @@ import 'auth_service.dart';
 ///
 /// For MVP testing without backend: Use MockRequestApprovalService instead
 class RequestApprovalService {
-  final String baseUrl = 'http://localhost:3000';
+  final String baseUrl = Environment.apiUrl;
 
   /// Approve a request at the current approval level
   ///
@@ -22,6 +23,7 @@ class RequestApprovalService {
     required String requestId,
     required String role,
     String? comments,
+    String? nextApproverUid,
   }) async {
     try {
       final user = AuthService().currentUser;
@@ -38,6 +40,7 @@ class RequestApprovalService {
           'requestId': requestId,
           'role': role,
           'comments': comments,
+          if (nextApproverUid != null) 'nextApproverUid': nextApproverUid,
         }),
       );
 
