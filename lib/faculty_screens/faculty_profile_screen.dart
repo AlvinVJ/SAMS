@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../styles/app_theme.dart';
-import '../widgets/app_header.dart';
-import '../widgets/faculty_sidebar.dart';
+import '../widgets/faculty_dashboard_layout.dart';
 import '../services/faculty_service.dart';
 import '../models/faculty_profile.dart';
 
@@ -51,119 +50,94 @@ class _FacultyProfileScreenState extends State<FacultyProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppTheme.backgroundLight,
-      body: Row(
-        children: [
-          const FacultySidebar(activeRoute: '/faculty/profile'),
-          Expanded(
-            child: Column(
-              children: [
-                const AppHeader(),
-                Expanded(
-                  child: _isLoading
-                      ? const Center(child: CircularProgressIndicator())
-                      : _error != null
-                      ? Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text(
-                                "Error: $_error",
-                                style: const TextStyle(color: Colors.red),
-                              ),
-                              const SizedBox(height: 16),
-                              ElevatedButton(
-                                onPressed: _loadData,
-                                child: const Text("Retry"),
-                              ),
-                            ],
-                          ),
-                        )
-                      : SingleChildScrollView(
-                          padding: const EdgeInsets.all(32),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              /// ================= BREADCRUMB =================
-                              Row(
-                                children: const [
-                                  Text(
-                                    'Home',
-                                    style: TextStyle(color: AppTheme.textLight),
-                                  ),
-                                  SizedBox(width: 6),
-                                  Icon(
-                                    Icons.chevron_right,
-                                    size: 16,
-                                    color: AppTheme.textLight,
-                                  ),
-                                  SizedBox(width: 6),
-                                  Text(
-                                    'Profile',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 24),
+    return FacultyDashboardLayout(
+      activeRoute: '/faculty/profile',
+      child: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : _error != null
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    "Error: $_error",
+                    style: const TextStyle(color: Colors.red),
+                  ),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: _loadData,
+                    child: const Text("Retry"),
+                  ),
+                ],
+              ),
+            )
+          : SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  /// ================= BREADCRUMB =================
+                  Row(
+                    children: const [
+                      Text('Home', style: TextStyle(color: AppTheme.textLight)),
+                      SizedBox(width: 6),
+                      Icon(
+                        Icons.chevron_right,
+                        size: 16,
+                        color: AppTheme.textLight,
+                      ),
+                      SizedBox(width: 6),
+                      Text(
+                        'Profile',
+                        style: TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
 
-                              /// ================= PROFILE HEADER =================
-                              _profileHeader(),
-                              const SizedBox(height: 24),
+                  /// ================= PROFILE HEADER =================
+                  _profileHeader(),
+                  const SizedBox(height: 24),
 
-                              /// ================= STATS =================
-                              Row(
-                                children: [
-                                  _StatCard(
-                                    title: 'Total Requests',
-                                    value: _stats?['total']?.toString() ?? '0',
-                                    icon: Icons.folder_open,
-                                    color: AppTheme.primary,
-                                  ),
-                                  const SizedBox(width: 16),
-                                  _StatCard(
-                                    title: 'Approved',
-                                    value:
-                                        _stats?['approved']?.toString() ?? '0',
-                                    icon: Icons.check_circle,
-                                    color: Colors.green,
-                                  ),
-                                  const SizedBox(width: 16),
-                                  _StatCard(
-                                    title: 'Pending',
-                                    value:
-                                        _stats?['pending']?.toString() ?? '0',
-                                    icon: Icons.pending,
-                                    color: Colors.orange,
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 32),
+                  /// ================= STATS =================
+                  Row(
+                    children: [
+                      _StatCard(
+                        title: 'Total Requests',
+                        value: _stats?['total']?.toString() ?? '0',
+                        icon: Icons.folder_open,
+                        color: AppTheme.primary,
+                      ),
+                      const SizedBox(width: 16),
+                      _StatCard(
+                        title: 'Approved',
+                        value: _stats?['approved']?.toString() ?? '0',
+                        icon: Icons.check_circle,
+                        color: Colors.green,
+                      ),
+                      const SizedBox(width: 16),
+                      _StatCard(
+                        title: 'Pending',
+                        value: _stats?['pending']?.toString() ?? '0',
+                        icon: Icons.pending,
+                        color: Colors.orange,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 32),
 
-                              /// ================= CONTACT INFO =================
-                              _ContactInfoCard(email: _profile?.email ?? 'N/A'),
-                              const SizedBox(height: 32),
+                  /// ================= CONTACT INFO =================
+                  _ContactInfoCard(email: _profile?.email ?? 'N/A'),
+                  const SizedBox(height: 32),
 
-                              const Center(
-                                child: Text(
-                                  '© 2024 SAMS Faculty Portal. All rights reserved.',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: AppTheme.textLight,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                ),
-              ],
+                  const Center(
+                    child: Text(
+                      '© 2024 SAMS Faculty Portal. All rights reserved.',
+                      style: TextStyle(fontSize: 12, color: AppTheme.textLight),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
-      ),
     );
   }
 
