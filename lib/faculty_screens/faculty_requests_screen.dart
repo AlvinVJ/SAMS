@@ -39,6 +39,7 @@ class _FacultyRequestsForApprovalScreenState
     setState(() => _isLoading = true);
     try {
       final tags = await UserRequestService().fetchRoleTags();
+      tags.add("General");
       setState(() {
         roleTags = tags;
         if (roleTags.isNotEmpty) {
