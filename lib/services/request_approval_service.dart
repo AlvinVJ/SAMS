@@ -49,8 +49,8 @@ class RequestApprovalService {
         print('✓ Request approved: ${data['message']}');
         return true;
       } else {
-        print('✗ Failed to approve request: ${response.statusCode}');
-        return false;
+        final data = jsonDecode(response.body);
+        throw Exception(data['message'] ?? 'Failed to approve request (Status: ${response.statusCode})');
       }
     } catch (e) {
       print('✗ Error approving request: $e');
@@ -97,8 +97,8 @@ class RequestApprovalService {
         print('✓ Request rejected: ${data['message']}');
         return true;
       } else {
-        print('✗ Failed to reject request: ${response.statusCode}');
-        return false;
+        final data = jsonDecode(response.body);
+        throw Exception(data['message'] ?? 'Failed to reject request (Status: ${response.statusCode})');
       }
     } catch (e) {
       print('✗ Error rejecting request: $e');
