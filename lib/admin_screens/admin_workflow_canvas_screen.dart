@@ -590,6 +590,10 @@ class _AdminCreateProcedureScreenState
                       value: 'PLACEMENT_BULK',
                       child: Text('Placement Attendance (Bulk)'),
                     ),
+                    DropdownMenuItem(
+                      value: 'OVERNIGHT_HOSTEL',
+                      child: Text('Overnight Hostel Notification (Bulk)'),
+                    ),
                   ],
                   onChanged: (val) {
                     setState(() {
@@ -597,7 +601,7 @@ class _AdminCreateProcedureScreenState
                     });
                   },
                 ),
-                if (_selectedHook == 'PLACEMENT_BULK') ...[
+                if (_selectedHook == 'PLACEMENT_BULK' || _selectedHook == 'OVERNIGHT_HOSTEL') ...[
                   const SizedBox(height: 12),
                   Container(
                     padding: const EdgeInsets.all(8),
@@ -612,7 +616,9 @@ class _AdminCreateProcedureScreenState
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
-                            'Placement Hook requires a "File" field and "Class Advisor" as the first approval level.',
+                            _selectedHook == 'PLACEMENT_BULK'
+                                ? 'Placement Hook requires a "File" field and "Class Advisor" as the first approval level.'
+                                : 'Hostel Hook requires a "File" field. It will automatically route hostellers to their respective wardens.',
                             style: TextStyle(
                               fontSize: 12,
                               color: Colors.blue[800],
