@@ -127,39 +127,54 @@ class _AdminEditProcedureScreenState extends State<AdminEditProcedureScreen> {
     });
   }
 
-  void _ensurePlacementFields() {
-    final requiredFields = [
-      FormFieldDraft(
-        fieldId: 'company_name',
-        label: 'Company Name',
-        type: FormFieldType.text,
-        required: true,
-      ),
-      FormFieldDraft(
-        fieldId: 'test_date',
-        label: 'Test Date',
-        type: FormFieldType.date,
-        required: true,
-      ),
-      FormFieldDraft(
-        fieldId: 'start_time',
-        label: 'Start Time',
-        type: FormFieldType.time,
-        required: true,
-      ),
-      FormFieldDraft(
-        fieldId: 'end_time',
-        label: 'End Time',
-        type: FormFieldType.time,
-        required: true,
-      ),
-      FormFieldDraft(
-        fieldId: 'hook_data',
-        label: 'Student List (CSV with UIDs)',
-        type: FormFieldType.csv,
-        required: true,
-      ),
-    ];
+  void _ensureHookFields() {
+    if (_selectedHook == null) return;
+
+    List<FormFieldDraft> requiredFields = [];
+
+    if (_selectedHook == 'PLACEMENT_BULK') {
+      requiredFields = [
+        FormFieldDraft(
+          fieldId: 'company_name',
+          label: 'Company Name',
+          type: FormFieldType.text,
+          required: true,
+        ),
+        FormFieldDraft(
+          fieldId: 'test_date',
+          label: 'Test Date',
+          type: FormFieldType.date,
+          required: true,
+        ),
+        FormFieldDraft(
+          fieldId: 'start_time',
+          label: 'Start Time',
+          type: FormFieldType.time,
+          required: true,
+        ),
+        FormFieldDraft(
+          fieldId: 'end_time',
+          label: 'End Time',
+          type: FormFieldType.time,
+          required: true,
+        ),
+        FormFieldDraft(
+          fieldId: 'hook_data',
+          label: 'Student List (CSV with UIDs)',
+          type: FormFieldType.csv,
+          required: true,
+        ),
+      ];
+    } else if (_selectedHook == 'OVERNIGHT_HOSTEL') {
+      requiredFields = [
+        FormFieldDraft(
+          fieldId: 'hook_data',
+          label: 'Student List (CSV with UIDs)',
+          type: FormFieldType.csv,
+          required: true,
+        ),
+      ];
+    }
 
     setState(() {
       for (var req in requiredFields) {
@@ -722,9 +737,9 @@ class _AdminEditProcedureScreenState extends State<AdminEditProcedureScreen> {
                             _hookTrigger = 'START';
                           }
 
-                          // Automatically add mandatory placement fields if selected
-                          if (_selectedHook == 'PLACEMENT_BULK') {
-                            _ensurePlacementFields();
+                          // Automatically add mandatory fields based on hook selection
+                          if (_selectedHook != null) {
+                            _ensureHookFields();
                           }
                         });
                       },
