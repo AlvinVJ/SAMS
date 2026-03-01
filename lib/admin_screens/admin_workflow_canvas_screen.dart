@@ -38,6 +38,7 @@ class _AdminCreateProcedureScreenState
 
   // System Hook (Plugin)
   String? _selectedHook;
+  String? _hookTrigger; // Standardized hook trigger
 
   bool _hasForm = false;
   bool _isHosteller = false;
@@ -108,6 +109,51 @@ class _AdminCreateProcedureScreenState
       _hasForm = false;
       _formFields.clear();
       _formKey.currentState?.reset();
+    });
+  }
+
+  void _ensurePlacementFields() {
+    final requiredFields = [
+      FormFieldDraft(
+        fieldId: 'company_name',
+        label: 'Company Name',
+        type: FormFieldType.text,
+        required: true,
+      ),
+      FormFieldDraft(
+        fieldId: 'test_date',
+        label: 'Test Date',
+        type: FormFieldType.date,
+        required: true,
+      ),
+      FormFieldDraft(
+        fieldId: 'start_time',
+        label: 'Start Time',
+        type: FormFieldType.time,
+        required: true,
+      ),
+      FormFieldDraft(
+        fieldId: 'end_time',
+        label: 'End Time',
+        type: FormFieldType.time,
+        required: true,
+      ),
+      FormFieldDraft(
+        fieldId: 'hook_data',
+        label: 'Student List (CSV with UIDs)',
+        type: FormFieldType.csv,
+        required: true,
+      ),
+    ];
+
+    setState(() {
+      for (var req in requiredFields) {
+        bool exists = _formFields.any((f) => f.fieldId == req.fieldId || f.label == req.label);
+        if (!exists) {
+          _formFields.add(req);
+        }
+      }
+      _hasForm = true;
     });
   }
 
@@ -360,6 +406,7 @@ class _AdminCreateProcedureScreenState
       }).toList(),
       visibility: _visibility.contains("all") ? {"all"} : _visibility,
       systemHook: _selectedHook,
+      hookTrigger: _hookTrigger,
       isHosteller: _isHosteller,
     );
 
@@ -598,9 +645,46 @@ class _AdminCreateProcedureScreenState
                   onChanged: (val) {
                     setState(() {
                       _selectedHook = val;
+                      if (_selectedHook != null && _hookTrigger == null) {
+                        _hookTrigger = 'START';
+                      }
+
+                      // Automatically add mandatory placement fields if selected
+                      if (_selectedHook == 'PLACEMENT_BULK') {
+                        _ensurePlacementFields();
+                      }
                     });
                   },
                 ),
+                if (_selectedHook != null) ...[
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<String>(
+                    value: _hookTrigger ?? 'START',
+                    decoration: const InputDecoration(
+                      labelText: 'Hook Execution Timing',
+                      border: OutlineInputBorder(),
+                      contentPadding: EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
+                    ),
+                    items: const [
+                      DropdownMenuItem(
+                        value: 'START',
+                        child: Text('On Submission (Start)'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'END',
+                        child: Text('After Final Approval (End)'),
+                      ),
+                    ],
+                    onChanged: (val) {
+                      setState(() {
+                        _hookTrigger = val;
+                      });
+                    },
+                  ),
+                ],
                 if (_selectedHook == 'PLACEMENT_BULK' || _selectedHook == 'OVERNIGHT_HOSTEL') ...[
                   const SizedBox(height: 12),
                   Container(
@@ -908,6 +992,10 @@ class FormBuilderSection extends StatelessWidget {
                             DropdownMenuItem(
                               value: FormFieldType.csv,
                               child: Text('Student List (CSV)'),
+                            ),
+                            DropdownMenuItem(
+                              value: FormFieldType.time,
+                              child: Text('Time'),
                             ),
                           ],
 

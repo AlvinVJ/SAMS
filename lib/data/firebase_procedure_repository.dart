@@ -43,6 +43,7 @@ class ApiProcedureRepository {
           "title": procedure.title,
           "desc": procedure.description,
           "system_hook": procedure.systemHook,
+          "hook_trigger": procedure.hookTrigger, // New standardized field
           "visibility": procedure.visibility.contains("all")
               ? ["all"]
               : procedure.visibility.toList(),
