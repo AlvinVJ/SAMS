@@ -409,7 +409,7 @@ class _FacultyActedRequestsScreenState
   }
 
   Widget _buildTimelineItem({
-    required int level,
+    required num level,
     required String status,
     required String approver,
     String? comment,
