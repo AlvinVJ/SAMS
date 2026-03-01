@@ -259,6 +259,7 @@ class _RequestFormScreenState extends State<RequestFormScreen> {
         ),
 
         FormFieldType.date => _buildDateField(field, label),
+        FormFieldType.time => _buildTimeField(field, label),
 
         FormFieldType.singleChoice => _buildSingleChoice(field, label),
 
@@ -302,8 +303,8 @@ class _RequestFormScreenState extends State<RequestFormScreen> {
 
   Widget _buildCSVFileField(FormFieldDraft field, String label) {
     final buttonLabel = _values[field.fieldId] == null
-        ? "Upload Student List (CSV)"
-        : "Change CSV";
+        ? "Upload Student List (CSV with UIDs)"
+        : "Change CSV (UIDs)";
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -363,6 +364,33 @@ class _RequestFormScreenState extends State<RequestFormScreen> {
             // Store as ISO string, not DateTime object
             _values[field.fieldId] = dateString;
             _controllers[field.fieldId]!.text = dateString;
+          });
+        }
+      },
+    );
+  }
+
+  Widget _buildTimeField(FormFieldDraft field, String label) {
+    _controllers[field.fieldId] ??= TextEditingController();
+
+    return TextFormField(
+      controller: _controllers[field.fieldId],
+      readOnly: true,
+      decoration: InputDecoration(labelText: label),
+      validator: field.required
+          ? (_) => _values[field.fieldId] == null ? 'Required' : null
+          : null,
+      onTap: () async {
+        final picked = await showTimePicker(
+          context: context,
+          initialTime: TimeOfDay.now(),
+        );
+
+        if (picked != null) {
+          final timeString = picked.format(context);
+          setState(() {
+            _values[field.fieldId] = timeString;
+            _controllers[field.fieldId]!.text = timeString;
           });
         }
       },
@@ -529,6 +557,15 @@ class _RequestFormScreenState extends State<RequestFormScreen> {
 
       // Create a copy of values for JSON submission, excluding raw bytes
       final Map<String, dynamic> submissionValues = Map.from(_values);
+      
+      // Standardized hook_data extraction for backend hooks
+      for (var field in widget.fields) {
+        if (field.type == FormFieldType.csv) {
+          submissionValues['hook_data'] = _values[field.fieldId];
+          break;
+        }
+      }
+
       submissionValues.forEach((key, value) {
         if (value is Map && value.containsKey('bytes')) {
           submissionValues[key] = {

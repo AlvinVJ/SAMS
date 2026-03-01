@@ -20,7 +20,8 @@ class ProcedureDraft {
   final List<FormFieldDraft> formSchema;
   final List<ApprovalLevelDraft> approvalLevels;
   final Set<String> visibility;
-  final String? systemHook;
+   final String? systemHook;
+  final String? hookTrigger;
   final bool isHosteller;
 
   ProcedureDraft({
@@ -30,6 +31,7 @@ class ProcedureDraft {
     required this.approvalLevels,
     required this.visibility,
     this.systemHook,
+    this.hookTrigger,
     this.isHosteller = false,
   });
 
@@ -47,6 +49,7 @@ class ProcedureDraft {
       description:
           json['description']?.toString() ?? json['desc']?.toString() ?? '',
       systemHook: json['system_hook']?.toString(),
+      hookTrigger: json['hook_trigger']?.toString(),
       formSchema:
           ((json['formFields'] ??
                       json['formSchema'] ??
@@ -108,7 +111,7 @@ class FormFieldDraft {
   }
 }
 
-enum FormFieldType { text, file, csv, singleChoice, multipleChoice, date }
+enum FormFieldType { text, file, csv, singleChoice, multipleChoice, date, time }
 
 class ApprovalLevelDraft {
   List<Map<String, String>> roles;
@@ -195,6 +198,7 @@ extension ProcedureDraftJson on ProcedureDraft {
       "requestFormat": 0,
       "priority": "NORMAL",
       "system_hook": systemHook,
+      "hook_trigger": hookTrigger,
       "is_hosteller": isHosteller,
 
       "formSchema": formSchema.map((f) => f.toJson()).toList(),

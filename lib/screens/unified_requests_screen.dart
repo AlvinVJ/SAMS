@@ -715,7 +715,7 @@ class _UnifiedRequestsScreenState extends State<UnifiedRequestsScreen> {
   }
 
   Widget _buildTimelineItem({
-    required int level,
+    required num level,
     required String status,
     required String approver,
     String? comment,
