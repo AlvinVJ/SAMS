@@ -70,22 +70,52 @@ class ApiProcedureRepository {
     required String procedureId,
     required Map<String, dynamic> values,
     required String? authToken,
+    String? fileName,
+    List<int>? fileBytes,
   }) async {
     if (authToken == null) {
       throw Exception('Auth token is missing');
     }
-    final response = await http.post(
-      Uri.parse('$baseUrl/api/common/create_request'),
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $authToken',
-      },
-      body: jsonEncode({"procedureId": procedureId, "formData": values}),
-    );
 
-    if (response.statusCode != 201 && response.statusCode != 200) {
-      print('DEBUG: createRequest Error: ${response.body}');
-      throw Exception('Failed to create request: ${response.body}');
+    if (fileBytes != null && fileName != null) {
+      // Use MultipartRequest for file uploads
+      final request = http.MultipartRequest(
+        'POST',
+        Uri.parse('$baseUrl/api/common/create_request'),
+      );
+
+      request.headers['Authorization'] = 'Bearer $authToken';
+      request.fields['procedureId'] = procedureId;
+      request.fields['formData'] = jsonEncode(values);
+
+      request.files.add(http.MultipartFile.fromBytes(
+        'file',
+        fileBytes,
+        filename: fileName,
+      ));
+
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
+
+      if (response.statusCode != 201 && response.statusCode != 200) {
+        print('DEBUG: createRequest (Multipart) Error: ${response.body}');
+        throw Exception('Failed to create request: ${response.body}');
+      }
+    } else {
+      // Standard JSON request if no file
+      final response = await http.post(
+        Uri.parse('$baseUrl/api/common/create_request'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $authToken',
+        },
+        body: jsonEncode({"procedureId": procedureId, "formData": values}),
+      );
+
+      if (response.statusCode != 201 && response.statusCode != 200) {
+        print('DEBUG: createRequest Error: ${response.body}');
+        throw Exception('Failed to create request: ${response.body}');
+      }
     }
   }
 

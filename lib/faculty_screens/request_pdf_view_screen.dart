@@ -3,6 +3,7 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import 'dart:convert';
+import 'package:url_launcher/url_launcher.dart';
 import '../services/user_request_service.dart';
 import '../widgets/app_header.dart';
 import '../widgets/faculty_sidebar.dart';
@@ -68,6 +69,35 @@ class _RequestPdfViewScreenState extends State<RequestPdfViewScreen> {
                               ),
                             ),
                             const Spacer(),
+                            if (widget.request.formData['attachmentUrl'] != null) ...[
+                              ElevatedButton.icon(
+                                icon: const Icon(Icons.attachment),
+                                label: const Text('View Attachment'),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.orange.shade700,
+                                  foregroundColor: Colors.white,
+                                ),
+                                onPressed: () async {
+                                  final attachmentUrl = widget.request.formData['attachmentUrl'];
+                                  final uri = Uri.parse(attachmentUrl);
+                                  if (await canLaunchUrl(uri)) {
+                                    await launchUrl(
+                                      uri,
+                                      mode: LaunchMode.externalApplication,
+                                    );
+                                  } else {
+                                    if (context.mounted) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(
+                                            content: Text(
+                                                'Could not open attachment')),
+                                      );
+                                    }
+                                  }
+                                },
+                              ),
+                              const SizedBox(width: 12),
+                            ],
                             ElevatedButton.icon(
                               icon: const Icon(Icons.download),
                               label: const Text('Download PDF'),
@@ -143,6 +173,16 @@ class _RequestPdfViewScreenState extends State<RequestPdfViewScreen> {
     final List<pw.Widget> formFields = [];
     if (combinedData.isNotEmpty) {
       combinedData.forEach((key, value) {
+        if (value == null) return;
+
+        // Skip internal attachment metadata keys
+        if (key == 'attachmentUrl' ||
+            key == 'attachmentPath' ||
+            key == 'attachmentName' ||
+            key == 'attachmentType') {
+          return;
+        }
+
         // Case 1: Student List (List of Maps)
         if (value is List) {
           formFields.add(
@@ -188,7 +228,36 @@ class _RequestPdfViewScreenState extends State<RequestPdfViewScreen> {
           return;
         }
 
-        // Case 2: Image/File Object
+        // Case 2: Supabase / Remote Attachment
+        if (value is Map && value.containsKey('attachmentUrl')) {
+          final url = value['attachmentUrl'].toString();
+          final name = value['attachmentName'] ?? 'Attachment';
+          final type = value['attachmentType'] ?? '';
+
+          if (type.startsWith('image/')) {
+            formFields.add(
+              pw.Column(
+                crossAxisAlignment: pw.CrossAxisAlignment.start,
+                children: [
+                  _buildPdfField(key, name),
+                  pw.SizedBox(height: 5),
+                  // Note: pw.Image(pw.MemoryImage(...)) needs actual bytes.
+                  // Since _generatePdf is often called synchronously or semi-sync in PDF preview,
+                  // we might need a placeholder or a way to pre-fetch.
+                  // For now, we'll indicate it's an image.
+                  pw.Text("[Image Attachment - See download for full view]",
+                      style: pw.TextStyle(color: PdfColors.blue, fontSize: 10)),
+                  pw.SizedBox(height: 10),
+                ],
+              ),
+            );
+          } else {
+            formFields.add(_buildPdfField(key, "$name (File)"));
+          }
+          return;
+        }
+
+        // Case 3: Legacy base64 Image/File Object
         if (value is Map &&
             value.containsKey('url') &&
             value['url'].toString().startsWith('data:image')) {

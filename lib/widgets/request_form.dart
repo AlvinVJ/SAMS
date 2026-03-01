@@ -49,6 +49,18 @@ class _RequestFormScreenState extends State<RequestFormScreen> {
         return 'image/jpeg';
       case 'png':
         return 'image/png';
+      case 'svg':
+        return 'image/svg+xml';
+      case 'doc':
+        return 'application/msword';
+      case 'docx':
+        return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+      case 'csv':
+        return 'text/csv';
+      case 'xls':
+        return 'application/vnd.ms-excel';
+      case 'xlsx':
+        return 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
       default:
         return 'application/octet-stream';
     }
@@ -58,7 +70,18 @@ class _RequestFormScreenState extends State<RequestFormScreen> {
     try {
       FilePickerResult? result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
-        allowedExtensions: ['pdf', 'jpg', 'jpeg', 'png'],
+        allowedExtensions: [
+          'pdf',
+          'jpg',
+          'jpeg',
+          'png',
+          'svg',
+          'doc',
+          'docx',
+          'csv',
+          'xls',
+          'xlsx'
+        ],
         withData: true,
       );
 
@@ -66,16 +89,13 @@ class _RequestFormScreenState extends State<RequestFormScreen> {
         setState(() => _isUploading = true);
         final file = result.files.first;
 
-        // Convert to base64 for storage in formData
-        final base64String = base64Encode(file.bytes!);
         final mimeType = _getMimeType(file.extension);
-        final dataUrl = "data:$mimeType;base64,$base64String";
 
         setState(() {
           _values[field.fieldId] = {
             'name': file.name,
             'type': mimeType,
-            'url': dataUrl,
+            'bytes': file.bytes, // Store bytes for Flutter Web compatibility
           };
           _controllers[field.fieldId] ??= TextEditingController();
           _controllers[field.fieldId]!.text = file.name;
@@ -251,6 +271,7 @@ class _RequestFormScreenState extends State<RequestFormScreen> {
   }
 
   Widget _buildGenericFileField(FormFieldDraft field, String label) {
+    _controllers[field.fieldId] ??= TextEditingController();
     final buttonLabel = _values[field.fieldId] == null
         ? "Upload File"
         : "Change File";
@@ -269,7 +290,10 @@ class _RequestFormScreenState extends State<RequestFormScreen> {
           label: Text(buttonLabel),
           onPressed: _isUploading ? null : () => _pickGenericFile(field),
         ),
-        if (_values[field.fieldId] != null) _fileSelectedText(field.fieldId),
+        if (_values[field.fieldId] != null) ...[
+          const SizedBox(height: 8),
+          _fileSelectedText(field.fieldId),
+        ],
         if (field.required && _values[field.fieldId] == null)
           _errorText("Required *"),
       ],
@@ -437,6 +461,33 @@ class _RequestFormScreenState extends State<RequestFormScreen> {
   Future<void> _submit() async {
     if (_isSubmitting) return;
 
+    // 1. Validate TextFields
+    if (!_formKey.currentState!.validate()) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please fill all required fields'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    // 2. Validate Required File/CSV fields (since they aren't TextFormFields)
+    for (var field in widget.fields) {
+      if (field.required &&
+          (field.type == FormFieldType.file || field.type == FormFieldType.csv)) {
+        if (_values[field.fieldId] == null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Please upload the required file: ${field.label}'),
+              backgroundColor: Colors.red,
+            ),
+          );
+          return;
+        }
+      }
+    }
+
     _multiChoiceErrors.clear();
 
     for (final field in widget.fields) {
@@ -465,11 +516,36 @@ class _RequestFormScreenState extends State<RequestFormScreen> {
     setState(() => _isSubmitting = true);
 
     try {
+      // Find a file to upload if it exists
+      List<int>? fileBytes;
+      String? fileName;
+      for (var entry in _values.entries) {
+        if (entry.value is Map && entry.value.containsKey('bytes')) {
+          fileBytes = entry.value['bytes'];
+          fileName = entry.value['name'];
+          break;
+        }
+      }
+
+      // Create a copy of values for JSON submission, excluding raw bytes
+      final Map<String, dynamic> submissionValues = Map.from(_values);
+      submissionValues.forEach((key, value) {
+        if (value is Map && value.containsKey('bytes')) {
+          submissionValues[key] = {
+            'name': value['name'],
+            'type': value['type'],
+            // 'bytes' removed here!
+          };
+        }
+      });
+
       // Submit to backend using ProcedureService
       await _requestRepo.createRequest(
         procedureId: widget.procedureId,
-        values: _values,
+        values: submissionValues,
         authToken: await FirebaseAuth.instance.currentUser!.getIdToken(),
+        fileName: fileName,
+        fileBytes: fileBytes,
       );
 
       if (!mounted) return;
