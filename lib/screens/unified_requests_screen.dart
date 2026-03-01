@@ -243,7 +243,9 @@ class _UnifiedRequestsScreenState extends State<UnifiedRequestsScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Withdraw Request'),
-        content: Text('Are you sure you want to withdraw "${req.title}"? This action cannot be undone.'),
+        content: Text(
+          'Are you sure you want to withdraw "${req.title}"? This action cannot be undone.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -251,7 +253,10 @@ class _UnifiedRequestsScreenState extends State<UnifiedRequestsScreen> {
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.error, foregroundColor: Colors.white),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.error,
+              foregroundColor: Colors.white,
+            ),
             child: const Text('Withdraw'),
           ),
         ],
@@ -264,14 +269,20 @@ class _UnifiedRequestsScreenState extends State<UnifiedRequestsScreen> {
         await _requestService.withdrawRequest(req.id);
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Request withdrawn successfully'), backgroundColor: AppTheme.success),
+            const SnackBar(
+              content: Text('Request withdrawn successfully'),
+              backgroundColor: AppTheme.success,
+            ),
           );
           _fetchRequests(); // Refresh list
         }
       } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error: ${e.toString()}'), backgroundColor: AppTheme.error),
+            SnackBar(
+              content: Text('Error: ${e.toString()}'),
+              backgroundColor: AppTheme.error,
+            ),
           );
           _fetchRequests(); // Refresh to ensure UI matches state
         }
@@ -427,23 +438,31 @@ class _UnifiedRequestsScreenState extends State<UnifiedRequestsScreen> {
               TextButton(
                 onPressed: () => _handleViewDetails(req),
                 child: Text(
-              req.isResolved
-                  ? 'Details (${req.approvalHistory.length})'
-                  : 'View Details',
-            ),
+                  req.isResolved
+                      ? 'Details (${req.approvalHistory.length})'
+                      : 'View Details',
+                ),
               ),
               Builder(
                 builder: (context) {
                   final status = req.status.trim().toLowerCase();
-                  if (widget.userRole == 'student' && (status == 'pending' || status.contains('pending'))) {
+                  final isRequester =
+                      widget.userRole == 'student' ||
+                      widget.userRole == 'faculty';
+                  if (isRequester &&
+                      (status == 'pending' || status.contains('pending'))) {
                     return IconButton(
-                      icon: const Icon(Icons.delete_outline, color: AppTheme.error, size: 20),
+                      icon: const Icon(
+                        Icons.delete_outline,
+                        color: AppTheme.error,
+                        size: 20,
+                      ),
                       onPressed: () => _handleWithdraw(req),
                       tooltip: 'Withdraw Request',
                     );
                   }
                   return const SizedBox.shrink();
-                }
+                },
               ),
             ],
           ),
@@ -540,7 +559,9 @@ class _UnifiedRequestsScreenState extends State<UnifiedRequestsScreen> {
                     ),
                   ],
                 ),
-                if (widget.userRole == 'student' && req.status.trim().toLowerCase().contains('pending')) ...[
+                if ((widget.userRole == 'student' ||
+                        widget.userRole == 'faculty') &&
+                    req.status.trim().toLowerCase().contains('pending')) ...[
                   const SizedBox(height: 16),
                   ElevatedButton.icon(
                     onPressed: () {

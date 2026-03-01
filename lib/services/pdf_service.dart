@@ -45,7 +45,17 @@ class PDFService {
               children: [
                 // Header Section
                 _buildHeader(),
-                pw.SizedBox(height: 30),
+                pw.SizedBox(height: 20),
+
+                // Recipient Section
+                _buildRecipientSection(
+                  requestData['lastLevelRoleTag'] ?? 'Principal',
+                ),
+                pw.SizedBox(height: 10),
+
+                // Sender Section (From)
+                _buildSenderSection(requestData['studentName'] ?? 'Student'),
+                pw.SizedBox(height: 10),
 
                 // Title
                 pw.Center(
@@ -58,7 +68,7 @@ class PDFService {
                     ),
                   ),
                 ),
-                pw.SizedBox(height: 30),
+                pw.SizedBox(height: 20),
 
                 // Request Information
                 _buildRequestInfo(requestId, requestType),
@@ -110,6 +120,35 @@ class PDFService {
           style: pw.TextStyle(fontSize: 10, fontStyle: pw.FontStyle.italic),
         ),
         pw.Divider(thickness: 2),
+      ],
+    );
+  }
+
+  /// Build recipient section
+  pw.Widget _buildRecipientSection(String roleTag) {
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        pw.Text('To,', style: const pw.TextStyle(fontSize: 11)),
+        pw.Text(
+          'The ${roleTag.replaceAll('_', ' ').toUpperCase()},',
+          style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold),
+        ),
+        pw.Text('MITS, Ernakulam.', style: const pw.TextStyle(fontSize: 11)),
+      ],
+    );
+  }
+
+  /// Build sender section
+  pw.Widget _buildSenderSection(String name) {
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        pw.Text('From,', style: const pw.TextStyle(fontSize: 11)),
+        pw.Text(
+          '$name,',
+          style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold),
+        ),
       ],
     );
   }
