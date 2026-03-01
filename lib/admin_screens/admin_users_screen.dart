@@ -16,22 +16,32 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
   bool _hasSearched = false;
   List<dynamic> _filteredUsers = [];
   List<dynamic> _roles = [];
+  List<dynamic> _departments = [];
+  List<dynamic> _batches = [];
   final TextEditingController _searchController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
-    _fetchRoles();
+    _fetchInitialData();
   }
 
-  Future<void> _fetchRoles() async {
+  Future<void> _fetchInitialData() async {
     try {
-      final roles = await _adminService.getRoles();
+      final results = await Future.wait([
+        _adminService.getRoles(),
+        _adminService.getDepartments(),
+        _adminService.getBatches(),
+      ]);
       if (mounted) {
-        setState(() => _roles = roles);
+        setState(() {
+          _roles = results[0];
+          _departments = results[1];
+          _batches = results[2];
+        });
       }
     } catch (e) {
-      debugPrint("Error fetching roles: $e");
+      debugPrint("Error fetching initial data: $e");
     }
   }
 
@@ -112,6 +122,10 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
         .map<int>((m) => m['role_id'] as int)
         .toList();
 
+    int? selectedDeptId = user['Faculty']?['department_id'];
+    int? selectedBatchId = user['Student']?['batch_id'];
+    int? selectedClassId = user['Student']?['class_id'];
+
     showDialog(
       context: context,
       builder: (context) => StatefulBuilder(
@@ -177,6 +191,82 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                     }
                   },
                 ),
+                const SizedBox(height: 20),
+                const Divider(),
+                const SizedBox(height: 10),
+                const Text(
+                  'Change Affiliation',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 16),
+                if (user['Faculty'] != null) ...[
+                  DropdownButtonFormField<int>(
+                    value: selectedDeptId,
+                    decoration: const InputDecoration(
+                      labelText: 'Department',
+                      border: OutlineInputBorder(),
+                    ),
+                    items: _departments.map((d) {
+                      return DropdownMenuItem<int>(
+                        value: d['dept_id'],
+                        child: Text(d['dept_name']),
+                      );
+                    }).toList(),
+                    onChanged: (val) {
+                      setDialogState(() {
+                        selectedDeptId = val;
+                      });
+                    },
+                  ),
+                ] else if (user['Student'] != null) ...[
+                  DropdownButtonFormField<int>(
+                    value: selectedBatchId,
+                    decoration: const InputDecoration(
+                      labelText: 'Batch',
+                      border: OutlineInputBorder(),
+                    ),
+                    items: _batches.map((b) {
+                      return DropdownMenuItem<int>(
+                        value: b['batch_id'],
+                        child: Text(b['batch']),
+                      );
+                    }).toList(),
+                    onChanged: (val) {
+                      setDialogState(() {
+                        selectedBatchId = val;
+                        selectedClassId = null; // Reset class
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  FutureBuilder<List<dynamic>>(
+                    future: selectedBatchId != null
+                        ? _adminService.getClasses(batchId: selectedBatchId)
+                        : Future.value([]),
+                    builder: (context, snapshot) {
+                      final classes = snapshot.data ?? [];
+                      return DropdownButtonFormField<int>(
+                        value: selectedClassId,
+                        decoration: const InputDecoration(
+                          labelText: 'Class',
+                          border: OutlineInputBorder(),
+                        ),
+                        hint: const Text('Select Class'),
+                        items: classes.map((c) {
+                          return DropdownMenuItem<int>(
+                            value: c['class_id'],
+                            child: Text(c['class']),
+                          );
+                        }).toList(),
+                        onChanged: (val) {
+                          setDialogState(() {
+                            selectedClassId = val;
+                          });
+                        },
+                      );
+                    },
+                  ),
+                ],
               ],
             ),
           ),
@@ -191,6 +281,12 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                   await _adminService.updateUser(user['mits_uid'], {
                     'name': nameController.text,
                     'role_ids': selectedRoleIds,
+                    if (user['Faculty'] != null)
+                      'department_id': selectedDeptId,
+                    if (user['Student'] != null) ...{
+                      'batch_id': selectedBatchId,
+                      'class_id': selectedClassId,
+                    },
                   });
                   Navigator.pop(context);
                   _fetchData(query: _searchController.text.trim());
