@@ -184,6 +184,17 @@ class _FacultyProfileScreenState extends State<FacultyProfileScreen> {
                   "Dept. of ${_profile!.department}",
                   style: const TextStyle(color: AppTheme.textLight),
                 ),
+                if (_profile!.hodOf != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Text(
+                      "HOD, Dept. of ${_profile!.hodOf}",
+                      style: const TextStyle(
+                        color: AppTheme.primary,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
                 const SizedBox(height: 12),
 
                 /// Assigned Classes
@@ -203,7 +214,7 @@ class _FacultyProfileScreenState extends State<FacultyProfileScreen> {
                                 ),
                                 const SizedBox(width: 8),
                                 Text(
-                                  "${ac.role}: ${ac.className}",
+                                  "${ac.role}: ${ac.className} (${ac.batchName})",
                                   style: const TextStyle(
                                     fontWeight: FontWeight.w500,
                                   ),

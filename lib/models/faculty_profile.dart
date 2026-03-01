@@ -1,12 +1,18 @@
 class AssignedClass {
   final String className;
+  final String batchName;
   final String role;
 
-  AssignedClass({required this.className, required this.role});
+  AssignedClass({
+    required this.className,
+    required this.batchName,
+    required this.role,
+  });
 
   factory AssignedClass.fromJson(Map<String, dynamic> json) {
     return AssignedClass(
       className: json['className'] ?? '',
+      batchName: json['batchName'] ?? '',
       role: json['role'] ?? '',
     );
   }
@@ -20,6 +26,7 @@ class FacultyProfile {
   final String designation;
   final List<AssignedClass> assignedClasses;
   final List<String> roles;
+  final String? hodOf;
 
   FacultyProfile({
     required this.mitsUid,
@@ -29,6 +36,7 @@ class FacultyProfile {
     required this.designation,
     required this.assignedClasses,
     required this.roles,
+    this.hodOf,
   });
 
   factory FacultyProfile.fromJson(Map<String, dynamic> json) {
@@ -42,6 +50,7 @@ class FacultyProfile {
           .map((i) => AssignedClass.fromJson(i))
           .toList(),
       roles: List<String>.from(json['roles'] ?? []),
+      hodOf: json['hodOf'],
     );
   }
 }
