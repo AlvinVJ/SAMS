@@ -495,7 +495,9 @@ class DashboardData {
   });
 
   factory DashboardData.fromJson(Map<String, dynamic> json) {
-    final stats = Map<String, int>.from(json['stats'] ?? {});
+    final stats = (json['stats'] as Map<String, dynamic>?)?.map(
+      (k, v) => MapEntry(k, (v as num).toInt())
+    ) ?? {};
     final activeRequests = (json['activeRequests'] as List? ?? [])
         .map((req) => ActiveRequest.fromJson(req))
         .toList();

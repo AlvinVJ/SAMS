@@ -1,5 +1,8 @@
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+import '../globals.dart';
+import '../widgets/notification_banner.dart';
 
 class FCMService {
   static final FCMService _instance = FCMService._internal();
@@ -26,8 +29,10 @@ class FCMService {
 
         if (message.notification != null) {
           print('Message also contained a notification: ${message.notification?.title}');
-          // TODO: If you want to show a custom in-app snackbar when a push notification
-          // arrives while the app is open, you can do it here.
+          showInAppNotification(
+            message.notification?.title ?? 'Notification',
+            message.notification?.body ?? '',
+          );
         }
       });
     }

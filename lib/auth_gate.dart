@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 import 'package:sams_final/faculty_screens/faculty_dashboard_screen.dart';
@@ -60,11 +61,17 @@ class AuthGate extends StatelessWidget {
                     final currUser = FirebaseAuth.instance.currentUser;
                     if (currUser != null) {
                       // 1. Get or Generate Persistent Device ID
-                      final prefs = await SharedPreferences.getInstance();
-                      String? deviceId = prefs.getString('device_id');
-                      if (deviceId == null) {
-                        deviceId = 'web_${const Uuid().v4()}';
-                        await prefs.setString('device_id', deviceId);
+                      String? deviceId;
+                      if (kIsWeb) {
+                        final prefs = await SharedPreferences.getInstance();
+                        deviceId = prefs.getString('device_id');
+                        if (deviceId == null) {
+                          deviceId = 'web_${const Uuid().v4()}';
+                          await prefs.setString('device_id', deviceId);
+                          print("Generated new device_id: $deviceId");
+                        } else {
+                          print("Reusing existing device_id: $deviceId");
+                        }
                       }
 
                       final idToken = await currUser.getIdToken();
@@ -76,10 +83,12 @@ class AuthGate extends StatelessWidget {
                         },
                         body: jsonEncode({
                           'fcm_token': token,
-                          'session_id': deviceId, // Use persistent ID instead of timestamp
+                          if (deviceId != null) 'session_id': deviceId, // Use persistent ID instead of timestamp
                         }),
                       );
-                      print("FCM token saved successfully with session_id: $deviceId");
+                      if (deviceId != null) {
+                        print("FCM token saved successfully with session_id: $deviceId");
+                      }
                     }
                   } catch (e) {
                     print("Error saving FCM token: $e");
