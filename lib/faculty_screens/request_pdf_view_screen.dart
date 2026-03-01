@@ -28,6 +28,37 @@ class RequestPdfViewScreen extends StatefulWidget {
 }
 
 class _RequestPdfViewScreenState extends State<RequestPdfViewScreen> {
+  bool _isLoadingDetails = false;
+  late PendingApproval _fullRequest;
+
+  @override
+  void initState() {
+    super.initState();
+    _fullRequest = widget.request;
+    // If it's a 'lite' request from a fast list, enrichment is needed
+    if (_fullRequest.formData.isEmpty) {
+      _loadFullDetails();
+    }
+  }
+
+  Future<void> _loadFullDetails() async {
+    setState(() => _isLoadingDetails = true);
+    try {
+      final fullData = await UserRequestService().fetchRequestDetails(widget.requestId);
+      setState(() {
+        _fullRequest = fullData.toPendingApproval();
+        _isLoadingDetails = false;
+      });
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to load full details: $e')),
+        );
+      }
+      setState(() => _isLoadingDetails = false);
+    }
+  }
+
   Widget _buildSidebar() {
     final profile = AuthService().userProfile;
     if (profile?.role == 'student') {
@@ -47,8 +78,11 @@ class _RequestPdfViewScreenState extends State<RequestPdfViewScreen> {
             child: Column(
               children: [
                 AppHeader(),
-                Expanded(
-                  child: Padding(
+                if (_isLoadingDetails)
+                  const Expanded(child: Center(child: CircularProgressIndicator()))
+                else
+                  Expanded(
+                    child: Padding(
                     padding: const EdgeInsets.all(32),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -69,7 +103,7 @@ class _RequestPdfViewScreenState extends State<RequestPdfViewScreen> {
                               ),
                             ),
                             const Spacer(),
-                            if (widget.request.formData['attachmentUrl'] != null) ...[
+                            if (_fullRequest.formData['attachmentUrl'] != null) ...[
                               ElevatedButton.icon(
                                 icon: const Icon(Icons.attachment),
                                 label: const Text('View Attachment'),
@@ -78,7 +112,7 @@ class _RequestPdfViewScreenState extends State<RequestPdfViewScreen> {
                                   foregroundColor: Colors.white,
                                 ),
                                 onPressed: () async {
-                                  final attachmentUrl = widget.request.formData['attachmentUrl'];
+                                  final attachmentUrl = _fullRequest.formData['attachmentUrl'];
                                   final uri = Uri.parse(attachmentUrl);
                                   if (await canLaunchUrl(uri)) {
                                     await launchUrl(
@@ -153,7 +187,7 @@ class _RequestPdfViewScreenState extends State<RequestPdfViewScreen> {
 
   Future<pw.Document> _generatePdf() async {
     final pdf = pw.Document();
-    final request = widget.request;
+    final request = _fullRequest;
 
     // Use formData for body if available, otherwise fallback to description
     final Map<String, dynamic> combinedData = Map.from(request.formData);

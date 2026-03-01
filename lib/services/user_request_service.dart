@@ -220,7 +220,7 @@ class UserRequestService {
       }
 
       final idToken = await user.getIdToken();
-      // Using query parameter for role, assuming backend supports it
+      // Using query parameter for role. Backend now uses batching for speed.
       final response = await http.get(
         Uri.parse('$baseUrl/api/faculty/request_for_approval?role=$role'),
         headers: {'Authorization': 'Bearer $idToken'},
