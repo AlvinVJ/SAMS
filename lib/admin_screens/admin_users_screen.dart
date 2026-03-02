@@ -16,6 +16,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
   bool _hasSearched = false;
   List<dynamic> _filteredUsers = [];
   List<dynamic> _roles = [];
+  List<dynamic> _userTypes = [];
   final TextEditingController _searchController = TextEditingController();
 
   @override
@@ -26,12 +27,18 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
 
   Future<void> _fetchRoles() async {
     try {
-      final roles = await _adminService.getRoles();
+      final results = await Future.wait([
+        _adminService.getRoles(),
+        _adminService.getUserTypes(),
+      ]);
       if (mounted) {
-        setState(() => _roles = roles);
+        setState(() {
+          _roles = results[0];
+          _userTypes = results[1];
+        });
       }
     } catch (e) {
-      debugPrint("Error fetching roles: $e");
+      debugPrint("Error fetching metadata: $e");
     }
   }
 
@@ -153,7 +160,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                   }).toList(),
                 ),
                 const SizedBox(height: 16),
-                DropdownButtonFormField<int>(
+                 DropdownButtonFormField<int>(
                   key: ValueKey("edit_role_${selectedRoleIds.length}"),
                   value: null,
                   decoration: const InputDecoration(
@@ -177,6 +184,41 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                     }
                   },
                 ),
+                const SizedBox(height: 20),
+                const Text(
+                  'Account Type',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 8),
+                DropdownButtonFormField<int>(
+                  value: user['user_type'],
+                  decoration: const InputDecoration(
+                    labelText: 'Identity Type',
+                    border: OutlineInputBorder(),
+                  ),
+                  items: _userTypes
+                      .map(
+                        (t) => DropdownMenuItem<int>(
+                          value: t['user_type_id'] as int,
+                          child: Text(t['user_type_tag'] ?? "Unknown"),
+                        ),
+                      )
+                      .toList(),
+                  onChanged: (val) {
+                    if (val != null) {
+                      setDialogState(() => user['user_type'] = val);
+                    }
+                  },
+                ),
+                const SizedBox(height: 16),
+                SwitchListTile(
+                  title: const Text('Banned Status'),
+                  subtitle: const Text('Prevent user from accessing the system'),
+                  value: user['isBanned'] ?? false,
+                  onChanged: (val) {
+                    setDialogState(() => user['isBanned'] = val);
+                  },
+                ),
               ],
             ),
           ),
@@ -191,6 +233,8 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                   await _adminService.updateUser(user['mits_uid'], {
                     'name': nameController.text,
                     'role_ids': selectedRoleIds,
+                    'user_type_id': user['user_type'],
+                    'is_banned': user['isBanned'] ?? false,
                   });
                   Navigator.pop(context);
                   _fetchData(query: _searchController.text.trim());
@@ -502,6 +546,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                 columns: const [
                   DataColumn(label: _Header('User')),
                   DataColumn(label: _Header('UID')),
+                  DataColumn(label: _Header('Type')),
                   DataColumn(label: _Header('Role')),
                   DataColumn(label: _Header('Affiliation')),
                   DataColumn(label: _Header('Email')),
@@ -539,13 +584,11 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
       }
     }
 
-    if (roleTags.isEmpty) {
-      if (u['UserTypes'] != null) {
-        roleTags.add(u['UserTypes']['user_type_tag']?.toString() ?? 'User');
-      } else {
-        roleTags.add('User');
-      }
+    String accountType = 'User';
+    if (u['UserTypes'] != null) {
+      accountType = u['UserTypes']['user_type_tag']?.toString() ?? 'User';
     }
+    final bool isBanned = u['isBanned'] ?? false;
 
     String affiliation = 'N/A';
     if (u['Student'] != null) {
@@ -579,13 +622,14 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  _status(isActive),
+                  _status(isActive, isBanned),
                 ],
               ),
             ],
           ),
         ),
         DataCell(_cellText(uid)),
+        DataCell(_role(accountType, isType: true)),
         DataCell(_rolesWrap(roleTags)),
         DataCell(_cellText(affiliation)),
         DataCell(_cellText(email)),
@@ -611,23 +655,23 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
     );
   }
 
-  Widget _status(bool active) {
+  Widget _status(bool active, bool banned) {
     return Row(
       children: [
         Container(
           width: 6,
           height: 6,
           decoration: BoxDecoration(
-            color: active ? Colors.green : Colors.red,
+            color: banned ? Colors.red : (active ? Colors.green : Colors.orange),
             shape: BoxShape.circle,
           ),
         ),
         const SizedBox(width: 4),
         Text(
-          active ? 'Active' : 'Blocked',
+          banned ? 'Banned' : (active ? 'Active' : 'Deactivated'),
           style: TextStyle(
             fontSize: 10,
-            color: active ? Colors.green : Colors.red,
+            color: banned ? Colors.red : (active ? Colors.green : Colors.orange),
           ),
         ),
       ],
@@ -670,20 +714,22 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
     );
   }
 
-  Widget _role(String role) {
+  Widget _role(String role, {bool isType = false}) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: AppTheme.backgroundLight,
+        color: isType ? AppTheme.primary.withOpacity(0.1) : AppTheme.backgroundLight,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppTheme.primary.withOpacity(0.2)),
+        border: Border.all(
+          color: isType ? AppTheme.primary : AppTheme.primary.withOpacity(0.2),
+        ),
       ),
       child: Text(
         role.toUpperCase(),
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 11,
           fontWeight: FontWeight.bold,
-          color: AppTheme.primary,
+          color: isType ? AppTheme.primary : AppTheme.textLight,
         ),
       ),
     );

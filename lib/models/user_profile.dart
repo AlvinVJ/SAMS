@@ -60,12 +60,12 @@ class UserProfile {
       displayName: displayName,
       photoUrl: photoUrl,
       role: data?['role'] ?? 'unknown',
-      isActive: data?['isActive'],
-      banned: data?['banned'],
-      studentId: data?['uid'],
+      isActive: data?['isActive'] ?? true,
+      banned: data?['banned'] ?? false,
+      studentId: data?['mits_uid'] ?? data?['uid'],
       createdAt: getDoB(data?['createdAt']),
       roleTags: roleTags,
-      // NEW: Parse student classification fields from Firestore
+      // NEW: Parse student classification fields from Firestore/Backend SQL
       isHosteler: data?['isHosteler'] ?? false,
       department: data?['department'] ?? '',
     );
