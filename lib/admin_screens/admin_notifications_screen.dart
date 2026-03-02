@@ -1,33 +1,31 @@
 import 'package:flutter/material.dart';
 import '../styles/app_theme.dart';
-import '../widgets/faculty_dashboard_layout.dart';
-import '../services/faculty_service.dart';
+import '../widgets/admin_dashboard_layout.dart';
+import '../services/notification_service.dart';
 import '../models/notification.dart';
 import '../widgets/shared_notification_list.dart';
 
-class FacultyNotificationsScreen extends StatefulWidget {
-  const FacultyNotificationsScreen({super.key});
+class AdminNotificationsScreen extends StatefulWidget {
+  const AdminNotificationsScreen({super.key});
 
   @override
-  State<FacultyNotificationsScreen> createState() =>
-      _FacultyNotificationsScreenState();
+  State<AdminNotificationsScreen> createState() => _AdminNotificationsScreenState();
 }
 
-class _FacultyNotificationsScreenState
-    extends State<FacultyNotificationsScreen> {
-  final FacultyService _facultyService = FacultyService();
+class _AdminNotificationsScreenState extends State<AdminNotificationsScreen> {
+  final NotificationService _notificationService = NotificationService();
   late Future<List<SAMSNotification>> _notificationsFuture;
 
   @override
   void initState() {
     super.initState();
-    _notificationsFuture = _facultyService.getFacultyNotifications();
+    _notificationsFuture = _notificationService.fetchNotifications();
   }
 
   @override
   Widget build(BuildContext context) {
-    return FacultyDashboardLayout(
-      activeRoute: '/faculty/notifications',
+    return AdminDashboardLayout(
+      activeRoute: '/admin/notifications',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -48,7 +46,7 @@ class _FacultyNotificationsScreenState
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Updates about requests you processed and actions required by you.',
+                      'Stay updated on critical system alerts and activities.',
                       style: Theme.of(
                         context,
                       ).textTheme.bodyLarge?.copyWith(color: AppTheme.textLight),
@@ -60,9 +58,9 @@ class _FacultyNotificationsScreenState
                 children: [
                   TextButton(
                     onPressed: () async {
-                      await _facultyService.markAllNotificationsAsRead();
+                      await _notificationService.markAllAsRead();
                       setState(() {
-                        _notificationsFuture = _facultyService.getFacultyNotifications();
+                        _notificationsFuture = _notificationService.fetchNotifications();
                       });
                     },
                     child: const Text(
@@ -74,7 +72,7 @@ class _FacultyNotificationsScreenState
                   TextButton(
                     onPressed: () {
                       setState(() {
-                        _notificationsFuture = _facultyService.getFacultyNotifications();
+                        _notificationsFuture = _notificationService.fetchNotifications();
                       });
                     },
                     child: const Text(
@@ -89,15 +87,15 @@ class _FacultyNotificationsScreenState
 
           const SizedBox(height: 32),
 
-          // Notifications List
+          // Shared Notifications List
           SharedNotificationList(
             notificationsFuture: _notificationsFuture,
             onMarkAsRead: (notificationId) async {
-              await _facultyService.markNotificationAsRead(notificationId);
+              await _notificationService.markAsRead(notificationId);
             },
             onRefresh: () {
               setState(() {
-                _notificationsFuture = _facultyService.getFacultyNotifications();
+                _notificationsFuture = _notificationService.fetchNotifications();
               });
             },
           ),

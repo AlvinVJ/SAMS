@@ -75,6 +75,16 @@ class AdminSidebar extends StatelessWidget {
                   ),
                 ),
                 _NavItem(
+                  icon: Icons.notifications,
+                  label: 'Notifications',
+                  isActive: activeRoute == '/admin/notifications',
+                  isCollapsed: isCollapsed,
+                  onTap: () => Navigator.pushReplacementNamed(
+                    context,
+                    '/admin/notifications',
+                  ),
+                ),
+                _NavItem(
                   icon: Icons.description,
                   label: 'Procedures',
                   isActive: activeRoute == '/admin/procedures',
