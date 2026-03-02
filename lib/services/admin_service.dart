@@ -202,6 +202,16 @@ class AdminService {
     throw Exception("Failed to fetch user types");
   }
 
+  Future<void> createUserType(String tag, String desc) async {
+    final token = await _getToken();
+    final response = await http.post(
+      Uri.parse("$_baseUrl/api/admin/user-type"),
+      headers: _headers(token!),
+      body: json.encode({"user_type_tag": tag, "description": desc}),
+    );
+    if (response.statusCode != 201) throw Exception("Failed to create user type");
+  }
+
   Future<void> createRole(String tag, String desc) async {
     final token = await _getToken();
     final response = await http.post(

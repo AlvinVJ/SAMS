@@ -16,7 +16,7 @@ class AuthService {
   AuthService._internal();
 
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  final FirebaseFirestore _db = FirebaseFirestore.instance;
+  // final FirebaseFirestore _db = FirebaseFirestore.instance; // Retired
   List<String> roleTags = [];
 
   Stream<User?> get authStateChanges => _auth.authStateChanges();
@@ -28,115 +28,65 @@ class AuthService {
 
   Future<AuthResolution> resolveUser() async {
     try {
-      // print("ResolveUser: Started");
       final user = currentUser;
 
       if (user == null) {
-        //   print("ResolveUser: User is NULL");
         return AuthResolution.unauthenticated;
       }
 
       final email = user.email;
-      String emailPrefix = extractEmailPrefix(email);
-      final uid = user.uid;
-
       if (!isMgitsEmail(email)) {
-        //  print("ResolveUser: invalid domain");
         return AuthResolution.unauthorized;
       }
 
-      // all are mgits emails
-      final profileDoc = await _db
-          .collection('profiles')
-          .doc(emailPrefix)
-          .get();
-      //print("ResolveUser: Profile Exists? ${profileDoc.exists}");
-
-      final backendBaseUrl = Environment.apiUrl;
+      // Everything is now handled by the backend API as a single source of truth
       final backendData = await sendUserProfileToBackend(
-        baseUrl: backendBaseUrl,
+        baseUrl: Environment.apiUrl,
       );
+      
       final String? role = backendData['role'];
+      final bool isActive = backendData['isActive'] ?? true;
+      final bool banned = backendData['banned'] ?? false;
 
-      if (!profileDoc.exists) {
-        final snapshot = await _db
-            .collection('profiles')
-            .doc(emailPrefix)
-            .get();
-        // handling for faculty role and then calling the api end point.
-        if (snapshot.data()?['role'] == 'faculty') {
-          try {
-            roleTags = await fetchRoleTags();
-          } catch (e) {
-            print('Error : $e');
-          }
+      if (role == 'faculty' || role == 'admin') {
+        try {
+          roleTags = await fetchRoleTags();
+        } catch (e) {
+          print('Error fetching role tags: $e');
         }
-        _userProfile = UserProfile.fromMap(
-          data: snapshot.data(),
-          authUid: user.uid,
-          email: email!,
-          displayName: user.displayName,
-          photoUrl: user.photoURL,
-          roleTags: roleTags,
-        );
+      }
 
-        switch (role) {
-          case 'admin':
-            return AuthResolution.admin;
-          case 'faculty':
-            return AuthResolution.faculty;
-          case 'student':
-            return AuthResolution.student;
-          default:
-            return AuthResolution.notAdded;
-        }
-      } else {
-        final data = profileDoc.data();
-        if (data == null) {
-          return AuthResolution.unauthenticated;
-        } else {
-          if (data['role'] == 'faculty') {
-            //await call roletag api /common/get_role_tags
-            try {
-              roleTags = await fetchRoleTags();
-            } catch (e) {
-              print('Error : $e');
-            }
-          }
-        }
+      _userProfile = UserProfile.fromMap(
+        data: backendData,
+        authUid: user.uid,
+        email: email!,
+        displayName: user.displayName,
+        photoUrl: user.photoURL,
+        roleTags: roleTags,
+      );
 
-        print("ResolveUser: Loading Existing Profile...");
-        _userProfile = UserProfile.fromMap(
-          data: data,
-          authUid: user.uid,
-          email: email!,
-          displayName: user.displayName,
-          photoUrl: user.photoURL,
-          roleTags: roleTags,
-        );
-        // print("ResolveUser: Memory Profile Set");
-        print(_userProfile);
-        _printProfileDetails();
-        if (data['isActive'] == true) {
-          if (data['banned'] != true) {
-            switch (_userProfile!.role) {
-              case 'admin':
-                return AuthResolution.admin;
-              case 'faculty':
-                return AuthResolution.faculty;
-              case 'student':
-                return AuthResolution.student;
-              default:
-                return AuthResolution.notAdded;
-            }
-          }
-          return AuthResolution.banned;
-        }
-        return AuthResolution.inactive;
+      print("ResolveUser: UI Profile Initialized from Backend");
+      _printProfileDetails();
+
+      if (!isActive) return AuthResolution.inactive;
+      if (banned) return AuthResolution.banned;
+
+      switch (role) {
+        case 'admin':
+          return AuthResolution.admin;
+        case 'faculty':
+          return AuthResolution.faculty;
+        case 'student':
+          return AuthResolution.student;
+        default:
+          return AuthResolution.notAdded;
       }
     } catch (e, stackTrace) {
       print("CRITICAL ERROR in resolveUser: $e");
-      print(stackTrace);
+      // Handle the case where user is not whitelisted in SQL
+      if (e.toString().contains('authorized') || e.toString().contains('not found')) {
+        return AuthResolution.notAdded;
+      }
       return AuthResolution.unauthenticated;
     }
   }
@@ -150,13 +100,8 @@ class AuthService {
   }
 
   // -------------------------------
-  // Firestore helpers (read-only)
+  // Static Helpers
   // -------------------------------
-
-  Future<String?> getAllowedRole(String? email) async {
-    final doc = await _db.collection('userdetails').doc(email).get();
-    return doc.data()?['role'];
-  }
 
   bool isStudentEmail(String? email) {
     final regex = RegExp(r'^\d+[a-zA-Z]+\d+@mgits\.ac\.in$');
@@ -172,7 +117,7 @@ class AuthService {
   bool isMgitsEmail(String? email) {
     if (email == null) return false;
     // return (email.split('@').last == 'mgits.ac.in');
-    return true;
+    return true; 
   }
 
   // -------------------------------
