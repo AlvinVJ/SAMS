@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../styles/app_theme.dart';
-import '../widgets/app_header.dart'; // 👈 changed header
+import '../widgets/app_header.dart';
 import '../widgets/faculty_sidebar.dart';
 
 /// =====================
@@ -42,7 +42,7 @@ class FacultyRequestHistoryScreen extends StatelessWidget {
       requestId: 'REQ-2023-014',
       date: 'Sep 12, 2023',
       status: 'Approved',
-      comment: 'Final approval granted by Dean\'s Office on Sep 15, 2023.',
+      comment: "Final approval granted by Dean's Office on Sep 15, 2023.",
     ),
     FacultyRequestHistory(
       title: 'Curriculum Change Proposal - CS101',
@@ -61,20 +61,16 @@ class FacultyRequestHistoryScreen extends StatelessWidget {
       body: Row(
         children: [
           const FacultySidebar(activeRoute: '/faculty/history'),
-
           Expanded(
             child: Column(
               children: [
-                /// 👇 REPLACED AppHeader with FacultyAppHeader
                 const AppHeader(),
-
                 Expanded(
                   child: SingleChildScrollView(
                     padding: const EdgeInsets.all(32),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        /// Breadcrumb
                         Row(
                           children: const [
                             Text(
@@ -88,10 +84,7 @@ class FacultyRequestHistoryScreen extends StatelessWidget {
                             ),
                           ],
                         ),
-
                         const SizedBox(height: 16),
-
-                        /// Title Row
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
@@ -101,7 +94,7 @@ class FacultyRequestHistoryScreen extends StatelessWidget {
                                 Text(
                                   'My Request History',
                                   style: TextStyle(
-                                    fontSize: 28, // slightly reduced
+                                    fontSize: 28,
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
@@ -126,18 +119,14 @@ class FacultyRequestHistoryScreen extends StatelessWidget {
                             ),
                           ],
                         ),
-
                         const SizedBox(height: 24),
-
-                        /// Stats (reduced height)
                         GridView.count(
                           crossAxisCount: 4,
                           shrinkWrap: true,
                           physics: const NeverScrollableScrollPhysics(),
                           crossAxisSpacing: 16,
                           mainAxisSpacing: 16,
-                          childAspectRatio:
-                              2.7, // 👈 WIDER THAN TALL = LOWER CARD HEIGHT
+                          childAspectRatio: 2.7,
                           children: const [
                             _StatCard(
                               label: 'Total Requests',
@@ -164,10 +153,7 @@ class FacultyRequestHistoryScreen extends StatelessWidget {
                             ),
                           ],
                         ),
-
                         const SizedBox(height: 24),
-
-                        /// Search + Filters
                         Container(
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
@@ -198,10 +184,7 @@ class FacultyRequestHistoryScreen extends StatelessWidget {
                             ],
                           ),
                         ),
-
                         const SizedBox(height: 24),
-
-                        /// Request Cards
                         Column(
                           children: requests
                               .map((r) => _HistoryCard(request: r))
@@ -220,10 +203,6 @@ class FacultyRequestHistoryScreen extends StatelessWidget {
   }
 }
 
-/// =====================
-/// COMPONENTS
-/// =====================
-
 class _StatCard extends StatelessWidget {
   final String label;
   final String value;
@@ -241,18 +220,15 @@ class _StatCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = color ?? Colors.blueGrey;
     return Container(
-      padding: const EdgeInsets.symmetric(
-        vertical: 12,
-        horizontal: 16,
-      ), // 👈 smaller
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(10), // slightly smaller
+        borderRadius: BorderRadius.circular(10),
         border: Border(left: BorderSide(color: c, width: 4)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.center, // centers vertically
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(icon, color: c, size: 18),
           const SizedBox(height: 6),
@@ -260,10 +236,7 @@ class _StatCard extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             value,
-            style: const TextStyle(
-              fontSize: 20, // 👈 smaller
-              fontWeight: FontWeight.bold,
-            ),
+            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
           ),
         ],
       ),
@@ -325,7 +298,6 @@ class _HistoryCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          /// Header
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -349,10 +321,7 @@ class _HistoryCard extends StatelessWidget {
               TextButton(onPressed: () {}, child: const Text('View Details')),
             ],
           ),
-
           const SizedBox(height: 8),
-
-          /// Meta
           Row(
             children: [
               Text(
@@ -366,10 +335,7 @@ class _HistoryCard extends StatelessWidget {
               ),
             ],
           ),
-
           const SizedBox(height: 16),
-
-          /// Comment
           Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
@@ -389,10 +355,7 @@ class _HistoryCard extends StatelessWidget {
               ],
             ),
           ),
-
           const SizedBox(height: 16),
-
-          /// Actions
           Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [

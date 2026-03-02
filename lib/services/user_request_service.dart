@@ -12,8 +12,8 @@ class UserRequest {
   final String level;
   final String status;
   final Color statusColor;
-  final int currentLevel;
-  final int totalLevels;
+  final num currentLevel;
+  final num totalLevels;
   final List<ApprovalAction> approvalHistory;
   final Map<String, dynamic> formData;
   final String studentName;
@@ -97,8 +97,8 @@ class UserRequest {
                   ? "Rejected"
                   : (json['status'] == 3 ? "Withdrawn" : "Unknown"))),
       statusColor: parseStatusColor(json['color']),
-      currentLevel: json['current_level'] ?? 1,
-      totalLevels: json['total_levels'] ?? 1,
+      currentLevel: num.tryParse(json['current_level']?.toString() ?? '1') ?? 1,
+      totalLevels: num.tryParse(json['total_levels']?.toString() ?? '1') ?? 1,
       approvalHistory: historyJson
           .map((h) => ApprovalAction.fromJson(Map<String, dynamic>.from(h)))
           .toList(),
@@ -220,7 +220,7 @@ class UserRequestService {
       }
 
       final idToken = await user.getIdToken();
-      // Using query parameter for role, assuming backend supports it
+      // Using query parameter for role. Backend now uses batching for speed.
       final response = await http.get(
         Uri.parse('$baseUrl/api/faculty/request_for_approval?role=$role'),
         headers: {'Authorization': 'Bearer $idToken'},
@@ -340,7 +340,7 @@ class UserRequestService {
 }
 
 class ApprovalAction {
-  final int level;
+  final num level;
   final String approverName;
   final String role;
   final String status;
@@ -358,9 +358,7 @@ class ApprovalAction {
 
   factory ApprovalAction.fromJson(Map<String, dynamic> json) {
     return ApprovalAction(
-      level: json['level'] is int
-          ? json['level']
-          : int.tryParse(json['level']?.toString() ?? '0') ?? 0,
+      level: num.tryParse(json['level']?.toString() ?? '0') ?? 0,
       approverName: json['approverName']?.toString() ?? 'Unknown',
       role: json['role']?.toString().replaceAll('_', ' ').toUpperCase() ?? '',
       status: json['status']?.toString() ?? 'APPROVED',
@@ -462,7 +460,7 @@ class ActiveRequest {
   final String title;
   final String date;
   final String status;
-  final int currentLevel;
+  final num currentLevel;
 
   ActiveRequest({
     required this.id,
@@ -478,7 +476,7 @@ class ActiveRequest {
       title: json['title'] ?? '',
       date: json['date'] ?? '',
       status: json['status'] ?? '',
-      currentLevel: json['currentLevel'] ?? 1,
+      currentLevel: num.tryParse(json['currentLevel']?.toString() ?? '1') ?? 1,
     );
   }
 }

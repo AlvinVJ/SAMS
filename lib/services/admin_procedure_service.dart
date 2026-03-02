@@ -195,6 +195,7 @@ class ProcedureDetail {
   final List<dynamic> approvalLevels;
   final List<String> visibility;
   final String? systemHook;
+  final String? hookTrigger;
   final bool isHosteller;
 
   ProcedureDetail({
@@ -205,6 +206,7 @@ class ProcedureDetail {
     required this.approvalLevels,
     required this.visibility,
     this.systemHook,
+    this.hookTrigger,
     this.isHosteller = false,
   });
 
@@ -217,6 +219,7 @@ class ProcedureDetail {
       approvalLevels: json['approvalLevels'] ?? [],
       visibility: List<String>.from(json['visibility'] ?? []),
       systemHook: json['system_hook'],
+      hookTrigger: json['hook_trigger'],
       isHosteller: json['is_hosteller'] == true,
     );
   }

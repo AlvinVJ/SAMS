@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../styles/app_theme.dart';
-import '../widgets/app_header.dart';
-import '../widgets/faculty_sidebar.dart';
+import '../widgets/faculty_dashboard_layout.dart';
 import '../services/user_request_service.dart';
 import '../services/request_approval_service.dart';
 import 'request_pdf_view_screen.dart';
@@ -40,6 +39,7 @@ class _FacultyRequestsForApprovalScreenState
     setState(() => _isLoading = true);
     try {
       final tags = await UserRequestService().fetchRoleTags();
+      tags.add("General");
       setState(() {
         roleTags = tags;
         if (roleTags.isNotEmpty) {
@@ -95,125 +95,96 @@ class _FacultyRequestsForApprovalScreenState
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppTheme.backgroundLight,
-      body: Row(
+    return FacultyDashboardLayout(
+      activeRoute: '/faculty/requests',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const FacultySidebar(activeRoute: '/faculty/requests'),
-          Expanded(
-            child: Column(
-              children: [
-                /// HEADER
-                AppHeader(
-                  key: ValueKey(activeRole), // Force rebuild if needed
+          /// HEADER + ROLE SWITCH
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Requests for Approval',
+                    style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+                  ),
+                  SizedBox(height: 6),
+                  Text(
+                    'Review pending requests and take action.',
+                    style: TextStyle(color: AppTheme.textLight),
+                  ),
+                ],
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: Colors.grey.shade300),
                 ),
-
-                Expanded(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.all(32),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        /// HEADER + ROLE SWITCH
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Requests for Approval',
-                                  style: TextStyle(
-                                    fontSize: 28,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                SizedBox(height: 6),
-                                Text(
-                                  'Review pending requests and take action.',
-                                  style: TextStyle(color: AppTheme.textLight),
-                                ),
-                              ],
-                            ),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(10),
-                                border: Border.all(color: Colors.grey.shade300),
-                              ),
-                              child: DropdownButtonHideUnderline(
-                                child: DropdownButton<String>(
-                                  value: activeRole,
-                                  items: roleTags
-                                      .map(
-                                        (role) => DropdownMenuItem(
-                                          value: role,
-                                          child: Text(role),
-                                        ),
-                                      )
-                                      .toList(),
-                                  onChanged: _onRoleChanged,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 28),
-
-                        /// CONTENT AREA
-                        if (_isLoading)
-                          const Center(
-                            child: Padding(
-                              padding: EdgeInsets.all(50.0),
-                              child: CircularProgressIndicator(),
-                            ),
-                          )
-                        else if (_errorMessage != null)
-                          Center(
-                            child: Padding(
-                              padding: const EdgeInsets.all(50.0),
-                              child: Text(
-                                _errorMessage!,
-                                style: const TextStyle(color: Colors.red),
-                              ),
-                            ),
-                          )
-                        else if (_requests.isEmpty)
-                          const Center(
-                            child: Padding(
-                              padding: EdgeInsets.all(50.0),
-                              child: Text(
-                                'No pending requests found for this role.',
-                                style: TextStyle(color: Colors.grey),
-                              ),
-                            ),
-                          )
-                        else
-                          GridView.builder(
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            itemCount: _requests.length,
-                            gridDelegate:
-                                const SliverGridDelegateWithFixedCrossAxisCount(
-                                  crossAxisCount: 2,
-                                  crossAxisSpacing: 24,
-                                  mainAxisSpacing: 24,
-                                  childAspectRatio: 1.55,
-                                ),
-                            itemBuilder: (context, index) {
-                              return _RequestCard(request: _requests[index]);
-                            },
-                          ),
-                      ],
-                    ),
+                child: DropdownButtonHideUnderline(
+                  child: DropdownButton<String>(
+                    value: activeRole,
+                    items: roleTags
+                        .map(
+                          (role) =>
+                              DropdownMenuItem(value: role, child: Text(role)),
+                        )
+                        .toList(),
+                    onChanged: _onRoleChanged,
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
+          const SizedBox(height: 28),
+
+          /// CONTENT AREA
+          if (_isLoading)
+            const Center(
+              child: Padding(
+                padding: EdgeInsets.all(50.0),
+                child: CircularProgressIndicator(),
+              ),
+            )
+          else if (_errorMessage != null)
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.all(50.0),
+                child: Text(
+                  _errorMessage!,
+                  style: const TextStyle(color: Colors.red),
+                ),
+              ),
+            )
+          else if (_requests.isEmpty)
+            const Center(
+              child: Padding(
+                padding: EdgeInsets.all(50.0),
+                child: Text(
+                  'No pending requests found for this role.',
+                  style: TextStyle(color: Colors.grey),
+                ),
+              ),
+            )
+          else
+            GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: _requests.length,
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                crossAxisSpacing: 24,
+                mainAxisSpacing: 24,
+                childAspectRatio: 1.55,
+              ),
+              itemBuilder: (context, index) {
+                return _RequestCard(request: _requests[index]);
+              },
+            ),
         ],
       ),
     );

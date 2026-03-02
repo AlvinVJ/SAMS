@@ -40,7 +40,8 @@ class _AdminEditProcedureScreenState extends State<AdminEditProcedureScreen> {
   final List<FormFieldDraft> _formFields = [];
   final _formKey = GlobalKey<FormState>();
   final List<ApprovalLevelDraft> _approvalLevels = [];
-  String? _selectedHook;
+   String? _selectedHook;
+  String? _hookTrigger; // Standardized hook trigger
   bool _isHosteller = false;
 
   bool _isLoading = true;
@@ -91,7 +92,8 @@ class _AdminEditProcedureScreenState extends State<AdminEditProcedureScreen> {
             .map((v) => v.toString().toLowerCase())
             .toSet();
 
-        _selectedHook = procedure.systemHook;
+         _selectedHook = procedure.systemHook;
+        _hookTrigger = procedure.hookTrigger;
         _isHosteller = procedure.isHosteller;
 
         // Parse form fields
@@ -121,6 +123,66 @@ class _AdminEditProcedureScreenState extends State<AdminEditProcedureScreen> {
 
   void _onFormBuilderClick() {
     setState(() {
+      _hasForm = true;
+    });
+  }
+
+  void _ensureHookFields() {
+    if (_selectedHook == null) return;
+
+    List<FormFieldDraft> requiredFields = [];
+
+    if (_selectedHook == 'PLACEMENT_BULK') {
+      requiredFields = [
+        FormFieldDraft(
+          fieldId: 'company_name',
+          label: 'Company Name',
+          type: FormFieldType.text,
+          required: true,
+        ),
+        FormFieldDraft(
+          fieldId: 'test_date',
+          label: 'Test Date',
+          type: FormFieldType.date,
+          required: true,
+        ),
+        FormFieldDraft(
+          fieldId: 'start_time',
+          label: 'Start Time',
+          type: FormFieldType.time,
+          required: true,
+        ),
+        FormFieldDraft(
+          fieldId: 'end_time',
+          label: 'End Time',
+          type: FormFieldType.time,
+          required: true,
+        ),
+        FormFieldDraft(
+          fieldId: 'hook_data',
+          label: 'Student List (CSV with UIDs)',
+          type: FormFieldType.csv,
+          required: true,
+        ),
+      ];
+    } else if (_selectedHook == 'OVERNIGHT_HOSTEL') {
+      requiredFields = [
+        FormFieldDraft(
+          fieldId: 'hook_data',
+          label: 'Student List (CSV with UIDs)',
+          type: FormFieldType.csv,
+          required: true,
+        ),
+      ];
+    }
+
+    setState(() {
+      for (var req in requiredFields) {
+        bool exists = _formFields.any((f) => f.fieldId == req.fieldId || f.label == req.label);
+        if (!exists) {
+          _formFields.add(req);
+        }
+      }
       _hasForm = true;
     });
   }
@@ -375,6 +437,7 @@ class _AdminEditProcedureScreenState extends State<AdminEditProcedureScreen> {
       "title": _titleController.text.trim(),
       "desc": _descriptionController.text.trim(),
       "system_hook": _selectedHook,
+      "hook_trigger": _hookTrigger,
       "visibility": _visibility.contains("all")
           ? ["all"]
           : _visibility.toList(),
@@ -661,14 +724,56 @@ class _AdminEditProcedureScreenState extends State<AdminEditProcedureScreen> {
                           value: 'PLACEMENT_BULK',
                           child: Text('Placement Attendance (Bulk)'),
                         ),
+                        DropdownMenuItem(
+                          value: 'OVERNIGHT_HOSTEL',
+                          child: Text('Overnight Hostel Notification (Bulk)'),
+                        ),
                       ],
-                      onChanged: (val) {
+                       onChanged: (val) {
                         setState(() {
                           _selectedHook = val;
+                          // Default trigger if none set
+                          if (_selectedHook != null && _hookTrigger == null) {
+                            _hookTrigger = 'START';
+                          }
+
+                          // Automatically add mandatory fields based on hook selection
+                          if (_selectedHook != null) {
+                            _ensureHookFields();
+                          }
                         });
                       },
                     ),
-                    if (_selectedHook == 'PLACEMENT_BULK') ...[
+                    if (_selectedHook != null) ...[
+                      const SizedBox(height: 12),
+                      DropdownButtonFormField<String>(
+                        value: _hookTrigger ?? 'START',
+                        decoration: const InputDecoration(
+                          labelText: 'Hook Execution Timing',
+                          border: OutlineInputBorder(),
+                          contentPadding: EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
+                          ),
+                        ),
+                        items: const [
+                          DropdownMenuItem(
+                            value: 'START',
+                            child: Text('On Submission (Start)'),
+                          ),
+                          DropdownMenuItem(
+                            value: 'END',
+                            child: Text('After Final Approval (End)'),
+                          ),
+                        ],
+                        onChanged: (val) {
+                          setState(() {
+                            _hookTrigger = val;
+                          });
+                        },
+                      ),
+                    ],
+                    if (_selectedHook == 'PLACEMENT_BULK' || _selectedHook == 'OVERNIGHT_HOSTEL') ...[
                       const SizedBox(height: 12),
                       Container(
                         padding: const EdgeInsets.all(8),
@@ -683,7 +788,9 @@ class _AdminEditProcedureScreenState extends State<AdminEditProcedureScreen> {
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
-                                'Placement Hook requires a "File" field and "Class Advisor" as the first approval level.',
+                                _selectedHook == 'PLACEMENT_BULK'
+                                    ? 'Placement Hook requires a "File" field and "Class Advisor" as the first approval level.'
+                                    : 'Hostel Hook requires a "File" field. It will automatically route hostellers to their respective wardens.',
                                 style: TextStyle(
                                   fontSize: 12,
                                   color: Colors.blue[800],

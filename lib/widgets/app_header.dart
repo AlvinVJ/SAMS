@@ -4,7 +4,8 @@ import '../styles/app_theme.dart';
 import '../services/auth_service.dart';
 
 class AppHeader extends StatefulWidget implements PreferredSizeWidget {
-  const AppHeader({super.key});
+  final VoidCallback? onMenuPressed;
+  const AppHeader({super.key, this.onMenuPressed});
 
   @override
   State<AppHeader> createState() => _AppHeaderState();
@@ -55,8 +56,18 @@ class _AppHeaderState extends State<AppHeader> {
         border: Border(bottom: BorderSide(color: Colors.transparent)),
       ),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.end,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
+          // Left Toggle
+          if (widget.onMenuPressed != null)
+            IconButton(
+              icon: const Icon(Icons.menu),
+              onPressed: widget.onMenuPressed,
+              color: AppTheme.textDark,
+            )
+          else
+            const SizedBox.shrink(),
+
           // Right Actions
           Row(
             children: [

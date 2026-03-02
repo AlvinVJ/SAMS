@@ -36,11 +36,11 @@ class _DataImportScreenState extends State<DataImportScreen> {
         setState(() => _isLoading = true);
 
         if (type == 'club') {
-          // Both users and clubs use the same service method for now
-          await _adminService.uploadUsersFile(bytes, platformFile.name);
-        } else {
-          // type is student or faculty
-          await _adminService.uploadUsersFile(bytes, platformFile.name);
+          await _adminService.uploadClubsFile(bytes, platformFile.name);
+        } else if (type == 'student') {
+          await _adminService.uploadStudentsFile(bytes, platformFile.name);
+        } else if (type == 'faculty') {
+          await _adminService.uploadFacultyFile(bytes, platformFile.name);
         }
 
         ScaffoldMessenger.of(context).showSnackBar(
@@ -260,9 +260,8 @@ class _DataImportScreenState extends State<DataImportScreen> {
                         ['mits_uid', 'Yes', 'Unique Student ID'],
                         ['name', 'Yes', 'Full Name'],
                         ['email', 'Yes', 'Institutional Email'],
-                        ['user_type_tag', 'Yes', '"STUDENT"'],
-                        ['batch_id', 'Yes', 'Batch ID'],
-                        ['class_id', 'Yes', 'Class ID'],
+                        ['batch', 'Yes', 'Batch Name (e.g. 2022-2026)'],
+                        ['class', 'Yes', 'Class Name (e.g. CS1A)'],
                         ['hosteller', 'Yes', '"true" / "false"'],
                         ['gender', 'Yes', 'Male / Female'],
                         ['phone', 'Yes', 'Mobile Number'],
@@ -272,18 +271,17 @@ class _DataImportScreenState extends State<DataImportScreen> {
                         ['mits_uid', 'Yes', 'Employee ID'],
                         ['name', 'Yes', 'Full Name'],
                         ['email', 'Yes', 'Institutional Email'],
-                        ['user_type_tag', 'Yes', '"FACULTY"'],
-                        ['department_id', 'Yes', 'Department ID'],
-                        ['role_tag', 'No', 'e.g. HOD'],
+                        ['department', 'Yes', 'Department Name (e.g. CSE)'],
                       ]),
                       _formatTable([
-                        ['mits_uid', 'Yes', 'Unique ID'],
-                        ['name', 'Yes', 'Full Name'],
-                        ['email', 'Yes', 'Institutional Email'],
-                        ['user_type_tag', 'Yes', 'STUDENT / FACULTY'],
-                        ['role_tag', 'No', 'e.g. HOD, ADMIN'],
-                        ['club_role_tag', 'No', 'e.g. COORDINATOR'],
-                        ['club_id', 'No', 'ID of the club (if mapping)'],
+                        ['club_name', 'Yes', 'Title of the Club'],
+                        ['club_department', 'No', 'Dept Name (if applicable)'],
+                        ['club_lead', 'Yes', 'MITS UID of the Lead'],
+                        [
+                          'club_coordinator',
+                          'Yes',
+                          'MITS UID of the Coordinator',
+                        ],
                       ]),
                     ],
                   ),

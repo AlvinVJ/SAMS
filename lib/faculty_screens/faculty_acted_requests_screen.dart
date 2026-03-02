@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/user_request_service.dart';
 import '../styles/app_theme.dart';
-import '../widgets/app_header.dart';
-import '../widgets/faculty_sidebar.dart';
+import '../widgets/faculty_dashboard_layout.dart';
 import 'request_pdf_view_screen.dart';
 
 class FacultyActedRequestsScreen extends StatefulWidget {
@@ -47,127 +46,100 @@ class _FacultyActedRequestsScreenState
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppTheme.backgroundLight,
-      body: Row(
+    return FacultyDashboardLayout(
+      activeRoute: '/faculty/request-status',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const FacultySidebar(activeRoute: '/faculty/request-status'),
-          Expanded(
-            child: Column(
-              children: [
-                const AppHeader(),
-                Expanded(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.all(32),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // ================= HEADER =================
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: const [
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'My Acted Requests',
-                                  style: TextStyle(
-                                    fontSize: 28,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                SizedBox(height: 6),
-                                Text(
-                                  'Historical log of requests you have reviewed and their current status.',
-                                  style: TextStyle(color: AppTheme.textLight),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-
-                        const SizedBox(height: 24),
-
-                        // ================= FILTER BAR =================
-                        TextField(
-                          decoration: InputDecoration(
-                            hintText:
-                                'Search by Request ID, Student Name, or Type',
-                            prefixIcon: const Icon(Icons.search),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                          ),
-                        ),
-
-                        const SizedBox(height: 24),
-
-                        // ================= TABLE =================
-                        Container(
-                          width: double.infinity,
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: Colors.grey.shade200),
-                          ),
-                          child: _isLoading
-                              ? const Padding(
-                                  padding: EdgeInsets.all(64.0),
-                                  child: Center(
-                                    child: CircularProgressIndicator(),
-                                  ),
-                                )
-                              : _error != null
-                              ? Padding(
-                                  padding: const EdgeInsets.all(64.0),
-                                  child: Center(
-                                    child: Text(
-                                      _error!,
-                                      style: const TextStyle(color: Colors.red),
-                                    ),
-                                  ),
-                                )
-                              : Column(
-                                  children: [
-                                    _tableHeader(),
-                                    const Divider(height: 1),
-                                    if (_requests.isEmpty)
-                                      const Padding(
-                                        padding: EdgeInsets.all(64.0),
-                                        child: Center(
-                                          child: Text(
-                                            'No request history found.',
-                                          ),
-                                        ),
-                                      )
-                                    else
-                                      ..._requests.asMap().entries.map(
-                                        (entry) {
-                                          final index = entry.key;
-                                          final req = entry.value;
-                                          return _tableRow(
-                                            index: index,
-                                            requestId: req.id,
-                                            type: req.title,
-                                            requestedBy: 'Student',
-                                            status: req.status,
-                                            date: req.date,
-                                            color: req.statusColor,
-                                            levelText:
-                                                'Level ${req.currentLevel} of ${req.totalLevels}',
-                                            request: req,
-                                          );
-                                        },
-                                      ),
-                                  ],
-                                ),
-                        ),
-                      ],
-                    ),
+          // ================= HEADER =================
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: const [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'My Acted Requests',
+                    style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
                   ),
-                ),
-              ],
+                  SizedBox(height: 6),
+                  Text(
+                    'Historical log of requests you have reviewed and their current status.',
+                    style: TextStyle(color: AppTheme.textLight),
+                  ),
+                ],
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 24),
+
+          // ================= FILTER BAR =================
+          TextField(
+            decoration: InputDecoration(
+              hintText: 'Search by Request ID, Student Name, or Type',
+              prefixIcon: const Icon(Icons.search),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
             ),
+          ),
+
+          const SizedBox(height: 24),
+
+          // ================= TABLE =================
+          Container(
+            width: double.infinity,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.grey.shade200),
+            ),
+            child: _isLoading
+                ? const Padding(
+                    padding: EdgeInsets.all(64.0),
+                    child: Center(child: CircularProgressIndicator()),
+                  )
+                : _error != null
+                ? Padding(
+                    padding: const EdgeInsets.all(64.0),
+                    child: Center(
+                      child: Text(
+                        _error!,
+                        style: const TextStyle(color: Colors.red),
+                      ),
+                    ),
+                  )
+                : Column(
+                    children: [
+                      _tableHeader(),
+                      const Divider(height: 1),
+                      if (_requests.isEmpty)
+                        const Padding(
+                          padding: EdgeInsets.all(64.0),
+                          child: Center(
+                            child: Text('No request history found.'),
+                          ),
+                        )
+                      else
+                        ..._requests.asMap().entries.map((entry) {
+                          final index = entry.key;
+                          final req = entry.value;
+                          return _tableRow(
+                            index: index,
+                            requestId: req.id,
+                            type: req.title,
+                            requestedBy: 'Student',
+                            status: req.status,
+                            date: req.date,
+                            color: req.statusColor,
+                            levelText:
+                                'Level ${req.currentLevel} of ${req.totalLevels}',
+                            request: req,
+                          );
+                        }),
+                    ],
+                  ),
           ),
         ],
       ),
@@ -437,7 +409,7 @@ class _FacultyActedRequestsScreenState
   }
 
   Widget _buildTimelineItem({
-    required int level,
+    required num level,
     required String status,
     required String approver,
     String? comment,

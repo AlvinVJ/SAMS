@@ -5,7 +5,7 @@ import '../styles/app_theme.dart';
 import 'app_header.dart';
 import 'app_sidebar.dart';
 
-class DashboardLayout extends StatelessWidget {
+class DashboardLayout extends StatefulWidget {
   final Widget child;
   final String? activeRoute;
   final bool disableSidebar;
@@ -17,7 +17,20 @@ class DashboardLayout extends StatelessWidget {
     this.disableSidebar = false,
   });
 
-   Widget _buildSidebar() {
+  @override
+  State<DashboardLayout> createState() => _DashboardLayoutState();
+}
+
+class _DashboardLayoutState extends State<DashboardLayout> {
+  bool _isCollapsed = false;
+
+  void _toggleSidebar() {
+    setState(() {
+      _isCollapsed = !_isCollapsed;
+    });
+  }
+
+  Widget _buildSidebar() {
     final profile = AuthService().userProfile;
 
     if (profile == null) {
@@ -25,11 +38,17 @@ class DashboardLayout extends StatelessWidget {
     }
 
     if (profile.role == 'student') {
-      return AppSidebar(activeRoute: activeRoute);
+      return AppSidebar(
+        activeRoute: widget.activeRoute,
+        isCollapsed: _isCollapsed,
+      );
     }
 
     if (profile.role == 'faculty') {
-      return FacultySidebar(activeRoute: activeRoute);
+      return FacultySidebar(
+        activeRoute: widget.activeRoute,
+        isCollapsed: _isCollapsed,
+      );
     }
 
     return const SizedBox.shrink();
@@ -42,22 +61,21 @@ class DashboardLayout extends StatelessWidget {
       body: Row(
         children: [
           // Sidebar
-          //AppSidebar(activeRoute: activeRoute),
           IgnorePointer(
-            ignoring: disableSidebar,
-            child: _buildSidebar()
+            ignoring: widget.disableSidebar,
+            child: _buildSidebar(),
           ),
 
           // Main Content
           Expanded(
             child: Column(
               children: [
-                const AppHeader(),
+                AppHeader(onMenuPressed: _toggleSidebar),
                 Expanded(
                   child: SingleChildScrollView(
                     child: Padding(
                       padding: const EdgeInsets.all(32),
-                      child: child,
+                      child: widget.child,
                     ),
                   ),
                 ),

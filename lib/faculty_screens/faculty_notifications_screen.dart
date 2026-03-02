@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../styles/app_theme.dart';
-import '../widgets/faculty_sidebar.dart';
-import '../widgets/app_header.dart';
+import '../widgets/faculty_dashboard_layout.dart';
 import '../services/faculty_service.dart';
 import '../models/notification.dart';
 
@@ -26,44 +25,34 @@ class _FacultyNotificationsScreenState
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppTheme.backgroundLight,
-      body: Row(
+    return FacultyDashboardLayout(
+      activeRoute: '/faculty/notifications',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const FacultySidebar(activeRoute: '/notifications'),
-          Expanded(
-            child: Column(
-              children: [
-                const AppHeader(),
-                Expanded(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.all(32),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Page Header
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Notifications',
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .headlineLarge
-                                      ?.copyWith(fontWeight: FontWeight.bold),
-                                ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  'Updates about requests you processed and actions required by you.',
-                                  style: Theme.of(context).textTheme.bodyLarge
-                                      ?.copyWith(color: AppTheme.textLight),
-                                ),
-                              ],
-                            ),
+          // Page Header
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Notifications',
+                    style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Updates about requests you processed and actions required by you.',
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodyLarge?.copyWith(color: AppTheme.textLight),
+                  ),
+                ],
+              ),
                             Row(
                               children: [
                                 TextButton(
@@ -79,68 +68,67 @@ class _FacultyNotificationsScreenState
                                   ),
                                 ),
                                 const SizedBox(width: 8),
-                                TextButton(
-                                  onPressed: () {
-                                    setState(() {
-                                      _notificationsFuture = _facultyService
-                                          .getFacultyNotifications();
-                                    });
-                                  },
-                                  child: const Text(
-                                    'Refresh',
-                                    style: TextStyle(fontWeight: FontWeight.w500),
-                                  ),
+                  TextButton(
+                    onPressed: () {
+                      setState(() {
+                        _notificationsFuture = _facultyService
+                            .getFacultyNotifications();
+                      });
+                    },
+                    child: const Text(
+                      'Refresh',
+                      style: TextStyle(fontWeight: FontWeight.w500),
+                    ),
                                 ),
                               ],
-                            ),
-                          ],
-                        ),
+              ),
+            ],
+          ),
 
-                        const SizedBox(height: 32),
+          const SizedBox(height: 32),
 
-                        // Notifications List
-                        FutureBuilder<List<SAMSNotification>>(
-                          future: _notificationsFuture,
-                          builder: (context, snapshot) {
-                            if (snapshot.connectionState ==
-                                ConnectionState.waiting) {
-                              return const Center(
-                                child: Padding(
-                                  padding: EdgeInsets.all(64.0),
-                                  child: CircularProgressIndicator(),
-                                ),
-                              );
-                            }
+          // Notifications List
+          FutureBuilder<List<SAMSNotification>>(
+            future: _notificationsFuture,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(64.0),
+                    child: CircularProgressIndicator(),
+                  ),
+                );
+              }
 
-                            if (snapshot.hasError) {
-                              return Center(
-                                child: Padding(
-                                  padding: const EdgeInsets.all(64.0),
-                                  child: Text('Error: ${snapshot.error}'),
-                                ),
-                              );
-                            }
+              if (snapshot.hasError) {
+                return Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(64.0),
+                    child: Text('Error: ${snapshot.error}'),
+                  ),
+                );
+              }
 
-                            final notifications = snapshot.data ?? [];
+              final notifications = snapshot.data ?? [];
 
-                            if (notifications.isEmpty) {
-                              return const Center(
-                                child: Padding(
-                                  padding: EdgeInsets.all(64.0),
-                                  child: Text('No notifications found.'),
-                                ),
-                              );
-                            }
+              if (notifications.isEmpty) {
+                return const Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(64.0),
+                    child: Text('No notifications found.'),
+                  ),
+                );
+              }
 
-                            return ListView.separated(
-                              shrinkWrap: true,
-                              physics: const NeverScrollableScrollPhysics(),
-                              itemCount: notifications.length,
-                              separatorBuilder: (context, index) =>
-                                  const SizedBox(height: 12),
-                              itemBuilder: (context, index) {
-                                final notification = notifications[index];
-                                return GestureDetector(
+              return ListView.separated(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: notifications.length,
+                separatorBuilder: (context, index) =>
+                    const SizedBox(height: 12),
+                itemBuilder: (context, index) {
+                  final notification = notifications[index];
+                  return GestureDetector(
                                   onTap: () {
                                     showDialog(
                                       context: context,
@@ -195,23 +183,16 @@ class _FacultyNotificationsScreenState
                                     );
                                   },
                                   child: _buildNotificationItem(
-                                    isUnread: notification.isUnread,
-                                    title: notification.title,
-                                    time: notification.timeAgo,
-                                    description: notification.description,
-                                    color: notification.color,
+                      isUnread: notification.isUnread,
+                      title: notification.title,
+                      time: notification.timeAgo,
+                      description: notification.description,
+                      color: notification.color,
                                   ),
-                                );
-                              },
-                            );
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
+                  );
+                },
+              );
+            },
           ),
         ],
       ),
