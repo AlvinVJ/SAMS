@@ -95,6 +95,8 @@ class _AppHeaderState extends State<AppHeader> {
                           final profile = AuthService().userProfile;
                           if (profile?.role == 'faculty') {
                             Navigator.pushNamed(context, '/faculty/notifications');
+                          } else if (profile?.role == 'admin') {
+                            Navigator.pushNamed(context, '/admin/notifications');
                           } else {
                             Navigator.pushNamed(context, '/notifications');
                           }
