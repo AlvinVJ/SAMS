@@ -25,6 +25,7 @@ import 'admin_screens/admin_settings_screen.dart';
 import 'admin_screens/admin_users_screen.dart';
 import 'admin_screens/admin_procedures_screen.dart';
 import 'admin_screens/academic_structure_screen.dart';
+import 'admin_screens/admin_user_types_screen.dart';
 import 'admin_screens/data_import_screen.dart';
 
 // Faculty screens
@@ -109,6 +110,10 @@ class MyApp extends StatelessWidget {
         '/admin/academic-structure': (context) => const RoleGuard(
           allowedRoles: [AuthResolution.admin],
           child: AcademicStructureScreen(),
+        ),
+        '/admin/user-types': (context) => const RoleGuard(
+          allowedRoles: [AuthResolution.admin],
+          child: AdminUserTypesScreen(),
         ),
         '/admin/data-import': (context) => const RoleGuard(
           allowedRoles: [AuthResolution.admin],

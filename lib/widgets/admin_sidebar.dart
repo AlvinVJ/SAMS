@@ -113,6 +113,16 @@ class AdminSidebar extends StatelessWidget {
                   ),
                 ),
                 _NavItem(
+                  icon: Icons.badge,
+                  label: 'User Types',
+                  isActive: activeRoute == '/admin/user-types',
+                  isCollapsed: isCollapsed,
+                  onTap: () => Navigator.pushReplacementNamed(
+                    context,
+                    '/admin/user-types',
+                  ),
+                ),
+                _NavItem(
                   icon: Icons.upload_file,
                   label: 'Data Import',
                   isActive: activeRoute == '/admin/data-import',
