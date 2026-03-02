@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../styles/app_theme.dart';
 import '../services/auth_service.dart';
 
@@ -71,36 +72,53 @@ class _AppHeaderState extends State<AppHeader> {
           Row(
             children: [
               // Notification Bell
-              Stack(
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.notifications_none),
-                    color: AppTheme.textLight,
-                    onPressed: () {
-                      final profile = AuthService().userProfile;
-                      if (profile?.role == 'faculty') {
-                        Navigator.pushNamed(context, '/faculty/notifications');
-                      } else {
-                        Navigator.pushNamed(context, '/notifications');
-                      }
-                    },
-                  ),
-                  Positioned(
-                    top: 8,
-                    right: 8,
-                    child: Container(
-                      width: 10,
-                      height: 10,
-                      decoration: const BoxDecoration(
-                        color: AppTheme.error,
-                        shape: BoxShape.circle,
-                        border: Border.fromBorderSide(
-                          BorderSide(color: AppTheme.backgroundLight, width: 2),
-                        ),
+              StreamBuilder<QuerySnapshot>(
+                stream: () {
+                  final profile = AuthService().userProfile;
+                  if (profile == null || profile.email == null) return const Stream<QuerySnapshot>.empty();
+                  final emailPrefix = profile.email!.split('@')[0].toLowerCase();
+                  return FirebaseFirestore.instance
+                      .collection('profiles')
+                      .doc(emailPrefix)
+                      .collection('notifications')
+                      .snapshots();
+                }(),
+                builder: (context, snapshot) {
+                  final hasUnread = snapshot.hasData && snapshot.data!.docs.isNotEmpty;
+
+                  return Stack(
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.notifications_none),
+                        color: AppTheme.textLight,
+                        onPressed: () {
+                          final profile = AuthService().userProfile;
+                          if (profile?.role == 'faculty') {
+                            Navigator.pushNamed(context, '/faculty/notifications');
+                          } else {
+                            Navigator.pushNamed(context, '/notifications');
+                          }
+                        },
                       ),
-                    ),
-                  ),
-                ],
+                      if (hasUnread)
+                        Positioned(
+                          top: 8,
+                          right: 8,
+                          child: Container(
+                            width: 10,
+                            height: 10,
+                            decoration: const BoxDecoration(
+                              color: AppTheme.error,
+                              shape: BoxShape.circle,
+                              border: Border.fromBorderSide(
+                                BorderSide(color: AppTheme.backgroundLight, width: 2),
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
+                  );
+                },
               ),
               const SizedBox(width: 24),
 

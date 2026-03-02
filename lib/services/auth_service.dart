@@ -2,6 +2,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 //import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../state/auth_resolution.dart';
 import '../models/user_profile.dart';
 import 'dart:convert';
@@ -201,6 +202,29 @@ class AuthService {
   }
 
   Future<AuthResolution> signOut() async {
+    try {
+      final user = currentUser;
+      if (user != null) {
+        final prefs = await SharedPreferences.getInstance();
+        final deviceId = prefs.getString('device_id');
+        
+        if (deviceId != null) {
+          final idToken = await user.getIdToken();
+          await http.delete(
+            Uri.parse('http://localhost:3000/api/common/delete_fcm_token'),
+            headers: {
+              'Authorization': 'Bearer $idToken',
+              'Content-Type': 'application/json',
+            },
+            body: jsonEncode({'session_id': deviceId}),
+          );
+          print("FCM token deleted successfully for session: $deviceId");
+        }
+      }
+    } catch (e) {
+      print("Error deleting FCM token on signout: $e");
+    }
+
     await _auth.signOut();
     _userProfile = null;
     print("AuthService: Signed out and profile cleared");

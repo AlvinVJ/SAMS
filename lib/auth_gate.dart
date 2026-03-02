@@ -1,6 +1,13 @@
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:uuid/uuid.dart';
 import 'package:sams_final/faculty_screens/faculty_dashboard_screen.dart';
 import 'services/auth_service.dart';
+import 'services/fcm_service.dart';
 import 'state/auth_resolution.dart';
 
 import 'screens/login_screen.dart';
@@ -45,6 +52,49 @@ class AuthGate extends StatelessWidget {
               print("User Role: ${AuthService().userProfile!.role}");
               print("User Email: ${AuthService().userProfile!.email}");
               print("Auth UID: ${AuthService().userProfile!.authUid}");
+              
+              // Fetch FCM token and update it in the backend
+              FCMService().getFCMToken().then((token) async {
+                if (token != null) {
+                  print("Sending FCM token to backend: $token");
+                  try {
+                    final currUser = FirebaseAuth.instance.currentUser;
+                    if (currUser != null) {
+                      // 1. Get or Generate Persistent Device ID
+                      String? deviceId;
+                      if (kIsWeb) {
+                        final prefs = await SharedPreferences.getInstance();
+                        deviceId = prefs.getString('device_id');
+                        if (deviceId == null) {
+                          deviceId = 'web_${const Uuid().v4()}';
+                          await prefs.setString('device_id', deviceId);
+                          print("Generated new device_id: $deviceId");
+                        } else {
+                          print("Reusing existing device_id: $deviceId");
+                        }
+                      }
+
+                      final idToken = await currUser.getIdToken();
+                      await http.post(
+                        Uri.parse('http://localhost:3000/api/common/save_fcm_token'),
+                        headers: {
+                          'Authorization': 'Bearer $idToken',
+                          'Content-Type': 'application/json',
+                        },
+                        body: jsonEncode({
+                          'fcm_token': token,
+                          if (deviceId != null) 'session_id': deviceId, // Use persistent ID instead of timestamp
+                        }),
+                      );
+                      if (deviceId != null) {
+                        print("FCM token saved successfully with session_id: $deviceId");
+                      }
+                    }
+                  } catch (e) {
+                    print("Error saving FCM token: $e");
+                  }
+                }
+              });
             } else {
               print("TEST FAILED: Profile is NULL");
             }
