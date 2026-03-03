@@ -41,7 +41,7 @@ class _AdminCreateProcedureScreenState
   String? _hookTrigger; // Standardized hook trigger
 
   bool _hasForm = false;
-  bool _isHosteller = false;
+  // bool _isHosteller = false; // DEPRECATED
   final List<FormFieldDraft> _formFields = [];
   final _formKey = GlobalKey<FormState>();
 
@@ -422,7 +422,7 @@ class _AdminCreateProcedureScreenState
       visibility: _visibility.contains("all") ? {"all"} : _visibility,
       systemHook: _selectedHook,
       hookTrigger: _hookTrigger,
-      isHosteller: _isHosteller,
+      // isHosteller: _isHosteller, // DEPRECATED
     );
 
     try {
@@ -504,7 +504,8 @@ class _AdminCreateProcedureScreenState
 
           const SizedBox(height: 24),
 
-          // ───────────────── Hosteller Toggle ─────────────────
+          /*
+          // ───────────────── Hosteller Toggle (DEPRECATED) ─────────────────
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
@@ -542,6 +543,7 @@ class _AdminCreateProcedureScreenState
               ],
             ),
           ),
+          */
 
           const SizedBox(height: 24),
 
