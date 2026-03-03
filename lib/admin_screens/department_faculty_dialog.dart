@@ -36,7 +36,7 @@ class _DepartmentFacultyDialogState extends State<DepartmentFacultyDialog> {
           orElse: () => null,
         );
         _asstHod = roles.firstWhere(
-          (r) => r['Roles']['role_tag'] == 'ASST_HOD',
+          (r) => r['Roles']['role_tag'] == 'ASSISTANT HOD',
           orElse: () => null,
         );
         _isLoading = false;
@@ -52,7 +52,7 @@ class _DepartmentFacultyDialogState extends State<DepartmentFacultyDialog> {
   Future<void> _searchAndAssign(String roleTag) async {
     final result = await showDialog<dynamic>(
       context: context,
-      builder: (context) => _FacultySearchDialog(),
+      builder: (context) => _FacultySearchDialog(deptId: widget.department['dept_id']),
     );
 
     if (result != null) {
@@ -99,7 +99,7 @@ class _DepartmentFacultyDialogState extends State<DepartmentFacultyDialog> {
                 children: [
                   _roleCard('Head of Department (HOD)', 'HOD', _hod),
                   const SizedBox(height: 16),
-                  _roleCard('Assistant HOD', 'ASST_HOD', _asstHod),
+                  _roleCard('Assistant HOD', 'ASSISTANT HOD', _asstHod),
                 ],
               ),
       ),
@@ -211,6 +211,9 @@ class _DepartmentFacultyDialogState extends State<DepartmentFacultyDialog> {
 }
 
 class _FacultySearchDialog extends StatefulWidget {
+  final int deptId;
+  const _FacultySearchDialog({required this.deptId});
+
   @override
   State<_FacultySearchDialog> createState() => _FacultySearchDialogState();
 }
@@ -225,11 +228,9 @@ class _FacultySearchDialogState extends State<_FacultySearchDialog> {
     if (query.length < 2) return;
     setState(() => _isSearching = true);
     try {
-      final results = await _adminService.getUsers(query: query);
+      final results = await _adminService.searchFaculty(query, widget.deptId);
       setState(() {
-        _results = results
-            .where((u) => u['UserTypes']['user_type_tag'] == 'FACULTY')
-            .toList();
+        _results = results;
         _isSearching = false;
       });
     } catch (e) {
@@ -268,11 +269,18 @@ class _FacultySearchDialogState extends State<_FacultySearchDialog> {
                   shrinkWrap: true,
                   itemCount: _results.length,
                   itemBuilder: (context, index) {
-                    final faculty = _results[index];
+                    final user = _results[index];
+                    final isFaculty = user['UserTypes']['user_type_tag'] == 'FACULTY';
+                    final profile = isFaculty ? user['Faculty'] : user['Student'];
+                    
                     return ListTile(
-                      title: Text(faculty['Faculty']['name']),
-                      subtitle: Text(faculty['mits_uid']),
-                      onTap: () => Navigator.pop(context, faculty),
+                      leading: CircleAvatar(
+                        child: Text(isFaculty ? 'F' : 'S'),
+                        backgroundColor: isFaculty ? Colors.blue.withOpacity(0.1) : Colors.orange.withOpacity(0.1),
+                      ),
+                      title: Text(profile['name']),
+                      subtitle: Text(user['mits_uid']),
+                      onTap: () => Navigator.pop(context, user),
                     );
                   },
                 ),
