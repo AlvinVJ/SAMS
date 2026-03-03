@@ -70,7 +70,7 @@ class ProcedureService {
       final authToken = await FirebaseAuth.instance.currentUser!.getIdToken();
 
       final response = await http.post(
-        Uri.parse('$baseUrl/api/common/create_request'),
+        Uri.parse('$baseUrl/api/requests/create'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $authToken',
