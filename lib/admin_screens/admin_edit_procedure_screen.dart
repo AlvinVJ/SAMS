@@ -42,7 +42,7 @@ class _AdminEditProcedureScreenState extends State<AdminEditProcedureScreen> {
   final List<ApprovalLevelDraft> _approvalLevels = [];
    String? _selectedHook;
   String? _hookTrigger; // Standardized hook trigger
-  bool _isHosteller = false;
+  bool _isHosteller = false; // DEPRECATED: Replaced by hooks
 
   bool _isLoading = true;
   String? _errorMessage;
@@ -94,7 +94,7 @@ class _AdminEditProcedureScreenState extends State<AdminEditProcedureScreen> {
 
          _selectedHook = procedure.systemHook;
         _hookTrigger = procedure.hookTrigger;
-        _isHosteller = procedure.isHosteller;
+        // _isHosteller = procedure.isHosteller; // DEPRECATED
 
         // Parse form fields
         if (procedure.formFields.isNotEmpty) {
@@ -448,7 +448,7 @@ class _AdminEditProcedureScreenState extends State<AdminEditProcedureScreen> {
           .entries
           .map((e) => e.value.toJson(e.key + 1))
           .toList(),
-      "is_hosteller": _isHosteller,
+      // "is_hosteller": _isHosteller, // DEPRECATED
     };
 
     try {
@@ -560,7 +560,8 @@ class _AdminEditProcedureScreenState extends State<AdminEditProcedureScreen> {
 
           const SizedBox(height: 24),
 
-          // ───────────────── Hosteller Toggle ─────────────────
+          /* 
+          // ───────────────── Hosteller Toggle (DEPRECATED) ─────────────────
           IgnorePointer(
             ignoring: widget.readOnly,
             child: Opacity(
@@ -604,6 +605,7 @@ class _AdminEditProcedureScreenState extends State<AdminEditProcedureScreen> {
               ),
             ),
           ),
+          */
 
           // Visibility Section
           Container(
