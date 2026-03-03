@@ -1,16 +1,24 @@
-# sams_final
+# SAMS (Mobile & Web Frontend)
 
-A new Flutter project.
+The official cross-platform client for the Student Activity Management System, providing a seamless experience for students, faculty, and administrators.
 
-## Getting Started
+## ✨ Highlights
 
-This project is a starting point for a Flutter application.
+- **Admin Workflow Canvas**: A visual builder for creating complex administrative procedures and approval chains.
+- **Unified Request Tracking**: Real-time monitoring of request statuses (Pending, Approved, Rejected) with detailed action history.
+- **Role-Speific Dashboards**: Customized interfaces for Students, HODs, Class Advisors, and Club Leads.
+- **Dynamic Form Engine**: Generates specialized forms on-the-fly based on procedure definitions.
+- **Push Notifications**: Integrated alerts for pending actions and status updates via Firebase Cloud Messaging.
 
-A few resources to get you started if this is your first Flutter project:
+## 🛠️ Technology Stack
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+- **Framework**: Flutter (Dart)
+- **Authentication**: Firebase Authentication
+- **State Management**: Provider / In-Memory Store
+- **Backend Communication**: RESTful API integration with HMAC-based security.
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## 📜 Key Implementation Areas
+
+- **Procedure Editor**: Advanced editing suite for modifying live workflows, including system hook triggers and visibility permissions.
+- **Faculty Approval Suite**: Streamlined interface for bulk-acting on student requests with context-aware data displays (e.g., student attendance history).
+- **Responsive Layouts**: Optimized for both high-density web dashboards and handheld mobile devices.
