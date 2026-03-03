@@ -153,6 +153,23 @@ class AdminService {
     throw Exception("Failed to fetch users");
   }
 
+  Future<List<dynamic>> searchFaculty(String query, int? deptId) async {
+    final token = await _getToken();
+    final response = await http.post(
+      Uri.parse("$_baseUrl/api/admin/search-faculty"),
+      headers: _headers(token!),
+      body: json.encode({
+        "query": query,
+        "dept_id": deptId,
+      }),
+    );
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      return data['data'];
+    }
+    throw Exception("Failed to search faculty");
+  }
+
   Future<void> updateUser(String mitsUid, Map<String, dynamic> data) async {
     final token = await _getToken();
     final response = await http.put(
