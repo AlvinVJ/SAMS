@@ -82,7 +82,7 @@ class ApiProcedureRepository {
       // Use MultipartRequest for file uploads
       final request = http.MultipartRequest(
         'POST',
-        Uri.parse('$baseUrl/api/common/create_request'),
+        Uri.parse('$baseUrl/api/requests/create'),
       );
 
       request.headers['Authorization'] = 'Bearer $authToken';
@@ -105,7 +105,7 @@ class ApiProcedureRepository {
     } else {
       // Standard JSON request if no file
       final response = await http.post(
-        Uri.parse('$baseUrl/api/common/create_request'),
+        Uri.parse('$baseUrl/api/requests/create'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $authToken',
