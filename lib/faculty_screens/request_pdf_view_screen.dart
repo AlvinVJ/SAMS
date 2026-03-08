@@ -112,19 +112,39 @@ class _RequestPdfViewScreenState extends State<RequestPdfViewScreen> {
                                   foregroundColor: Colors.white,
                                 ),
                                 onPressed: () async {
-                                  final attachmentUrl = _fullRequest.formData['attachmentUrl'];
-                                  final uri = Uri.parse(attachmentUrl);
-                                  if (await canLaunchUrl(uri)) {
-                                    await launchUrl(
+                                  try {
+                                    final rawUrl = _fullRequest.formData['attachmentUrl'];
+                                    final attachmentUrl = rawUrl?.toString();
+                                    
+                                    debugPrint('[DEBUG] View Attachment Clicked. URL: $attachmentUrl');
+                                    
+                                    if (attachmentUrl == null || attachmentUrl.isEmpty) {
+                                      debugPrint('[DEBUG] Attachment URL is null or empty');
+                                      throw 'No attachment URL found';
+                                    }
+
+                                    final uri = Uri.parse(attachmentUrl);
+                                    
+                                    // On Web, directly calling launchUrl is often more reliable
+                                    // than checking canLaunchUrl first, which can be restricted.
+                                    final success = await launchUrl(
                                       uri,
                                       mode: LaunchMode.externalApplication,
                                     );
-                                  } else {
+
+                                    if (!success) {
+                                      debugPrint('[DEBUG] launchUrl returned false for $attachmentUrl');
+                                      if (context.mounted) {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          const SnackBar(content: Text('Browser blocked the popup or could not open URL')),
+                                        );
+                                      }
+                                    }
+                                  } catch (e) {
+                                    debugPrint('[DEBUG] Error launching attachment: $e');
                                     if (context.mounted) {
                                       ScaffoldMessenger.of(context).showSnackBar(
-                                        const SnackBar(
-                                            content: Text(
-                                                'Could not open attachment')),
+                                        SnackBar(content: Text('Could not open attachment: $e')),
                                       );
                                     }
                                   }
