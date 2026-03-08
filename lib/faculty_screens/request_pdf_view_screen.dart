@@ -10,6 +10,7 @@ import '../widgets/faculty_sidebar.dart';
 import '../widgets/app_sidebar.dart';
 import '../services/auth_service.dart';
 import '../styles/app_theme.dart';
+import '../services/url_launcher_helper.dart';
 
 /// Screen to view request details as PDF
 /// Allows faculty to review the full request before approving/rejecting
@@ -111,20 +112,26 @@ class _RequestPdfViewScreenState extends State<RequestPdfViewScreen> {
                                   backgroundColor: Colors.orange.shade700,
                                   foregroundColor: Colors.white,
                                 ),
+
                                 onPressed: () async {
-                                  final attachmentUrl = _fullRequest.formData['attachmentUrl'];
-                                  final uri = Uri.parse(attachmentUrl);
-                                  if (await canLaunchUrl(uri)) {
-                                    await launchUrl(
-                                      uri,
-                                      mode: LaunchMode.externalApplication,
-                                    );
-                                  } else {
+                                  try {
+                                    final rawUrl = _fullRequest.formData['attachmentUrl'];
+                                    final attachmentUrl = rawUrl?.toString();
+                                    
+                                    debugPrint('[DEBUG] View Attachment Clicked. URL: $attachmentUrl');
+                                    
+                                    if (attachmentUrl == null || attachmentUrl.isEmpty) {
+                                      throw 'No attachment URL found';
+                                    }
+
+                                    // Use the new helper that handles Web specifically
+                                    await UrlLauncherHelper.launch(attachmentUrl);
+                                    
+                                  } catch (e) {
+                                    debugPrint('[DEBUG] Error launching attachment: $e');
                                     if (context.mounted) {
                                       ScaffoldMessenger.of(context).showSnackBar(
-                                        const SnackBar(
-                                            content: Text(
-                                                'Could not open attachment')),
+                                        SnackBar(content: Text('Could not open attachment: $e')),
                                       );
                                     }
                                   }

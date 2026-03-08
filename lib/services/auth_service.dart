@@ -35,11 +35,31 @@ class AuthService {
       }
 
       final email = user.email;
+      final emailPrefix = extractEmailPrefix(email);
+      print("ResolveUser: User is signed in. Email: $email, MITS UID (Doc ID): $emailPrefix");
+
+      // 🔹 Ensure Firestore profile document exists (for subcollection access)
+      // We do this EARLY so it exists even if the backend call fails or takes time.
+      try {
+        print("ResolveUser: Attempting to sync Firestore profile doc ($emailPrefix)...");
+        await FirebaseFirestore.instance.collection('profiles').doc(emailPrefix).set({
+          'email': email,
+          'authUid': user.uid,
+          'lastLogin': FieldValue.serverTimestamp(),
+          // role will be updated after backend sync
+        }, SetOptions(merge: true));
+        print("ResolveUser: Firestore profile document synced/ensured (minimal)");
+      } catch (e) {
+        print("ResolveUser: 🔥 Firestore Error: $e");
+      }
+
       if (!isMgitsEmail(email)) {
+        print("ResolveUser: Non-MGITS email detected. Access Denied.");
         return AuthResolution.unauthorized;
       }
 
       // Everything is now handled by the backend API as a single source of truth
+      print("ResolveUser: Calling backend signup/sync...");
       final backendData = await sendUserProfileToBackend(
         baseUrl: Environment.apiUrl,
       );
@@ -48,12 +68,24 @@ class AuthService {
       final bool isActive = backendData['isActive'] ?? true;
       final bool banned = backendData['banned'] ?? false;
 
+      print("ResolveUser: Backend sync successful. Role: $role");
+
       if (role == 'faculty' || role == 'admin') {
         try {
           roleTags = await fetchRoleTags();
         } catch (e) {
-          print('Error fetching role tags: $e');
+          print('ResolveUser: Error fetching role tags: $e');
         }
+      }
+
+      // Update with role and other data if we got it from backend
+      try {
+        await FirebaseFirestore.instance.collection('profiles').doc(emailPrefix).update({
+          'role': role,
+        });
+        print("ResolveUser: Firestore profile updated with role: $role");
+      } catch (e) {
+        print("ResolveUser: Firestore update (role) failed: $e");
       }
 
       _userProfile = UserProfile.fromMap(

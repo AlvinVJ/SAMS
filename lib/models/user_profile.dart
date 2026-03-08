@@ -60,9 +60,9 @@ class UserProfile {
       displayName: displayName,
       photoUrl: photoUrl,
       role: data?['role'] ?? 'unknown',
-      isActive: data?['isActive'] ?? true,
-      banned: data?['banned'] ?? false,
-      studentId: data?['mits_uid'] ?? data?['uid'],
+      isActive: data?['isActive'],
+      banned: data?['banned'],
+      studentId: data?['mits_uid'],
       createdAt: getDoB(data?['createdAt']),
       roleTags: roleTags,
       // NEW: Parse student classification fields from Firestore/Backend SQL
