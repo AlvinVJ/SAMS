@@ -16,9 +16,3 @@ The official cross-platform client for the Student Activity Management System, p
 - **Authentication**: Firebase Authentication
 - **State Management**: Provider / In-Memory Store
 - **Backend Communication**: RESTful API integration with HMAC-based security.
-
-## 📜 Key Implementation Areas
-
-- **Procedure Editor**: Advanced editing suite for modifying live workflows, including system hook triggers and visibility permissions.
-- **Faculty Approval Suite**: Streamlined interface for bulk-acting on student requests with context-aware data displays (e.g., student attendance history).
-- **Responsive Layouts**: Optimized for both high-density web dashboards and handheld mobile devices.
