@@ -135,6 +135,7 @@ class _BatchClassesDialogState extends State<BatchClassesDialog> {
           classItem['class_id'],
           result['mits_uid'],
           'CLASS_ADVISOR',
+          replaceMitsUid: oldAdvisor?['mits_uid'],
         );
         _fetchData();
       } catch (e) {

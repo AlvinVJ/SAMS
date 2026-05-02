@@ -22,6 +22,20 @@ class _ClassDetailsDialogState extends State<ClassDetailsDialog> {
     super.initState();
     _facultyAdvisors = widget.classData['ClassFaculty'] ?? [];
     _fetchStudents();
+    _fetchFacultyRoles();
+  }
+
+  Future<void> _fetchFacultyRoles() async {
+    try {
+      final updatedRoles = await _adminService.getClassFacultyRoles(widget.classData['class_id']);
+      if (mounted) {
+        setState(() {
+          _facultyAdvisors = updatedRoles;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error fetching faculty roles: $e');
+    }
   }
 
   Future<void> _fetchStudents() async {
@@ -52,12 +66,14 @@ class _ClassDetailsDialogState extends State<ClassDetailsDialog> {
       setState(() => _isLoading = true);
       try {
         final classId = widget.classData['class_id'];
-        final roleTag = 'ADVISOR_$position';
+        final roleTag = 'CLASS_ADVISOR';
 
-        if (oldAdvisor != null) {
-          await _adminService.removeClassRole(classId, oldAdvisor['mits_uid'], roleTag);
-        }
-        await _adminService.assignClassRole(classId, result['mits_uid'], roleTag);
+        await _adminService.assignClassRole(
+          classId, 
+          result['mits_uid'], 
+          roleTag,
+          replaceMitsUid: oldAdvisor?['mits_uid'],
+        );
         
         // Refresh class data (just the faculty roles part for simplicity, or we can just pop and let parent refresh)
         // Since we don't have a specific endpoint to fetch just ONE class, it's easier to pop(true) to tell parent to refresh,
@@ -83,7 +99,7 @@ class _ClassDetailsDialogState extends State<ClassDetailsDialog> {
       await _adminService.removeClassRole(
         widget.classData['class_id'],
         advisor['mits_uid'],
-        advisor['role_tag'] ?? advisor['Roles']['role_tag'],
+        'CLASS_ADVISOR',
       );
       final updatedRoles = await _adminService.getClassFacultyRoles(widget.classData['class_id']);
       setState(() {
@@ -214,11 +230,11 @@ class _ClassDetailsDialogState extends State<ClassDetailsDialog> {
   }
 
   Widget _buildAdvisorCard(int position) {
-    final roleTag = 'ADVISOR_$position';
-    final advisorRecord = _facultyAdvisors.firstWhere(
-      (f) => (f['Roles']?['role_tag'] == roleTag) || (f['role_tag'] == roleTag),
-      orElse: () => null,
-    );
+    // We just take the advisor at index (position - 1)
+    final advisorRecord = _facultyAdvisors.length >= position 
+        ? _facultyAdvisors[position - 1] 
+        : null;
+
     final faculty = advisorRecord?['Faculty'];
 
     return Container(

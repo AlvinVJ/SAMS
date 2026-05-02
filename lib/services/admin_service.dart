@@ -537,8 +537,9 @@ class AdminService {
   Future<void> assignClassRole(
     int classId,
     String mitsUid,
-    String roleTag,
-  ) async {
+    String roleTag, {
+    String? replaceMitsUid,
+  }) async {
     final token = await _getToken();
     final response = await http.post(
       Uri.parse("$_baseUrl/api/admin/class/assign-role"),
@@ -547,6 +548,7 @@ class AdminService {
         "class_id": classId,
         "mits_uid": mitsUid,
         "role_tag": roleTag,
+        "replace_mits_uid": replaceMitsUid,
       }),
     );
     if (response.statusCode != 200)
