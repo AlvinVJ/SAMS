@@ -5,6 +5,7 @@ import '../services/admin_service.dart';
 import 'department_faculty_dialog.dart';
 import 'batch_classes_dialog.dart';
 import 'role_assignment_dialog.dart';
+import 'club_details_dialog.dart';
 
 class AcademicStructureScreen extends StatefulWidget {
   const AcademicStructureScreen({super.key});
@@ -20,6 +21,7 @@ class _AcademicStructureScreenState extends State<AcademicStructureScreen> {
   List<dynamic> _departments = [];
   List<dynamic> _batches = [];
   List<dynamic> _roles = [];
+  List<dynamic> _clubs = [];
 
   @override
   void initState() {
@@ -34,11 +36,13 @@ class _AcademicStructureScreenState extends State<AcademicStructureScreen> {
         _adminService.getDepartments(),
         _adminService.getBatches(),
         _adminService.getRoles(),
+        _adminService.getClubs(),
       ]);
       setState(() {
         _departments = results[0];
         _batches = results[1];
         _roles = results[2];
+        _clubs = results[3];
         _isLoading = false;
       });
     } catch (e) {
@@ -71,6 +75,9 @@ class _AcademicStructureScreenState extends State<AcademicStructureScreen> {
                   const SizedBox(height: 32),
                   _sectionTitle('Roles'),
                   _entityGrid(_roles, 'role'),
+                  const SizedBox(height: 32),
+                  _sectionTitle('Clubs'),
+                  _entityGrid(_clubs, 'club'),
                 ],
               ),
             ),
@@ -236,7 +243,9 @@ class _AcademicStructureScreenState extends State<AcademicStructureScreen> {
               ? () => _showDepartmentFacultyDialog(item)
               : type == 'batch'
               ? () => _showBatchClassesDialog(item)
-              : () => _showRoleAssignmentDialog(item),
+              : type == 'role'
+              ? () => _showRoleAssignmentDialog(item)
+              : () => _showClubDetailsDialog(item),
           borderRadius: BorderRadius.circular(12),
           child: Container(
             padding: const EdgeInsets.all(12),
@@ -252,6 +261,8 @@ class _AcademicStructureScreenState extends State<AcademicStructureScreen> {
                       ? Icons.business
                       : type == 'batch'
                       ? Icons.calendar_today
+                      : type == 'club'
+                      ? Icons.groups
                       : Icons.person_outline,
                   color: AppTheme.primary,
                   size: 20,
@@ -267,7 +278,9 @@ class _AcademicStructureScreenState extends State<AcademicStructureScreen> {
                             ? item['dept_name']
                             : type == 'batch'
                             ? item['batch']
-                            : item['role_tag'],
+                            : type == 'club'
+                            ? item['club_name']
+                            : item['role_tag'] ?? 'Unknown',
                         style: const TextStyle(
                           fontWeight: FontWeight.w600,
                           fontSize: 13,
@@ -279,13 +292,14 @@ class _AcademicStructureScreenState extends State<AcademicStructureScreen> {
                   ),
                 ),
                 // Edit Icon
-                IconButton(
-                  icon: const Icon(Icons.edit, size: 16, color: Colors.blue),
-                  onPressed: () => _showEditDialog(item, type),
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(),
-                  visualDensity: VisualDensity.compact,
-                ),
+                if (type != 'club')
+                  IconButton(
+                    icon: const Icon(Icons.edit, size: 16, color: Colors.blue),
+                    onPressed: () => _showEditDialog(item, type),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                    visualDensity: VisualDensity.compact,
+                  ),
                 const SizedBox(width: 4),
                 // Delete Icon
                 IconButton(
@@ -325,6 +339,14 @@ class _AcademicStructureScreenState extends State<AcademicStructureScreen> {
     showDialog(
       context: context,
       builder: (context) => RoleAssignmentDialog(role: role),
+    );
+  }
+
+  void _showClubDetailsDialog(dynamic club) {
+    // We'll create this dialog in the next step
+    showDialog(
+      context: context,
+      builder: (context) => ClubDetailsDialog(club: club),
     );
   }
 

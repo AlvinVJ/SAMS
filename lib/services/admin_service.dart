@@ -566,4 +566,42 @@ class AdminService {
     if (response.statusCode != 200)
       throw Exception("Failed to remove class role");
   }
+
+  // ================= CLUBS =================
+
+  Future<List<dynamic>> getClubs() async {
+    final token = await _getToken();
+    final response = await http.get(
+      Uri.parse("$_baseUrl/api/admin/clubs"),
+      headers: _headers(token!),
+    );
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      return data['data'];
+    }
+    throw Exception("Failed to fetch clubs");
+  }
+
+  Future<void> assignClubRole(int clubId, String mitsUid, String roleTag) async {
+    final token = await _getToken();
+    final response = await http.post(
+      Uri.parse("$_baseUrl/api/admin/club/assign-role"),
+      headers: _headers(token!),
+      body: json.encode({
+        "club_id": clubId,
+        "mits_uid": mitsUid,
+        "role_tag": roleTag,
+      }),
+    );
+    if (response.statusCode != 200) throw Exception("Failed to assign club role");
+  }
+
+  Future<void> removeClubRole(int clubId, String mitsUid, String roleTag) async {
+    final token = await _getToken();
+    final response = await http.delete(
+      Uri.parse("$_baseUrl/api/admin/club/role/$clubId/$mitsUid/$roleTag"),
+      headers: _headers(token!),
+    );
+    if (response.statusCode != 200) throw Exception("Failed to remove club role");
+  }
 }
