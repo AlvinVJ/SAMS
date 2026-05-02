@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../styles/app_theme.dart';
 import '../services/admin_service.dart';
 import 'class_details_dialog.dart';
+import 'department_all_faculty_dialog.dart';
 
 class DepartmentFacultyDialog extends StatefulWidget {
   final dynamic department;
@@ -109,6 +110,28 @@ class _DepartmentFacultyDialogState extends State<DepartmentFacultyDialog> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          showDialog(
+                            context: context,
+                            builder: (context) => DepartmentAllFacultyDialog(
+                              department: widget.department,
+                            ),
+                          );
+                        },
+                        icon: const Icon(Icons.people_outline),
+                        label: const Text('Manage All Faculty'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppTheme.primary.withOpacity(0.1),
+                          foregroundColor: AppTheme.primary,
+                          elevation: 0,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
                     _roleCard('Head of Department (HOD)', 'HOD', _hod),
                     const SizedBox(height: 16),
                     _roleCard('Assistant HOD', 'ASSISTANT HOD', _asstHod),

@@ -490,6 +490,19 @@ class AdminService {
     throw Exception("Failed to fetch department faculty roles");
   }
 
+  Future<List<dynamic>> getDepartmentFacultyWithRoles(int deptId) async {
+    final token = await _getToken();
+    final response = await http.get(
+      Uri.parse("$_baseUrl/api/admin/department/$deptId/faculty"),
+      headers: _headers(token!),
+    );
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      return data['data'];
+    }
+    throw Exception("Failed to fetch department faculty list");
+  }
+
   Future<void> assignDepartmentRole(
     int deptId,
     String mitsUid,
