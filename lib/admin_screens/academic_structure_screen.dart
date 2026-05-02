@@ -4,6 +4,7 @@ import '../widgets/admin_dashboard_layout.dart';
 import '../services/admin_service.dart';
 import 'department_faculty_dialog.dart';
 import 'batch_classes_dialog.dart';
+import 'role_assignment_dialog.dart';
 
 class AcademicStructureScreen extends StatefulWidget {
   const AcademicStructureScreen({super.key});
@@ -235,10 +236,7 @@ class _AcademicStructureScreenState extends State<AcademicStructureScreen> {
               ? () => _showDepartmentFacultyDialog(item)
               : type == 'batch'
               ? () => _showBatchClassesDialog(item)
-              : () => _showEditDialog(
-                  item,
-                  type,
-                ), // Roles can be edited by tap or icon
+              : () => _showRoleAssignmentDialog(item),
           borderRadius: BorderRadius.circular(12),
           child: Container(
             padding: const EdgeInsets.all(12),
@@ -321,6 +319,13 @@ class _AcademicStructureScreenState extends State<AcademicStructureScreen> {
       context: context,
       builder: (context) => BatchClassesDialog(batch: batch),
     ).then((_) => _fetchData());
+  }
+
+  void _showRoleAssignmentDialog(dynamic role) {
+    showDialog(
+      context: context,
+      builder: (context) => RoleAssignmentDialog(role: role),
+    );
   }
 
   void _showAddDialog(String type) {

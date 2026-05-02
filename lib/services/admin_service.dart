@@ -258,6 +258,47 @@ class AdminService {
     if (response.statusCode != 200) throw Exception("Failed to delete role");
   }
 
+  // ================= GLOBAL ROLE ASSIGNMENTS =================
+
+  Future<List<dynamic>> getRoleUsers(int roleId) async {
+    final token = await _getToken();
+    final response = await http.get(
+      Uri.parse("$_baseUrl/api/admin/roles/$roleId/users"),
+      headers: _headers(token!),
+    );
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      return data['data'];
+    }
+    throw Exception("Failed to fetch role users");
+  }
+
+  Future<void> assignRoleUser(int roleId, String mitsUid) async {
+    final token = await _getToken();
+    final response = await http.post(
+      Uri.parse("$_baseUrl/api/admin/roles/assign-user"),
+      headers: _headers(token!),
+      body: json.encode({
+        "role_id": roleId,
+        "mits_uid": mitsUid,
+      }),
+    );
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      throw Exception("Failed to assign role to user");
+    }
+  }
+
+  Future<void> removeRoleUser(int roleId, String mitsUid) async {
+    final token = await _getToken();
+    final response = await http.delete(
+      Uri.parse("$_baseUrl/api/admin/roles/$roleId/users/$mitsUid"),
+      headers: _headers(token!),
+    );
+    if (response.statusCode != 200) {
+      throw Exception("Failed to remove role from user");
+    }
+  }
+
   // ================= REQUESTS =================
 
   Future<List<dynamic>> getGlobalRequests() async {

@@ -13,6 +13,8 @@ import 'state/auth_resolution.dart';
 import 'screens/login_screen.dart';
 import 'screens/dashboard_screen.dart';
 import 'admin_screens/admin_dashboard_screen.dart';
+import 'config/environment.dart';
+
 
 class AuthGate extends StatelessWidget {
   const AuthGate({super.key});
@@ -76,7 +78,7 @@ class AuthGate extends StatelessWidget {
 
                       final idToken = await currUser.getIdToken();
                       await http.post(
-                        Uri.parse('http://localhost:3000/api/common/save_fcm_token'),
+                        Uri.parse('${Environment.apiUrl}/api/common/save_fcm_token'),
                         headers: {
                           'Authorization': 'Bearer $idToken',
                           'Content-Type': 'application/json',

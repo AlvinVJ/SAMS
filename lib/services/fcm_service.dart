@@ -41,12 +41,14 @@ class FCMService {
   Future<String?> getFCMToken() async {
     try {
       if (kIsWeb) {
-        // For Flutter Web, you must pass the VAPID key generated from Firebase Console
         return await _firebaseMessaging.getToken(
           vapidKey: "BEjBJLilJWPbnId0WJV8iSi-aFVmqNUICC9gXXgJC5WouKSGM6BHgQf-7WIhwk3tTK03u69Jt-Har8o2jiJc27E", 
         );
       } else {
-        return await _firebaseMessaging.getToken();
+        return await _firebaseMessaging.getToken(
+          vapidKey: "BEjBJLilJWPbnId0WJV8iSi-aFVmqNUICC9gXXgJC5WouKSGM6BHgQf-7WIhwk3tTK03u69Jt-Har8o2jiJc27E", 
+
+        );
       }
     } catch (e) {
       print("Error fetching FCM token: $e");
