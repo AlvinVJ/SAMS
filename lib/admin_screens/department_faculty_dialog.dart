@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../styles/app_theme.dart';
 import '../services/admin_service.dart';
+import 'class_details_dialog.dart';
 
 class DepartmentFacultyDialog extends StatefulWidget {
   final dynamic department;
@@ -17,19 +18,26 @@ class _DepartmentFacultyDialogState extends State<DepartmentFacultyDialog> {
   bool _isLoading = true;
   dynamic _hod;
   dynamic _asstHod;
+  List<dynamic> _classes = [];
 
   @override
   void initState() {
     super.initState();
-    _fetchRoles();
+    _fetchData();
   }
 
-  Future<void> _fetchRoles() async {
+  Future<void> _fetchData() async {
     setState(() => _isLoading = true);
     try {
-      final roles = await _adminService.getDepartmentFacultyRoles(
+      final rolesFuture = _adminService.getDepartmentFacultyRoles(
         widget.department['dept_id'],
       );
+      final classesFuture = _adminService.getClasses(deptId: widget.department['dept_id']);
+      
+      final results = await Future.wait([rolesFuture, classesFuture]);
+      final roles = results[0] as List<dynamic>;
+      final classes = results[1] as List<dynamic>;
+      
       setState(() {
         _hod = roles.firstWhere(
           (r) => r['Roles']['role_tag'] == 'HOD',
@@ -39,13 +47,16 @@ class _DepartmentFacultyDialogState extends State<DepartmentFacultyDialog> {
           (r) => r['Roles']['role_tag'] == 'ASSISTANT HOD',
           orElse: () => null,
         );
+        _classes = classes;
         _isLoading = false;
       });
     } catch (e) {
-      setState(() => _isLoading = false);
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Error: $e')));
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
+      }
     }
   }
 
@@ -63,7 +74,7 @@ class _DepartmentFacultyDialogState extends State<DepartmentFacultyDialog> {
           result['mits_uid'],
           roleTag,
         );
-        _fetchRoles();
+        _fetchData();
       } catch (e) {
         setState(() => _isLoading = false);
         ScaffoldMessenger.of(
@@ -77,7 +88,7 @@ class _DepartmentFacultyDialogState extends State<DepartmentFacultyDialog> {
     setState(() => _isLoading = true);
     try {
       await _adminService.removeDepartmentRole(mitsUid);
-      _fetchRoles();
+      _fetchData();
     } catch (e) {
       setState(() => _isLoading = false);
       ScaffoldMessenger.of(
@@ -94,13 +105,44 @@ class _DepartmentFacultyDialogState extends State<DepartmentFacultyDialog> {
         width: 400,
         child: _isLoading
             ? const Center(child: CircularProgressIndicator())
-            : Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  _roleCard('Head of Department (HOD)', 'HOD', _hod),
-                  const SizedBox(height: 16),
-                  _roleCard('Assistant HOD', 'ASSISTANT HOD', _asstHod),
-                ],
+            : SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _roleCard('Head of Department (HOD)', 'HOD', _hod),
+                    const SizedBox(height: 16),
+                    _roleCard('Assistant HOD', 'ASSISTANT HOD', _asstHod),
+                    const SizedBox(height: 24),
+                    const Text(
+                      'Classes in Department',
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                    ),
+                    const SizedBox(height: 12),
+                    if (_classes.isEmpty)
+                      const Text('No classes found in this department.', style: TextStyle(color: Colors.grey))
+                    else
+                      ..._classes.map((c) => ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            leading: const Icon(Icons.class_, color: AppTheme.primary),
+                            title: Text(c['class']),
+                            subtitle: Text('Batch: ${c['Batches']['batch']}'),
+                            trailing: ElevatedButton(
+                              onPressed: () {
+                                showDialog(
+                                  context: context,
+                                  builder: (context) => ClassDetailsDialog(classData: c),
+                                ).then((_) => _fetchData());
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppTheme.primary.withOpacity(0.1),
+                                foregroundColor: AppTheme.primary,
+                                elevation: 0,
+                              ),
+                              child: const Text('View Details'),
+                            ),
+                          )).toList(),
+                  ],
+                ),
               ),
       ),
       actions: [

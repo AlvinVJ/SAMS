@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../styles/app_theme.dart';
 import '../services/admin_service.dart';
+import 'class_details_dialog.dart';
 import 'department_faculty_dialog.dart';
 
 class BatchClassesDialog extends StatefulWidget {
@@ -202,7 +203,7 @@ class _BatchClassesDialogState extends State<BatchClassesDialog> {
                                 0: FlexColumnWidth(1.5),
                                 1: FlexColumnWidth(2),
                                 2: FlexColumnWidth(3),
-                                3: FlexColumnWidth(3),
+                                3: FlexColumnWidth(1.5),
                               },
                               border: TableBorder.all(color: Colors.grey.shade200),
                               children: [
@@ -211,30 +212,39 @@ class _BatchClassesDialogState extends State<BatchClassesDialog> {
                                   children: const [
                                     _TableCell(text: 'Class', isHeader: true),
                                     _TableCell(text: 'Department', isHeader: true),
-                                    _TableCell(text: 'Advisor 1', isHeader: true),
-                                    _TableCell(text: 'Advisor 2', isHeader: true),
+                                    _TableCell(text: 'Advisors', isHeader: true),
+                                    _TableCell(text: 'Actions', isHeader: true),
                                   ],
                                 ),
                                 ..._classes.map((c) {
                                   final facultyList = c['ClassFaculty'] ?? [];
-                                  final advisor1 = facultyList.isNotEmpty ? facultyList[0] : null;
-                                  final advisor2 = facultyList.length > 1 ? facultyList[1] : null;
+                                  final advisorsStr = facultyList.isNotEmpty
+                                      ? facultyList.map((f) => f['Faculty']['name']).join(', ')
+                                      : 'No advisors';
 
                                   return TableRow(
                                     children: [
                                       _TableCell(text: c['class']),
                                       _TableCell(text: c['Departments']['dept_name']),
-                                      _AdvisorCell(
-                                        advisor: advisor1,
-                                        onAssign: () => _assignAdvisor(c, 1),
-                                        onEdit: () => _assignAdvisor(c, 1, oldAdvisor: advisor1),
-                                        onRemove: advisor1 != null ? () => _removeAdvisor(c, advisor1['Faculty']) : null,
-                                      ),
-                                      _AdvisorCell(
-                                        advisor: advisor2,
-                                        onAssign: () => _assignAdvisor(c, 2),
-                                        onEdit: () => _assignAdvisor(c, 2, oldAdvisor: advisor2),
-                                        onRemove: advisor2 != null ? () => _removeAdvisor(c, advisor2['Faculty']) : null,
+                                      _TableCell(text: advisorsStr),
+                                      Padding(
+                                        padding: const EdgeInsets.all(8),
+                                        child: ElevatedButton(
+                                          onPressed: () {
+                                            showDialog(
+                                              context: context,
+                                              builder: (context) => ClassDetailsDialog(classData: c),
+                                            ).then((_) => _fetchData());
+                                          },
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: AppTheme.primary.withOpacity(0.1),
+                                            foregroundColor: AppTheme.primary,
+                                            elevation: 0,
+                                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                            textStyle: const TextStyle(fontSize: 12),
+                                          ),
+                                          child: const Text('View Details'),
+                                        ),
                                       ),
                                     ],
                                   );

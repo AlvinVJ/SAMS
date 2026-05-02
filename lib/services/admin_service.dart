@@ -109,18 +109,35 @@ class AdminService {
 
   // ================= CLASSES =================
 
-  Future<List<dynamic>> getClasses({int? batchId}) async {
+  Future<List<dynamic>> getClasses({int? batchId, int? deptId}) async {
     final token = await _getToken();
     String url = "$_baseUrl/api/admin/classes";
-    if (batchId != null) {
-      url += "?batch_id=$batchId";
+    List<String> queryParams = [];
+    if (batchId != null) queryParams.add("batch_id=$batchId");
+    if (deptId != null) queryParams.add("dept_id=$deptId");
+    if (queryParams.isNotEmpty) {
+      url += "?${queryParams.join('&')}";
     }
+    
     final response = await http.get(Uri.parse(url), headers: _headers(token!));
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
       return data['data'];
     }
     throw Exception("Failed to fetch classes");
+  }
+
+  Future<List<dynamic>> getClassStudents(int classId) async {
+    final token = await _getToken();
+    final response = await http.get(
+      Uri.parse("$_baseUrl/api/admin/class/$classId/students"),
+      headers: _headers(token!),
+    );
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      return data['data'];
+    }
+    throw Exception("Failed to fetch class students");
   }
 
   Future<void> createClass(String name, int batchId, int deptId) async {
