@@ -10,8 +10,12 @@ class FCMService {
   FCMService._internal();
 
   final FirebaseMessaging _firebaseMessaging = FirebaseMessaging.instance;
+  bool _initialized = false;
 
   Future<void> init() async {
+    if (_initialized) return; // Prevent duplicate listener registration on rebuilds
+    _initialized = true;
+
     // 1. Request permission
     NotificationSettings settings = await _firebaseMessaging.requestPermission(
       alert: true,

@@ -43,12 +43,6 @@ Future<void> main() async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   
   try {
-    await FCMService().init();
-  } catch (e) {
-    print("FCM Init Error: $e");
-  }
-
-  try {
     print(await FirebaseAuth.instance.getRedirectResult());
   } catch (e) {
     print("Redirect Error: $e");

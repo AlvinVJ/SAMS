@@ -55,6 +55,8 @@ class AuthGate extends StatelessWidget {
               print("User Email: ${AuthService().userProfile!.email}");
               print("Auth UID: ${AuthService().userProfile!.authUid}");
               
+              // Init FCM after login so requestPermission() has a user gesture context
+              FCMService().init().then((_) {
               // Fetch FCM token and update it in the backend
               FCMService().getFCMToken().then((token) async {
                 if (token != null) {
@@ -96,7 +98,8 @@ class AuthGate extends StatelessWidget {
                     print("Error saving FCM token: $e");
                   }
                 }
-              });
+              }); // closes getFCMToken().then
+              }); // closes init().then
             } else {
               print("TEST FAILED: Profile is NULL");
             }
